@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+/* Optional: your custom theme overrides / variables */
+@theme inline {
+  --color-primary: #7c3aed;        /* your purple accent */
+  --color-primary-dark: #5b6dee;
+  /* Add fonts, spacing, etc. if needed */
+}
+
+/* Optional dark mode example */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background, #ffffff);
+  color: var(--foreground, #171717);
+}
+
+/* Your other global styles if any */
