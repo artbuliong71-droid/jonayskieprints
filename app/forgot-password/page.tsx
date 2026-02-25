@@ -1,3 +1,4 @@
+"use client";
 // ForgotPassword.tsx - Styled to match Jonayskie Prints login page
 import React, { useState, useEffect } from "react";
 
