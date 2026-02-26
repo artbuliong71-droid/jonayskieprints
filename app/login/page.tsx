@@ -3,37 +3,58 @@ import { useState, FormEvent, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-interface LoginFormData { email: string; password: string; remember: boolean; }
-interface LoginResponse {
-  success: boolean; message: string; redirect?: string;
-  user?: { id: number; name: string; email: string; role: string; };
+interface LoginFormData {
+  email: string;
+  password: string;
+  remember: boolean;
 }
-interface NotificationState { message: string; type: "success" | "error"; visible: boolean; }
+interface LoginResponse {
+  success: boolean;
+  message: string;
+  redirect?: string;
+  user?: { id: number; name: string; email: string; role: string };
+}
+interface NotificationState {
+  message: string;
+  type: "success" | "error";
+  visible: boolean;
+}
 
 export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState<LoginFormData>({ email: "", password: "", remember: false });
+  const [formData, setFormData] = useState<LoginFormData>({
+    email: "",
+    password: "",
+    remember: false,
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [notification, setNotification] = useState<NotificationState>({ message: "", type: "error", visible: false });
-  const [errors, setErrors] = useState<Partial<LoginFormData & { general: string }>>({});
+  const [notification, setNotification] = useState<NotificationState>({
+    message: "",
+    type: "error",
+    visible: false,
+  });
+  const [errors, setErrors] = useState<
+    Partial<LoginFormData & { general: string }>
+  >({});
 
-  // ✅ Clear any existing session so a different account can log in
   useEffect(() => {
-    fetch("/api/auth/logout", { method: "POST" })
-      .finally(() => setCheckingAuth(false));
+    fetch("/api/auth/logout", { method: "POST" }).finally(() =>
+      setCheckingAuth(false),
+    );
   }, []);
 
   const showNotification = (message: string, type: "success" | "error") => {
     setNotification({ message, type, visible: true });
-    setTimeout(() => setNotification(n => ({ ...n, visible: false })), 4000);
+    setTimeout(() => setNotification((n) => ({ ...n, visible: false })), 4000);
   };
 
   const validate = (): boolean => {
     const newErrors: Partial<LoginFormData & { general: string }> = {};
     if (!formData.email) newErrors.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Invalid email format";
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      newErrors.email = "Invalid email format";
     if (!formData.password) newErrors.password = "Password is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -46,7 +67,7 @@ export default function LoginPage() {
 
     try {
       const body = new FormData();
-      body.append("email",    formData.email);
+      body.append("email", formData.email);
       body.append("password", formData.password);
       if (formData.remember) body.append("remember", "on");
 
@@ -61,12 +82,15 @@ export default function LoginPage() {
       if (data.success) {
         showNotification(data.message, "success");
         setTimeout(() => {
-          if (data.redirect)                    router.replace(data.redirect);
+          if (data.redirect) router.replace(data.redirect);
           else if (data.user?.role === "admin") router.replace("/dashboard");
-          else                                  router.replace("/user/dashboard");
+          else router.replace("/user/dashboard");
         }, 1200);
       } else {
-        showNotification(data.message || "Login failed. Please try again.", "error");
+        showNotification(
+          data.message || "Login failed. Please try again.",
+          "error",
+        );
       }
     } catch {
       showNotification("An error occurred. Please try again.", "error");
@@ -75,21 +99,28 @@ export default function LoginPage() {
     }
   };
 
-  // Show spinner while clearing session
   if (checkingAuth) {
     return (
-      <div style={{
-        minHeight: "100dvh",
-        background: "linear-gradient(135deg,#5b6dee 0%,#7c3aed 50%,#a855f7 100%)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-      }}>
-        <div style={{
-          width: 36, height: 36,
-          border: "3px solid rgba(255,255,255,.3)",
-          borderTop: "3px solid #fff",
-          borderRadius: "50%",
-          animation: "spin .7s linear infinite",
-        }} />
+      <div
+        style={{
+          minHeight: "100dvh",
+          background:
+            "linear-gradient(135deg,#5b6dee 0%,#7c3aed 50%,#a855f7 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            border: "3px solid rgba(255,255,255,.3)",
+            borderTop: "3px solid #fff",
+            borderRadius: "50%",
+            animation: "spin .7s linear infinite",
+          }}
+        />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -215,6 +246,20 @@ export default function LoginPage() {
         }
         .btn-register:hover  { border-color: #7c3aed; background: #faf5ff; }
         .btn-register:active { background: #f3e8ff; }
+        .btn-google {
+          width: 100%; padding: clamp(.72rem,2.5vw,.85rem);
+          background: #fff; color: #374151;
+          border: 1.5px solid #e5e7eb; border-radius: 10px;
+          font-family: 'Inter', sans-serif;
+          font-size: clamp(.84rem,2.5vw,.9rem); font-weight: 600; cursor: pointer;
+          text-align: center; text-decoration: none;
+          display: flex; align-items: center; justify-content: center; gap: .65rem;
+          transition: border-color .2s, background .2s, box-shadow .2s;
+          box-shadow: 0 1px 4px rgba(0,0,0,.08);
+          -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+        }
+        .btn-google:hover  { border-color: #d1d5db; background: #f9fafb; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+        .btn-google:active { background: #f3f4f6; }
         .divider {
           display: flex; align-items: center; gap: .75rem;
           margin: clamp(.75rem,2.5vw,1rem) 0;
@@ -281,10 +326,17 @@ export default function LoginPage() {
         <div className="card">
           <div className="brand">
             <div className="brand-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="6 9 6 2 18 2 18 9"/>
-                <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
-                <rect x="6" y="14" width="12" height="8"/>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="6 9 6 2 18 2 18 9" />
+                <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+                <rect x="6" y="14" width="12" height="8" />
               </svg>
             </div>
             <div className="brand-name">Jonayskie Prints</div>
@@ -300,20 +352,31 @@ export default function LoginPage() {
               <label htmlFor="email">Email Address</label>
               <div className="input-wrapper">
                 <span className="input-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
                   </svg>
                 </span>
                 <input
                   className={`form-input ${errors.email ? "has-error" : ""}`}
-                  type="email" id="email" name="email"
-                  autoComplete="email" inputMode="email"
+                  type="email"
+                  id="email"
+                  name="email"
+                  autoComplete="email"
+                  inputMode="email"
                   placeholder="you@example.com"
                   value={formData.email}
-                  onChange={e => {
-                    setFormData(f => ({ ...f, email: e.target.value }));
-                    if (errors.email) setErrors(err => ({ ...err, email: undefined }));
+                  onChange={(e) => {
+                    setFormData((f) => ({ ...f, email: e.target.value }));
+                    if (errors.email)
+                      setErrors((err) => ({ ...err, email: undefined }));
                   }}
                 />
               </div>
@@ -324,80 +387,186 @@ export default function LoginPage() {
               <label htmlFor="password">Password</label>
               <div className="input-wrapper">
                 <span className="input-icon">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" />
                   </svg>
                 </span>
                 <input
                   className={`form-input ${errors.password ? "has-error" : ""}`}
                   type={showPassword ? "text" : "password"}
-                  id="password" name="password"
+                  id="password"
+                  name="password"
                   autoComplete="current-password"
                   placeholder="••••••••"
                   value={formData.password}
-                  onChange={e => {
-                    setFormData(f => ({ ...f, password: e.target.value }));
-                    if (errors.password) setErrors(err => ({ ...err, password: undefined }));
+                  onChange={(e) => {
+                    setFormData((f) => ({ ...f, password: e.target.value }));
+                    if (errors.password)
+                      setErrors((err) => ({ ...err, password: undefined }));
                   }}
                   style={{ paddingRight: "3rem" }}
                 />
-                <button type="button" className="toggle-btn"
-                  onClick={() => setShowPassword(v => !v)}
-                  aria-label="Toggle password visibility">
+                <button
+                  type="button"
+                  className="toggle-btn"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label="Toggle password visibility"
+                >
                   {showPassword ? (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
-                      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
-                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
                     </svg>
                   ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                      <circle cx="12" cy="12" r="3"/>
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
                     </svg>
                   )}
                 </button>
               </div>
-              {errors.password && <p className="field-error">{errors.password}</p>}
+              {errors.password && (
+                <p className="field-error">{errors.password}</p>
+              )}
             </div>
 
             <div className="form-footer-row">
-              <label className="checkbox-label"
-                onClick={() => setFormData(f => ({ ...f, remember: !f.remember }))}>
-                <div className={`custom-checkbox ${formData.remember ? "checked" : ""}`}>
+              <label
+                className="checkbox-label"
+                onClick={() =>
+                  setFormData((f) => ({ ...f, remember: !f.remember }))
+                }
+              >
+                <div
+                  className={`custom-checkbox ${formData.remember ? "checked" : ""}`}
+                >
                   {formData.remember && (
                     <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                      <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path
+                        d="M1 4L3.5 6.5L9 1"
+                        stroke="white"
+                        strokeWidth="1.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   )}
                 </div>
                 Remember me
               </label>
-              <Link href="/forgot-password" className="forgot-link">Forgot Password?</Link>
+              <Link href="/forgot-password" className="forgot-link">
+                Forgot Password?
+              </Link>
             </div>
 
             <button type="submit" className="btn-signin" disabled={isLoading}>
-              {isLoading ? <><span className="spinner"/>Signing in…</> : "Sign In"}
+              {isLoading ? (
+                <>
+                  <span className="spinner" />
+                  Signing in…
+                </>
+              ) : (
+                "Sign In"
+              )}
             </button>
 
-            <div className="divider">Don't have an account?</div>
+            {/* ── Google Sign-In ── */}
+            <div className="divider">or continue with</div>
 
-            <Link href="/register" className="btn-register">Create Account</Link>
+            <a href="/api/auth/google" className="btn-google">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 48 48"
+                aria-hidden="true"
+              >
+                <path
+                  fill="#EA4335"
+                  d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+                />
+              </svg>
+              Continue with Google
+            </a>
+
+            <div className="divider">Don&apos;t have an account?</div>
+
+            <Link href="/register" className="btn-register">
+              Create Account
+            </Link>
           </form>
         </div>
 
-        <Link href="/" className="back-link">← Back to Home</Link>
+        <Link href="/" className="back-link">
+          ← Back to Home
+        </Link>
       </div>
 
-      <div className={`notification ${notification.type} ${notification.visible ? "visible" : ""}`}>
+      <div
+        className={`notification ${notification.type} ${notification.visible ? "visible" : ""}`}
+      >
         {notification.type === "success" ? (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{flexShrink:0}}>
-            <polyline points="20 6 9 17 4 12"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            style={{ flexShrink: 0 }}
+          >
+            <polyline points="20 6 9 17 4 12" />
           </svg>
         ) : (
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" style={{flexShrink:0}}>
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            style={{ flexShrink: 0 }}
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         )}
         {notification.message}
