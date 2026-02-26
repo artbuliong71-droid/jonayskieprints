@@ -64,21 +64,17 @@ export default function LoginPage() {
     e.preventDefault();
     if (!validate()) return;
     setIsLoading(true);
-
     try {
       const body = new FormData();
       body.append("email", formData.email);
       body.append("password", formData.password);
       if (formData.remember) body.append("remember", "on");
-
       const response = await fetch("/api/login", {
         method: "POST",
         body,
         headers: { Accept: "application/json" },
       });
-
       const data: LoginResponse = await response.json();
-
       if (data.success) {
         showNotification(data.message, "success");
         setTimeout(() => {
@@ -133,6 +129,7 @@ export default function LoginPage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; }
         body { font-family: 'Inter', sans-serif; min-height: 100vh; min-height: 100dvh; }
+
         .page {
           min-height: 100vh; min-height: 100dvh;
           background: linear-gradient(135deg, #5b6dee 0%, #7c3aed 50%, #a855f7 100%);
@@ -155,6 +152,7 @@ export default function LoginPage() {
           background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%);
           pointer-events: none;
         }
+
         .card {
           background: #fff; border-radius: clamp(14px,3vw,22px);
           padding: clamp(1.5rem,5vw,2.75rem) clamp(1.25rem,5vw,2.5rem);
@@ -162,24 +160,32 @@ export default function LoginPage() {
           box-shadow: 0 24px 60px rgba(0,0,0,.22), 0 8px 24px rgba(0,0,0,.13);
           position: relative; z-index: 1;
         }
-        .brand { display: flex; flex-direction: column; align-items: center; margin-bottom: clamp(1rem,3vw,1.5rem); gap: .55rem; }
-        .brand-icon {
-          width: clamp(48px,10vw,66px); height: clamp(48px,10vw,66px);
-          background: linear-gradient(135deg,#5b6dee,#7c3aed);
-          border-radius: clamp(12px,2.5vw,17px);
-          display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 8px 20px rgba(124,58,237,.38); flex-shrink: 0;
+
+        .brand {
+          display: flex; flex-direction: column; align-items: center;
+          margin-bottom: clamp(1rem,3vw,1.5rem); gap: .55rem;
         }
-        .brand-icon svg { width: clamp(22px,4.5vw,31px); height: clamp(22px,4.5vw,31px); color: #fff; }
+
+        .brand-logo {
+          width: clamp(56px, 12vw, 80px);
+          height: clamp(56px, 12vw, 80px);
+          object-fit: contain;
+          border-radius: clamp(12px, 2.5vw, 17px);
+          display: block;
+        }
+
         .brand-name { font-size: clamp(.82rem,2.5vw,1rem); font-weight: 700; color: #111827; letter-spacing: -.01em; text-align: center; }
         .form-header { text-align: center; margin-bottom: clamp(1.25rem,3.5vw,1.85rem); }
         .form-header h2 { font-size: clamp(1.35rem,5vw,1.65rem); font-weight: 800; color: #111827; letter-spacing: -.03em; margin-bottom: .3rem; }
         .form-header p  { font-size: clamp(.78rem,2.5vw,.86rem); color: #6b7280; line-height: 1.5; }
+
         .form-group { margin-bottom: clamp(.75rem,2.5vw,1rem); }
         .form-group label { display: block; font-size: clamp(.72rem,2vw,.79rem); font-weight: 600; letter-spacing: .04em; color: #374151; margin-bottom: .4rem; }
+
         .input-wrapper { position: relative; }
         .input-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; display: flex; align-items: center; }
         .input-icon svg { width: clamp(14px,3vw,17px); height: clamp(14px,3vw,17px); }
+
         .form-input {
           width: 100%;
           padding: clamp(.62rem,2.5vw,.78rem) 1rem clamp(.62rem,2.5vw,.78rem) 2.6rem;
@@ -190,6 +196,7 @@ export default function LoginPage() {
         }
         .form-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.12); }
         .form-input.has-error { border-color: #ef4444; }
+
         .toggle-btn {
           position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
           background: none; border: none; cursor: pointer; color: #9ca3af;
@@ -197,7 +204,9 @@ export default function LoginPage() {
           transition: color .2s; min-width: 40px; min-height: 40px; justify-content: center;
         }
         .toggle-btn:hover { color: #374151; }
+
         .field-error { font-size: clamp(.7rem,2vw,.75rem); color: #ef4444; margin-top: .3rem; font-weight: 500; }
+
         .form-footer-row {
           display: flex; justify-content: space-between; align-items: center;
           margin-bottom: clamp(1.1rem,3vw,1.6rem); gap: .5rem; flex-wrap: wrap;
@@ -219,6 +228,7 @@ export default function LoginPage() {
           text-decoration: none; transition: opacity .2s; white-space: nowrap; padding: 4px 0;
         }
         .forgot-link:hover { opacity: .75; }
+
         .btn-signin {
           width: 100%; padding: clamp(.75rem,3vw,.9rem);
           background: linear-gradient(135deg,#5b6dee,#7c3aed); color: #fff;
@@ -234,6 +244,7 @@ export default function LoginPage() {
         .btn-signin:hover:not(:disabled) { opacity: .92; transform: translateY(-1px); }
         .btn-signin:active:not(:disabled) { transform: translateY(0); opacity: .85; }
         .btn-signin:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
         .btn-register {
           width: 100%; padding: clamp(.72rem,2.5vw,.85rem);
           background: transparent; color: #7c3aed; border: 1.5px solid #c4b5fd;
@@ -241,11 +252,12 @@ export default function LoginPage() {
           font-size: clamp(.84rem,2.5vw,.9rem); font-weight: 600; cursor: pointer;
           text-align: center; text-decoration: none;
           display: flex; align-items: center; justify-content: center; gap: .5rem;
-          transition: border-color .2s, background .2s; margin-bottom: .6rem;
+          transition: border-color .2s, background .2s;
           -webkit-tap-highlight-color: transparent; touch-action: manipulation;
         }
         .btn-register:hover  { border-color: #7c3aed; background: #faf5ff; }
         .btn-register:active { background: #f3e8ff; }
+
         .btn-google {
           width: 100%; padding: clamp(.72rem,2.5vw,.85rem);
           background: #fff; color: #374151;
@@ -260,12 +272,14 @@ export default function LoginPage() {
         }
         .btn-google:hover  { border-color: #d1d5db; background: #f9fafb; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
         .btn-google:active { background: #f3f4f6; }
+
         .divider {
           display: flex; align-items: center; gap: .75rem;
           margin: clamp(.75rem,2.5vw,1rem) 0;
           color: #9ca3af; font-size: clamp(.72rem,2vw,.79rem);
         }
         .divider::before, .divider::after { content:''; flex:1; height:1px; background:#e5e7eb; }
+
         .back-link {
           display: block; text-align: center;
           font-size: clamp(.78rem,2.2vw,.84rem); color: rgba(255,255,255,.78);
@@ -275,6 +289,7 @@ export default function LoginPage() {
           -webkit-tap-highlight-color: transparent;
         }
         .back-link:hover { color: #fff; }
+
         .notification {
           position: fixed; top: env(safe-area-inset-top, 1rem);
           right: 1rem; left: 1rem; max-width: 360px; margin: 0 auto;
@@ -289,12 +304,14 @@ export default function LoginPage() {
         .notification.visible  { transform: translateY(0); opacity: 1; }
         .notification.success  { background: #22c55e; }
         .notification.error    { background: #ef4444; }
+
         .spinner {
           width: 16px; height: 16px;
           border: 2px solid rgba(255,255,255,.35); border-top-color: #fff;
           border-radius: 50%; animation: spin .65s linear infinite; flex-shrink: 0;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+
         @media (max-width: 359px) {
           .card { padding: 1.35rem 1rem; }
           .form-footer-row { flex-direction: column; align-items: flex-start; gap: .5rem; }
@@ -303,7 +320,7 @@ export default function LoginPage() {
         @media (max-height: 600px) and (orientation: landscape) {
           .page { justify-content: flex-start; padding-top: 1rem; padding-bottom: 1rem; }
           .brand { margin-bottom: .75rem; flex-direction: row; gap: .75rem; }
-          .brand-icon { width: 40px; height: 40px; }
+          .brand-logo { width: 40px; height: 40px; }
           .form-header { margin-bottom: 1rem; }
           .form-header h2 { font-size: 1.25rem; }
           .form-group { margin-bottom: .6rem; }
@@ -325,21 +342,12 @@ export default function LoginPage() {
       <div className="page">
         <div className="card">
           <div className="brand">
-            <div className="brand-icon">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="6 9 6 2 18 2 18 9" />
-                <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
-                <rect x="6" y="14" width="12" height="8" />
-              </svg>
-            </div>
-            <div className="brand-name">Jonayskie Prints</div>
+            {/* ✅ YOUR LOGO */}
+            <img
+              src="/logo.png"
+              alt="Jonayskie Prints"
+              className="brand-logo"
+            />
           </div>
 
           <div className="form-header">
@@ -348,6 +356,7 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} noValidate>
+            {/* Email */}
             <div className="form-group">
               <label htmlFor="email">Email Address</label>
               <div className="input-wrapper">
@@ -383,6 +392,7 @@ export default function LoginPage() {
               {errors.email && <p className="field-error">{errors.email}</p>}
             </div>
 
+            {/* Password */}
             <div className="form-group">
               <label htmlFor="password">Password</label>
               <div className="input-wrapper">
@@ -455,6 +465,7 @@ export default function LoginPage() {
               )}
             </div>
 
+            {/* Remember + Forgot */}
             <div className="form-footer-row">
               <label
                 className="checkbox-label"
@@ -484,6 +495,7 @@ export default function LoginPage() {
               </Link>
             </div>
 
+            {/* Sign In Button */}
             <button type="submit" className="btn-signin" disabled={isLoading}>
               {isLoading ? (
                 <>
@@ -495,9 +507,8 @@ export default function LoginPage() {
               )}
             </button>
 
-            {/* ── Google Sign-In ── */}
+            {/* Google */}
             <div className="divider">or continue with</div>
-
             <a href="/api/auth/google" className="btn-google">
               <svg
                 width="18"
@@ -525,8 +536,8 @@ export default function LoginPage() {
               Continue with Google
             </a>
 
+            {/* Register */}
             <div className="divider">Don&apos;t have an account?</div>
-
             <Link href="/register" className="btn-register">
               Create Account
             </Link>

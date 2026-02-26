@@ -44,22 +44,6 @@ function getPasswordStrength(password: string): PasswordStrength {
   return "strong";
 }
 
-const IconPrinter = () => (
-  <svg
-    width="26"
-    height="26"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="white"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polyline points="6 9 6 2 18 2 18 9" />
-    <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
-    <rect x="6" y="14" width="12" height="8" rx="1" />
-  </svg>
-);
 const IconUser = () => (
   <svg
     width="15"
@@ -306,229 +290,131 @@ export default function RegisterPage() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; }
-
-        body {
-          font-family: 'DM Sans', sans-serif;
-          min-height: 100vh;
-          min-height: 100dvh;
-        }
+        body { font-family: 'DM Sans', sans-serif; min-height: 100vh; min-height: 100dvh; }
 
         .page {
-          min-height: 100vh;
-          min-height: 100dvh;
+          min-height: 100vh; min-height: 100dvh;
           background: linear-gradient(135deg, #5b6dee 0%, #7c3aed 50%, #a855f7 100%);
-          display: flex;
-          align-items: flex-start;
-          justify-content: center;
+          display: flex; align-items: flex-start; justify-content: center;
           padding: clamp(1rem, 4vw, 2.5rem) clamp(0.75rem, 4vw, 1.25rem);
-          position: relative;
-          overflow: hidden;
+          position: relative; overflow: hidden;
         }
-
         .page::before {
-          content: '';
-          position: absolute;
-          top: -10%; left: -10%;
-          width: clamp(200px, 40vw, 420px);
-          height: clamp(200px, 40vw, 420px);
+          content: ''; position: absolute; top: -10%; left: -10%;
+          width: clamp(200px, 40vw, 420px); height: clamp(200px, 40vw, 420px);
           border-radius: 50%;
           background: radial-gradient(circle, rgba(255,255,255,0.09) 0%, transparent 70%);
           pointer-events: none;
         }
         .page::after {
-          content: '';
-          position: absolute;
-          bottom: -8%; right: -8%;
-          width: clamp(180px, 35vw, 380px);
-          height: clamp(180px, 35vw, 380px);
+          content: ''; position: absolute; bottom: -8%; right: -8%;
+          width: clamp(180px, 35vw, 380px); height: clamp(180px, 35vw, 380px);
           border-radius: 50%;
           background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%);
           pointer-events: none;
         }
 
         .card {
-          background: #fff;
-          border-radius: clamp(14px, 3vw, 22px);
+          background: #fff; border-radius: clamp(14px, 3vw, 22px);
           padding: clamp(1.5rem, 5vw, 2.75rem) clamp(1.25rem, 5vw, 2.25rem);
-          width: 100%;
-          max-width: min(490px, 100%);
+          width: 100%; max-width: min(490px, 100%);
           box-shadow: 0 20px 60px rgba(0,0,0,0.22), 0 8px 24px rgba(0,0,0,0.12);
-          margin: auto 0;
-          position: relative;
-          z-index: 1;
+          margin: auto 0; position: relative; z-index: 1;
         }
 
-        .card-header {
-          text-align: center;
-          margin-bottom: clamp(1.25rem, 3.5vw, 1.85rem);
-        }
-        .brand-icon {
-          width: clamp(44px, 9vw, 56px);
-          height: clamp(44px, 9vw, 56px);
-          background: linear-gradient(135deg, #5b6dee, #7c3aed);
+        .card-header { text-align: center; margin-bottom: clamp(1.25rem, 3.5vw, 1.85rem); }
+
+        .brand-logo {
+          width: clamp(56px, 12vw, 80px);
+          height: clamp(56px, 12vw, 80px);
+          object-fit: contain;
           border-radius: clamp(11px, 2.5vw, 15px);
-          display: flex; align-items: center; justify-content: center;
           margin: 0 auto clamp(0.45rem, 1.5vw, 0.65rem);
-          box-shadow: 0 6px 16px rgba(124,58,237,0.38);
+          display: block;
         }
-        .brand-icon svg {
-          width: clamp(20px, 4vw, 26px);
-          height: clamp(20px, 4vw, 26px);
-        }
-        .brand-name {
-          font-size: clamp(0.82rem, 2.5vw, 1rem);
-          font-weight: 700;
-          color: #0f0e11;
-          margin-bottom: clamp(0.35rem, 1.5vw, 0.6rem);
-        }
-        .card-title {
-          font-size: clamp(1.25rem, 4.5vw, 1.6rem);
-          font-weight: 700;
-          color: #0f0e11;
-          margin-bottom: 0.2rem;
-          letter-spacing: -0.02em;
-        }
-        .card-subtitle {
-          font-size: clamp(0.78rem, 2.3vw, 0.88rem);
-          color: #6b7280;
-        }
+
+        .brand-name { font-size: clamp(0.82rem, 2.5vw, 1rem); font-weight: 700; color: #0f0e11; margin-bottom: clamp(0.35rem, 1.5vw, 0.6rem); }
+        .card-title { font-size: clamp(1.25rem, 4.5vw, 1.6rem); font-weight: 700; color: #0f0e11; margin-bottom: 0.2rem; letter-spacing: -0.02em; }
+        .card-subtitle { font-size: clamp(0.78rem, 2.3vw, 0.88rem); color: #6b7280; }
 
         .name-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
+          display: grid; grid-template-columns: 1fr 1fr;
           gap: clamp(0.6rem, 2vw, 0.9rem);
           margin-bottom: clamp(0.75rem, 2.5vw, 1rem);
         }
 
         .form-group { margin-bottom: clamp(0.7rem, 2.5vw, 1rem); }
-        .form-group label {
-          display: block;
-          font-size: clamp(0.75rem, 2vw, 0.85rem);
-          font-weight: 600;
-          color: #0f0e11;
-          margin-bottom: 0.38rem;
-        }
+        .form-group label { display: block; font-size: clamp(0.75rem, 2vw, 0.85rem); font-weight: 600; color: #0f0e11; margin-bottom: 0.38rem; }
 
         .input-wrapper { position: relative; }
-        .input-icon {
-          position: absolute;
-          left: 12px; top: 50%;
-          transform: translateY(-50%);
-          color: #9ca3af;
-          pointer-events: none;
-          display: flex; align-items: center;
-        }
+        .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; display: flex; align-items: center; }
 
         .form-input {
           width: 100%;
           padding: clamp(0.6rem, 2.5vw, 0.8rem) 1rem clamp(0.6rem, 2.5vw, 0.8rem) 2.45rem;
-          border: 1.5px solid #e5e7eb;
-          border-radius: 10px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: max(16px, 0.875rem);
-          color: #0f0e11;
-          background: #fff;
-          transition: border-color 0.2s, box-shadow 0.2s;
-          outline: none;
-          -webkit-appearance: none;
+          border: 1.5px solid #e5e7eb; border-radius: 10px;
+          font-family: 'DM Sans', sans-serif; font-size: max(16px, 0.875rem);
+          color: #0f0e11; background: #fff;
+          transition: border-color 0.2s, box-shadow 0.2s; outline: none; -webkit-appearance: none;
         }
-        .form-input:focus {
-          border-color: #7c3aed;
-          box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
-        }
+        .form-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
         .form-input.has-error { border-color: #e63329; background: #fff8f8; }
         .form-input.with-toggle { padding-right: 2.8rem; }
 
         .toggle-btn {
-          position: absolute;
-          right: 8px; top: 50%;
-          transform: translateY(-50%);
-          background: none; border: none;
-          cursor: pointer;
-          color: #9ca3af;
-          min-width: 40px; min-height: 40px;
-          display: flex; align-items: center; justify-content: center;
-          transition: color 0.2s;
-          -webkit-tap-highlight-color: transparent;
+          position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+          background: none; border: none; cursor: pointer; color: #9ca3af;
+          min-width: 40px; min-height: 40px; display: flex; align-items: center; justify-content: center;
+          transition: color 0.2s; -webkit-tap-highlight-color: transparent;
         }
         .toggle-btn:hover { color: #374151; }
 
-        .field-error {
-          font-size: clamp(0.68rem, 1.8vw, 0.73rem);
-          color: #e63329;
-          margin-top: 0.28rem;
-          font-weight: 500;
-          display: flex; align-items: center; gap: 0.25rem;
-        }
+        .field-error { font-size: clamp(0.68rem, 1.8vw, 0.73rem); color: #e63329; margin-top: 0.28rem; font-weight: 500; display: flex; align-items: center; gap: 0.25rem; }
 
         .strength-bar-wrap { margin-top: 0.42rem; display: flex; gap: 4px; }
-        .strength-segment {
-          height: 3px; flex: 1; border-radius: 99px;
-          background: #e5e7eb; transition: background 0.3s;
-        }
+        .strength-segment { height: 3px; flex: 1; border-radius: 99px; background: #e5e7eb; transition: background 0.3s; }
         .strength-segment.active.weak   { background: #ef4444; }
         .strength-segment.active.medium { background: #d97706; }
         .strength-segment.active.strong { background: #2d9b5a; }
-        .strength-label {
-          font-size: clamp(0.67rem, 1.8vw, 0.72rem);
-          margin-top: 0.28rem; font-weight: 500; color: #9ca3af;
-        }
+        .strength-label { font-size: clamp(0.67rem, 1.8vw, 0.72rem); margin-top: 0.28rem; font-weight: 500; color: #9ca3af; }
         .strength-label.weak   { color: #ef4444; }
         .strength-label.medium { color: #d97706; }
         .strength-label.strong { color: #2d9b5a; }
 
-        .terms-row {
-          display: flex; align-items: flex-start;
-          gap: 0.55rem;
-          margin-bottom: clamp(1rem, 3vw, 1.35rem);
-          cursor: pointer;
-          padding: 4px 0;
-        }
+        .terms-row { display: flex; align-items: flex-start; gap: 0.55rem; margin-bottom: clamp(1rem, 3vw, 1.35rem); cursor: pointer; padding: 4px 0; }
         .custom-checkbox {
-          width: clamp(16px, 3.5vw, 19px);
-          height: clamp(16px, 3.5vw, 19px);
-          border: 1.5px solid #d1d5db;
-          border-radius: 4px; background: #fff;
+          width: clamp(16px, 3.5vw, 19px); height: clamp(16px, 3.5vw, 19px);
+          border: 1.5px solid #d1d5db; border-radius: 4px; background: #fff;
           display: flex; align-items: center; justify-content: center;
           transition: all 0.18s; flex-shrink: 0; margin-top: 2px;
         }
         .custom-checkbox.checked { background: #7c3aed; border-color: #7c3aed; }
         .custom-checkbox.err { border-color: #e63329; background: #fff8f8; }
-        .terms-text {
-          font-size: clamp(0.8rem, 2.3vw, 0.87rem);
-          color: #374151; line-height: 1.5; user-select: none;
-        }
+        .terms-text { font-size: clamp(0.8rem, 2.3vw, 0.87rem); color: #374151; line-height: 1.5; user-select: none; }
         .terms-text a { color: #7c3aed; font-weight: 600; text-decoration: none; }
         .terms-text a:hover { opacity: 0.75; }
 
         .btn-primary {
-          width: 100%;
-          padding: clamp(0.75rem, 3vw, 0.9rem);
+          width: 100%; padding: clamp(0.75rem, 3vw, 0.9rem);
           background: linear-gradient(135deg, #5b6dee, #7c3aed);
           color: #fff; border: none; border-radius: 10px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: clamp(0.86rem, 2.5vw, 0.95rem);
-          font-weight: 600; cursor: pointer;
-          transition: opacity 0.2s, transform 0.15s;
+          font-family: 'DM Sans', sans-serif; font-size: clamp(0.86rem, 2.5vw, 0.95rem);
+          font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.15s;
           display: flex; align-items: center; justify-content: center; gap: 0.5rem;
           margin-bottom: clamp(0.75rem, 2vw, 1rem);
           box-shadow: 0 4px 14px rgba(124,58,237,0.4);
-          -webkit-tap-highlight-color: transparent;
-          touch-action: manipulation;
+          -webkit-tap-highlight-color: transparent; touch-action: manipulation;
         }
         .btn-primary:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
         .btn-primary:active:not(:disabled) { transform: translateY(0); opacity: 0.85; }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
         .btn-google {
-          width: 100%;
-          padding: clamp(0.72rem, 2.5vw, 0.875rem);
+          width: 100%; padding: clamp(0.72rem, 2.5vw, 0.875rem);
           background: #fff; color: #374151;
           border: 1.5px solid #e5e7eb; border-radius: 10px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: clamp(0.84rem, 2.5vw, 0.92rem);
-          font-weight: 600; cursor: pointer;
-          text-align: center; text-decoration: none;
+          font-family: 'DM Sans', sans-serif; font-size: clamp(0.84rem, 2.5vw, 0.92rem);
+          font-weight: 600; cursor: pointer; text-align: center; text-decoration: none;
           display: flex; align-items: center; justify-content: center; gap: 0.65rem;
           transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
           box-shadow: 0 1px 4px rgba(0,0,0,0.08);
@@ -541,45 +427,36 @@ export default function RegisterPage() {
         .divider {
           display: flex; align-items: center; gap: 0.75rem;
           margin: 0.2rem 0 clamp(0.75rem, 2vw, 1rem);
-          color: #9ca3af;
-          font-size: clamp(0.72rem, 2vw, 0.82rem);
+          color: #9ca3af; font-size: clamp(0.72rem, 2vw, 0.82rem);
         }
         .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
 
         .btn-outline {
-          width: 100%;
-          padding: clamp(0.72rem, 2.5vw, 0.875rem);
+          width: 100%; padding: clamp(0.72rem, 2.5vw, 0.875rem);
           background: transparent; color: #7c3aed;
           border: 1.5px solid #c4b5fd; border-radius: 10px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: clamp(0.84rem, 2.5vw, 0.92rem);
-          font-weight: 600; cursor: pointer;
-          text-align: center; text-decoration: none;
+          font-family: 'DM Sans', sans-serif; font-size: clamp(0.84rem, 2.5vw, 0.92rem);
+          font-weight: 600; cursor: pointer; text-align: center; text-decoration: none;
           display: flex; align-items: center; justify-content: center;
-          transition: all 0.2s;
-          -webkit-tap-highlight-color: transparent;
+          transition: all 0.2s; -webkit-tap-highlight-color: transparent;
         }
         .btn-outline:hover { border-color: #7c3aed; background: #faf5ff; }
         .btn-outline:active { background: #f3e8ff; }
 
         .spinner {
           width: 15px; height: 15px;
-          border: 2px solid rgba(255,255,255,0.3);
-          border-top-color: #fff; border-radius: 50%;
-          animation: spin 0.6s linear infinite; flex-shrink: 0;
+          border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+          border-radius: 50%; animation: spin 0.6s linear infinite; flex-shrink: 0;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .notification {
-          position: fixed;
-          top: env(safe-area-inset-top, 1rem);
+          position: fixed; top: env(safe-area-inset-top, 1rem);
           left: 1rem; right: 1rem;
           padding: clamp(0.7rem, 2.5vw, 0.85rem) clamp(1rem, 3vw, 1.25rem);
-          border-radius: 10px; color: #fff;
-          font-weight: 600;
+          border-radius: 10px; color: #fff; font-weight: 600;
           font-size: clamp(0.78rem, 2.3vw, 0.88rem);
-          z-index: 9999;
-          transform: translateY(-10px); opacity: 0;
+          z-index: 9999; transform: translateY(-10px); opacity: 0;
           transition: all 0.3s; pointer-events: none;
           box-shadow: 0 8px 24px rgba(0,0,0,0.18);
           display: flex; align-items: center; gap: 0.5rem;
@@ -593,28 +470,21 @@ export default function RegisterPage() {
           .card { padding: 1.35rem 1rem; }
           .name-grid { grid-template-columns: 1fr; gap: 0; }
         }
-
         @media (max-height: 600px) and (orientation: landscape) {
           .page { padding-top: 0.75rem; padding-bottom: 0.75rem; align-items: flex-start; }
           .card-header { margin-bottom: 0.9rem; }
-          .brand-icon { width: 38px; height: 38px; margin-bottom: 0.3rem; }
+          .brand-logo { width: 38px; height: 38px; margin-bottom: 0.3rem; }
           .card-title { font-size: 1.15rem; }
           .form-group { margin-bottom: 0.55rem; }
           .terms-row { margin-bottom: 0.75rem; }
         }
-
         @media (min-width: 540px) {
-          .notification {
-            top: 1.5rem; right: 1.5rem;
-            left: auto; max-width: 340px;
-          }
+          .notification { top: 1.5rem; right: 1.5rem; left: auto; max-width: 340px; }
         }
-
         @media (min-width: 768px) {
           .card { padding: 2.75rem 2.5rem; }
           .page { align-items: center; }
         }
-
         @supports (padding: max(0px)) {
           .page {
             padding-left: max(clamp(0.75rem, 4vw, 1.25rem), env(safe-area-inset-left));
@@ -627,17 +497,19 @@ export default function RegisterPage() {
       <div className="page">
         <div className="card">
           <div className="card-header">
-            <div className="brand-icon">
-              <IconPrinter />
-            </div>
-            <div className="brand-name">Jonayskie Prints</div>
+            {/* ✅ YOUR LOGO */}
+            <img
+              src="/logo.png"
+              alt="Jonayskie Prints"
+              className="brand-logo"
+            />
             <h1 className="card-title">Create Account</h1>
             <p className="card-subtitle">
               Join our community — it&apos;s completely free!
             </p>
           </div>
 
-          {/* ── Google Sign-Up (at the top for prominence) ── */}
+          {/* ── Google Sign-Up ── */}
           <a href="/api/auth/google" className="btn-google">
             <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
               <path
