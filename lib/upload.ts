@@ -1,37 +1,27 @@
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { NextApiRequest } from 'next';
-import { IncomingMessage } from 'http';
+import { v2 as cloudinary } from "cloudinary";
 
-const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
-  },
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
+  api_key: process.env.CLOUDINARY_API_KEY!,
+  api_secret: process.env.CLOUDINARY_API_SECRET!,
 });
 
-export const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
-});
-
-// Helper to run multer as promise in Next.js API routes
-export function runMiddleware(
-  req: NextApiRequest | IncomingMessage,
-  res: any,
-  fn: Function
-): Promise<void> {
+export async function uploadToCloudinary(
+  fileBuffer: Buffer,
+  filename: string,
+): Promise<string> {
   return new Promise((resolve, reject) => {
-    fn(req, res, (result: any) => {
-      if (result instanceof Error) reject(result);
-      else resolve(result);
-    });
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: "orders",
+        public_id: `${Date.now()}-${filename.replace(/\.[^/.]+$/, "")}`,
+        resource_type: "auto",
+      },
+      (error, result) => {
+        if (error || !result) return reject(error);
+        resolve(result.secure_url);
+      },
+    );
+    stream.end(fileBuffer);
   });
 }
