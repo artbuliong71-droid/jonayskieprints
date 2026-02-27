@@ -26,6 +26,7 @@ export async function GET(req: NextRequest) {
     });
 
     const tokens = await tokenRes.json();
+    console.log("TOKEN RESPONSE:", JSON.stringify(tokens));
     if (!tokens.access_token) {
       return NextResponse.redirect(
         `${process.env.CLIENT_URL}/login?error=token_failed`,
