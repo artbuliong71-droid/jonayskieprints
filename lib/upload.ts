@@ -10,6 +10,20 @@ export async function uploadToCloudinary(
   fileBuffer: Buffer,
   filename: string,
 ): Promise<string> {
+  // Guard: reject empty buffers immediately
+  if (!fileBuffer || fileBuffer.length === 0) {
+    throw new Error("Empty file buffer");
+  }
+
+  // Guard: check Cloudinary config is present
+  if (
+    !process.env.CLOUDINARY_CLOUD_NAME ||
+    !process.env.CLOUDINARY_API_KEY ||
+    !process.env.CLOUDINARY_API_SECRET
+  ) {
+    throw new Error("Cloudinary environment variables are not set");
+  }
+
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
@@ -18,7 +32,8 @@ export async function uploadToCloudinary(
         resource_type: "auto",
       },
       (error, result) => {
-        if (error || !result) return reject(error);
+        if (error) return reject(error);
+        if (!result) return reject(new Error("No result from Cloudinary"));
         resolve(result.secure_url);
       },
     );

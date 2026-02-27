@@ -66,10 +66,15 @@ async function saveUploadedFiles(
 
   for (const file of files) {
     if (!file || file.size === 0) continue;
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const url = await uploadToCloudinary(buffer, file.name);
-    fileUrls.push(url);
+    try {
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const url = await uploadToCloudinary(buffer, file.name);
+      fileUrls.push(url);
+    } catch (err) {
+      console.error(`[UPLOAD ERROR] Failed to upload ${file.name}:`, err);
+      // skip failed file, don't crash the order
+    }
   }
 
   return fileUrls;
@@ -195,6 +200,8 @@ export async function POST(req: NextRequest) {
 
     // ── createOrder ──
     if (action === "createOrder") {
+      console.log("[createOrder] hit");
+
       const service = (formData.get("service") as string)?.trim();
       const quantity = parseInt(formData.get("quantity") as string) || 1;
       const specifications = (formData.get("specifications") as string)?.trim();
@@ -207,6 +214,15 @@ export async function POST(req: NextRequest) {
       const photo_size = (formData.get("photo_size") as string) || "A4";
       const color_option = (formData.get("color_option") as string) || "bw";
       const add_lamination = formData.get("add_lamination") === "on";
+
+      console.log(
+        "[createOrder] service:",
+        service,
+        "qty:",
+        quantity,
+        "delivery:",
+        delivery_option,
+      );
 
       if (!service || !specifications || !delivery_option) {
         return NextResponse.json(
@@ -222,10 +238,10 @@ export async function POST(req: NextRequest) {
           { status: 404 },
         );
 
-      // Upload files to Cloudinary
+      console.log("[createOrder] uploading files...");
       const fileUrls = await saveUploadedFiles(formData, "files[]");
+      console.log("[createOrder] fileUrls:", fileUrls);
 
-      // Build full specifications string
       const specsLines: string[] = [];
       if (["Print", "Photocopy", "Scanning"].includes(service))
         specsLines.push(`Paper Size: ${paper_size}`);
@@ -250,6 +266,7 @@ export async function POST(req: NextRequest) {
       );
       const order_id = generateOrderId();
 
+      console.log("[createOrder] creating order in DB...");
       const order = await Order.create({
         order_id,
         user_id: session.userId,
@@ -266,6 +283,7 @@ export async function POST(req: NextRequest) {
         files: fileUrls,
       });
 
+      console.log("[createOrder] success:", order.order_id);
       return NextResponse.json({
         success: true,
         message: "Order placed successfully!",
@@ -301,7 +319,6 @@ export async function POST(req: NextRequest) {
           { status: 400 },
         );
 
-      // Upload new files to Cloudinary, or keep existing
       const newFileUrls = await saveUploadedFiles(formData, "new_files[]");
       const updatedFiles =
         newFileUrls.length > 0 ? newFileUrls : (order.files ?? []);
