@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
-import { User } from "@/models/user";
+import { Order } from "@/models/order";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
@@ -14,27 +14,17 @@ export async function GET() {
     }
 
     await connectDB();
-    const user = await User.findById(session.userId).select("-password");
-    if (!user) {
-      return NextResponse.json(
-        { success: false, message: "User not found." },
-        { status: 404 },
-      );
-    }
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get("status");
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: user._id,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-      },
-    });
+    const query: any = { user_id: session.userId };
+    if (status) query.status = status;
+
+    const orders = await Order.find(query).sort({ created_at: -1 });
+
+    return NextResponse.json({ success: true, data: { orders } });
   } catch (err) {
-    console.error("[ME ERROR]", err);
+    console.error("[ORDERS ERROR]", err);
     return NextResponse.json(
       { success: false, message: "Server error." },
       { status: 500 },
