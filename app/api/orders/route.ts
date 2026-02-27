@@ -7,13 +7,19 @@ export async function GET() {
   try {
     const session = await getSession();
     if (!session) {
-      return NextResponse.json({ success: false, message: "Not authenticated." }, { status: 401 });
+      return NextResponse.json(
+        { success: false, message: "Not authenticated." },
+        { status: 401 },
+      );
     }
 
     await connectDB();
     const user = await User.findById(session.userId).select("-password");
     if (!user) {
-      return NextResponse.json({ success: false, message: "User not found." }, { status: 404 });
+      return NextResponse.json(
+        { success: false, message: "User not found." },
+        { status: 404 },
+      );
     }
 
     return NextResponse.json({
@@ -29,6 +35,9 @@ export async function GET() {
     });
   } catch (err) {
     console.error("[ME ERROR]", err);
-    return NextResponse.json({ success: false, message: "Server error." }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: "Server error." },
+      { status: 500 },
+    );
   }
 }
