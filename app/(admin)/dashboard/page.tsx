@@ -75,6 +75,22 @@ function getOrderDisplay(o: Order | DeletedOrder): string {
   const id = o.order_id || o._id || "";
   return id ? String(id).slice(-6) : "------";
 }
+function getFileName(url: string) {
+  try {
+    return decodeURIComponent(url.split("/").pop()?.split("?")[0] || url);
+  } catch {
+    return url;
+  }
+}
+function fixCloudinaryUrl(url: string): string {
+  if (
+    url.includes("res.cloudinary.com") &&
+    url.toLowerCase().endsWith(".pdf")
+  ) {
+    return url.replace("/image/upload/", "/raw/upload/");
+  }
+  return url;
+}
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 const IC = {
@@ -460,7 +476,7 @@ const IC = {
   ),
 };
 
-// ─── Simple SVG Donut for Dashboard only ─────────────────────────────────────
+// ─── Simple SVG Donut ─────────────────────────────────────────────────────────
 function DashboardDonut({ stats }: { stats: AdminStats }) {
   const total =
     stats.pendingOrders +
@@ -613,16 +629,13 @@ function ReportCharts({ stats }: { stats: AdminStats }) {
     { name: "Completed", value: stats.completedOrders },
     { name: "Cancelled", value: stats.cancelledOrders },
   ].filter((d) => d.value > 0);
-
   const barData = [
     { name: "Pending", orders: stats.pendingOrders, fill: "#eab308" },
     { name: "In Progress", orders: stats.inProgressOrders, fill: "#3b82f6" },
     { name: "Completed", orders: stats.completedOrders, fill: "#22c55e" },
     { name: "Cancelled", orders: stats.cancelledOrders, fill: "#ef4444" },
   ];
-
   const total = pieData.reduce((s, d) => s + d.value, 0);
-
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
     const d = payload[0];
@@ -651,7 +664,6 @@ function ReportCharts({ stats }: { stats: AdminStats }) {
       </div>
     );
   };
-
   if (total === 0)
     return (
       <div
@@ -665,7 +677,6 @@ function ReportCharts({ stats }: { stats: AdminStats }) {
         No order data yet
       </div>
     );
-
   return (
     <div
       style={{
@@ -1049,16 +1060,10 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
   function isImage(url: string) {
     return /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url);
   }
-  function getFileName(url: string) {
-    try {
-      return decodeURIComponent(url.split("/").pop()?.split("?")[0] || url);
-    } catch {
-      return url;
-    }
-  }
+
   async function handleDownload(url: string, filename: string) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(fixCloudinaryUrl(url));
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -1069,7 +1074,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
       a.remove();
       URL.revokeObjectURL(blobUrl);
     } catch {
-      window.open(url, "_blank");
+      window.open(fixCloudinaryUrl(url), "_blank");
     }
   }
 
@@ -1165,7 +1170,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                   <button
                     onClick={() =>
                       files.forEach((url) =>
-                        handleDownload(url, getFileName(url)),
+                        handleDownload(fixCloudinaryUrl(url), getFileName(url)),
                       )
                     }
                     style={{
@@ -1207,7 +1212,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                     {isImage(url) ? (
                       <div>
                         <img
-                          src={url}
+                          src={fixCloudinaryUrl(url)}
                           alt={`File ${i + 1}`}
                           style={{
                             width: "100%",
@@ -1251,7 +1256,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                             }}
                           >
                             <a
-                              href={url}
+                              href={fixCloudinaryUrl(url)}
                               target="_blank"
                               rel="noreferrer"
                               style={{
@@ -1268,7 +1273,10 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                             </a>
                             <button
                               onClick={() =>
-                                handleDownload(url, getFileName(url))
+                                handleDownload(
+                                  fixCloudinaryUrl(url),
+                                  getFileName(url),
+                                )
                               }
                               style={{
                                 fontSize: ".72rem",
@@ -1321,7 +1329,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                           }}
                         >
                           <a
-                            href={url}
+                            href={fixCloudinaryUrl(url)}
                             target="_blank"
                             rel="noreferrer"
                             style={{
@@ -1338,7 +1346,10 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                           </a>
                           <button
                             onClick={() =>
-                              handleDownload(url, getFileName(url))
+                              handleDownload(
+                                fixCloudinaryUrl(url),
+                                getFileName(url),
+                              )
                             }
                             style={{
                               fontSize: ".72rem",
@@ -1405,28 +1416,22 @@ export default function AdminDashboardPage() {
   const [pricingSaving, setPricingSaving] = useState(false);
   const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
   const [filesOrder, setFilesOrder] = useState<Order | null>(null);
-
-  // ── Notification state ──────────────────────────────────────────────────────
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifSeen, setNotifSeen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
-
   const notifCount = stats.pendingOrders;
   const showBadge = notifCount > 0 && !notifSeen;
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     if (!notifOpen) return;
     function handleClickOutside(e: MouseEvent) {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node))
         setNotifOpen(false);
-      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [notifOpen]);
 
-  // Reset notifSeen when new pending orders come in
   useEffect(() => {
     setNotifSeen(false);
   }, [stats.pendingOrders]);
@@ -1615,26 +1620,20 @@ export default function AdminDashboardPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-          --sb: #5b4fa8; --active: #7c3aed;
-          --grad: linear-gradient(135deg, #5b6dee 0%, #7c3aed 50%, #a855f7 100%);
-          --surface: #fff; --bg: #f3f4f6; --border: #e5e7eb;
-          --text: #111827; --muted: #6b7280;
-          --sw: 235px; --hh: 56px; --r: 12px;
-        }
+        :root { --sb: #5b4fa8; --active: #7c3aed; --grad: linear-gradient(135deg, #5b6dee 0%, #7c3aed 50%, #a855f7 100%); --surface: #fff; --bg: #f3f4f6; --border: #e5e7eb; --text: #111827; --muted: #6b7280; --sw: 235px; --hh: 56px; --r: 12px; }
         html, body { height: 100%; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100dvh; }
         .shell { display: flex; height: 100dvh; overflow: hidden; }
         .sidebar { width: var(--sw); background: var(--sb); display: flex; flex-direction: column; height: 100%; flex-shrink: 0; z-index: 200; transition: transform .28s cubic-bezier(.4,0,.2,1); }
         .sb-brand { display: flex; align-items: center; gap: .6rem; padding: .9rem .95rem .8rem; border-bottom: 1px solid rgba(255,255,255,.1); }
-        .sb-icon  { width: 34px; height: 34px; background: rgba(255,255,255,.18); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
-        .sb-name  { font-size: .88rem; font-weight: 700; color: #fff; line-height: 1.25; }
-        .sb-sub   { font-size: .58rem; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .08em; }
-        .sb-nav   { flex: 1; padding: .65rem .6rem; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-        .nav-btn  { display: flex; align-items: center; gap: .55rem; padding: .58rem .75rem; border-radius: 8px; color: rgba(255,255,255,.72); font-size: .83rem; font-weight: 500; cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; -webkit-tap-highlight-color: transparent; }
-        .nav-btn:hover  { background: rgba(255,255,255,.1); color: #fff; }
+        .sb-icon { width: 34px; height: 34px; background: rgba(255,255,255,.18); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+        .sb-name { font-size: .88rem; font-weight: 700; color: #fff; line-height: 1.25; }
+        .sb-sub { font-size: .58rem; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .08em; }
+        .sb-nav { flex: 1; padding: .65rem .6rem; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
+        .nav-btn { display: flex; align-items: center; gap: .55rem; padding: .58rem .75rem; border-radius: 8px; color: rgba(255,255,255,.72); font-size: .83rem; font-weight: 500; cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; -webkit-tap-highlight-color: transparent; }
+        .nav-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
         .nav-btn.active { background: var(--active); color: #fff; }
-        .sb-foot  { padding: .55rem; border-top: 1px solid rgba(255,255,255,.1); }
+        .sb-foot { padding: .55rem; border-top: 1px solid rgba(255,255,255,.1); }
         .logout-btn { display: flex; align-items: center; gap: .55rem; padding: .58rem .75rem; border-radius: 8px; color: rgba(255,255,255,.4); font-size: .82rem; font-weight: 500; cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; -webkit-tap-highlight-color: transparent; }
         .logout-btn:hover { background: rgba(239,68,68,.18); color: #fca5a5; }
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
@@ -1662,14 +1661,14 @@ export default function AdminDashboardPage() {
         .notif-footer { padding: .6rem 1rem; text-align: center; font-size: .76rem; font-weight: 600; color: #7c3aed; border-top: 1px solid #e5e7eb; cursor: pointer; transition: background .15s; }
         .notif-footer:hover { background: #f5f3ff; }
         .welcome { font-size: .78rem; color: rgba(255,255,255,.85); font-weight: 500; white-space: nowrap; }
-        .avatar  { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .72rem; font-weight: 700; border: 2px solid rgba(255,255,255,.4); flex-shrink: 0; }
+        .avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center; color: #fff; font-size: .72rem; font-weight: 700; border: 2px solid rgba(255,255,255,.4); flex-shrink: 0; }
         .content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1rem; background: var(--bg); }
         .panel { display: none; } .panel.active { display: block; }
         .banner { background: var(--grad); border-radius: var(--r); padding: .85rem 1rem; margin-bottom: .9rem; display: flex; align-items: center; gap: .5rem; box-shadow: 0 4px 20px rgba(91,109,238,.3); }
         .banner-title { font-size: .9rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: .45rem; }
         .stats-wrap { background: var(--grad); border-radius: var(--r); padding: .75rem .9rem 1rem; margin-bottom: .9rem; box-shadow: 0 4px 20px rgba(91,109,238,.3); }
         .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: .65rem; }
-        .stat-card  { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.15); border-radius: 10px; padding: .75rem .5rem; display: flex; flex-direction: column; align-items: center; text-align: center; backdrop-filter: blur(6px); transition: background .2s; }
+        .stat-card { background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.15); border-radius: 10px; padding: .75rem .5rem; display: flex; flex-direction: column; align-items: center; text-align: center; backdrop-filter: blur(6px); transition: background .2s; }
         .stat-card:hover { background: rgba(255,255,255,.2); }
         .stat-ico { display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,.85); margin-bottom: .28rem; }
         .stat-val { font-size: 1.35rem; font-weight: 700; color: #fff; letter-spacing: -.03em; line-height: 1; }
@@ -1689,14 +1688,14 @@ export default function AdminDashboardPage() {
         .action-btn { display: inline-flex; align-items: center; gap: 5px; padding: .32rem .65rem; border-radius: 6px; font-size: .72rem; font-weight: 600; cursor: pointer; border: 1.5px solid; transition: all .15s; white-space: nowrap; font-family: 'Inter', sans-serif; text-decoration: none; }
         .action-btn-details { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
         .action-btn-details:hover { background: #dbeafe; }
-        .action-btn-files   { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
+        .action-btn-files { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
         .action-btn-files:hover { background: #ede9fe; }
         .action-btns { display: flex; gap: .35rem; flex-wrap: wrap; }
         .m-card { padding: .65rem .9rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; transition: background .15s; }
         .m-card:last-child { border-bottom: none; }
         .m-card:hover { background: #f9fafb; }
         .m-card-main { min-width: 0; flex: 1; }
-        .m-id   { font-weight: 700; font-size: .78rem; color: var(--text); }
+        .m-id { font-weight: 700; font-size: .78rem; color: var(--text); }
         .m-name { font-size: .76rem; font-weight: 500; color: var(--text); margin-top: 1px; }
         .m-meta { font-size: .68rem; color: var(--muted); margin-top: 2px; line-height: 1.4; }
         .m-card-right { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: .3rem; }
@@ -1726,9 +1725,9 @@ export default function AdminDashboardPage() {
         .form-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .85rem; }
         .report-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .85rem; margin-bottom: .9rem; }
         .report-card { background: #fff; border: 1px solid var(--border); border-radius: var(--r); padding: 1rem; display: flex; align-items: center; gap: .85rem; }
-        .report-ico  { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .report-val  { font-size: 1.4rem; font-weight: 700; color: #111827; letter-spacing: -.02em; }
-        .report-lbl  { font-size: .72rem; color: #6b7280; margin-top: 2px; }
+        .report-ico { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .report-val { font-size: 1.4rem; font-weight: 700; color: #111827; letter-spacing: -.02em; }
+        .report-lbl { font-size: .72rem; color: #6b7280; margin-top: 2px; }
         .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
         @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
         .sb-overlay { display: none; position: fixed; inset: 0; background: rgba(30,27,75,.5); z-index: 190; }
@@ -1736,16 +1735,13 @@ export default function AdminDashboardPage() {
         .empty-state { padding: 2.5rem; text-align: center; color: var(--muted); font-size: .84rem; }
         @media (min-width: 1025px) { .hamburger { display: none; } .welcome { display: block; } }
         @media (max-width: 1024px) { .sidebar { position: fixed; top: 0; left: 0; height: 100%; transform: translateX(-100%); } .sidebar.open { transform: translateX(0); box-shadow: 4px 0 30px rgba(0,0,0,.25); } .hamburger { display: flex; } }
-        @media (max-width: 900px)  { .stats-grid { grid-template-columns: repeat(2,1fr); } .form-grid { grid-template-columns: repeat(2,1fr); } .report-grid { grid-template-columns: repeat(2,1fr); } }
-        @media (max-width: 768px)  { .welcome { display: none; } .notif-dropdown { width: 280px; right: -8px; } }
-        @media (max-width: 600px)  { .content { padding: .65rem; } .desktop-tbl { display: none; } .mobile-cards { display: block; } .stats-wrap { padding: .6rem .7rem .8rem; } }
-        @media (min-width: 601px)  { .mobile-cards { display: none; } .desktop-tbl { display: block; } }
-        @media (max-width: 400px)  { .stats-grid { grid-template-columns: repeat(2,1fr); gap: .4rem; } .form-grid { grid-template-columns: 1fr; } .report-grid { grid-template-columns: 1fr; } .stat-val { font-size: 1.1rem; } }
-        @supports (padding: max(0px)) {
-          .header  { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
-          .content { padding-left: max(.85rem, env(safe-area-inset-left)); padding-right: max(.85rem, env(safe-area-inset-right)); }
-        }
-        @keyframes fadeIn   { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2,1fr); } .form-grid { grid-template-columns: repeat(2,1fr); } .report-grid { grid-template-columns: repeat(2,1fr); } }
+        @media (max-width: 768px) { .welcome { display: none; } .notif-dropdown { width: 280px; right: -8px; } }
+        @media (max-width: 600px) { .content { padding: .65rem; } .desktop-tbl { display: none; } .mobile-cards { display: block; } .stats-wrap { padding: .6rem .7rem .8rem; } }
+        @media (min-width: 601px) { .mobile-cards { display: none; } .desktop-tbl { display: block; } }
+        @media (max-width: 400px) { .stats-grid { grid-template-columns: repeat(2,1fr); gap: .4rem; } .form-grid { grid-template-columns: 1fr; } .report-grid { grid-template-columns: 1fr; } .stat-val { font-size: 1.1rem; } }
+        @supports (padding: max(0px)) { .header { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); } .content { padding-left: max(.85rem, env(safe-area-inset-left)); padding-right: max(.85rem, env(safe-area-inset-right)); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes badgePop { from { transform: scale(0); } to { transform: scale(1); } }
       `}</style>
 
@@ -1766,7 +1762,6 @@ export default function AdminDashboardPage() {
           onClick={() => setSidebarOpen(false)}
         />
 
-        {/* SIDEBAR */}
         <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
           <div className="sb-brand">
             <div className="sb-icon">
@@ -1808,7 +1803,6 @@ export default function AdminDashboardPage() {
           </div>
         </aside>
 
-        {/* MAIN */}
         <div className="main">
           <header className="header">
             <div className="hdr-l">
@@ -1822,14 +1816,13 @@ export default function AdminDashboardPage() {
               <div className="hdr-title">Admin Dashboard</div>
             </div>
             <div className="hdr-r">
-              {/* ── Notification Bell ── */}
               <div className="notif-wrapper" ref={notifRef}>
                 <button
                   className="notif-btn"
                   aria-label="Notifications"
                   onClick={() => {
                     setNotifOpen((prev) => !prev);
-                    setNotifSeen(true); // clears the badge
+                    setNotifSeen(true);
                   }}
                 >
                   <IC.Bell />
@@ -1839,10 +1832,8 @@ export default function AdminDashboardPage() {
                     </span>
                   )}
                 </button>
-
                 {notifOpen && (
                   <div className="notif-dropdown">
-                    {/* Header */}
                     <div className="notif-dropdown-head">
                       <span className="notif-dropdown-title">
                         Pending Orders
@@ -1851,8 +1842,6 @@ export default function AdminDashboardPage() {
                         {notifCount} pending
                       </span>
                     </div>
-
-                    {/* List */}
                     <div className="notif-list">
                       {orders.filter((o) => o.status === "pending").length ===
                       0 ? (
@@ -1885,8 +1874,6 @@ export default function AdminDashboardPage() {
                           ))
                       )}
                     </div>
-
-                    {/* Footer */}
                     <div
                       className="notif-footer"
                       onClick={() => {
@@ -1900,8 +1887,6 @@ export default function AdminDashboardPage() {
                   </div>
                 )}
               </div>
-              {/* ── End Notification Bell ── */}
-
               <span className="welcome">Welcome, Admin</span>
               <div className="avatar">A</div>
             </div>
