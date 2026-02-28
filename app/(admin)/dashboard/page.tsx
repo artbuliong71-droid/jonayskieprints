@@ -120,16 +120,19 @@ function isPdfUrl(url: string): boolean {
 function openPdfInline(url: string) {
   // Always fix Cloudinary URL — swap image/upload → raw/upload so the file is accessible
   const fixed = fixCloudinaryUrl(url);
+  const filename = getFileName(url);
+  const gdocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fixed)}&embedded=true`;
+
   const win = window.open("", "_blank");
   if (win) {
     win.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>PDF Viewer — ${getFileName(url)}</title>
+          <title>${filename}</title>
           <style>
             *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-            body, html { height: 100%; background: #1a1a2e; font-family: system-ui, sans-serif; }
+            body, html { height: 100%; background: #1a1a2e; font-family: system-ui, sans-serif; overflow: hidden; }
             .toolbar {
               background: #16213e;
               border-bottom: 1px solid #0f3460;
@@ -138,6 +141,7 @@ function openPdfInline(url: string) {
               align-items: center;
               justify-content: space-between;
               gap: 12px;
+              height: 49px;
             }
             .toolbar-name {
               font-size: 13px;
@@ -160,72 +164,83 @@ function openPdfInline(url: string) {
               border: none;
               text-decoration: none;
               font-family: system-ui, sans-serif;
+              white-space: nowrap;
+              flex-shrink: 0;
             }
             .btn-download { background: #22c55e; color: #fff; }
-            .btn-gdocs { background: #3b82f6; color: #fff; }
-            .viewer-wrap { height: calc(100vh - 49px); width: 100%; }
-            embed, iframe { width: 100%; height: 100%; border: none; display: block; }
-            .fallback {
-              display: none;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              height: 100%;
-              gap: 16px;
-              color: #94a3b8;
-              font-size: 14px;
-              text-align: center;
-              padding: 2rem;
+            .btn-embed { background: #7c3aed; color: #fff; }
+            .viewer-wrap { height: calc(100vh - 49px); width: 100%; position: relative; }
+            iframe { width: 100%; height: 100%; border: none; display: block; }
+            .loading {
+              position: absolute; inset: 0;
+              display: flex; flex-direction: column;
+              align-items: center; justify-content: center;
+              gap: 14px; color: #94a3b8; font-size: 14px;
+              background: #1a1a2e; pointer-events: none;
             }
-            .fallback svg { opacity: 0.4; }
+            .spinner {
+              width: 36px; height: 36px;
+              border: 3px solid rgba(124,58,237,.3);
+              border-top-color: #7c3aed;
+              border-radius: 50%;
+              animation: spin .8s linear infinite;
+            }
+            @keyframes spin { to { transform: rotate(360deg); } }
           </style>
         </head>
         <body>
           <div class="toolbar">
-            <span class="toolbar-name">${getFileName(url)}</span>
-            <a href="${fixed}" download="${getFileName(url)}" class="toolbar-btn btn-download">
-              ⬇ Download
-            </a>
-            <a href="https://docs.google.com/viewer?url=${encodeURIComponent(fixed)}&embedded=true" target="_blank" class="toolbar-btn btn-gdocs">
-              ↗ Google Docs
-            </a>
+            <span class="toolbar-name">${filename}</span>
+            <a href="${fixed}" download="${filename}" class="toolbar-btn btn-download">⬇ Download</a>
+            <button onclick="toggleView()" id="toggleBtn" class="toolbar-btn btn-embed">⧉ Direct View</button>
           </div>
-          <div class="viewer-wrap" id="viewer">
-            <embed
-              src="${fixed}#toolbar=1&navpanes=1&scrollbar=1&view=FitH"
-              type="application/pdf"
-              id="pdfEmbed"
-            />
-          </div>
-          <div class="fallback" id="fallback">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
-              <polyline points="13 2 13 9 20 9"/>
-            </svg>
-            <p>Your browser couldn't display the PDF inline.</p>
-            <p style="font-size:12px; color:#64748b;">Use the buttons above to download or open in Google Docs.</p>
+          <div class="viewer-wrap">
+            <div class="loading" id="loading">
+              <div class="spinner"></div>
+              <span>Loading via Google Docs Viewer…</span>
+            </div>
+            <iframe
+              id="frame"
+              src="${gdocsUrl}"
+              onload="document.getElementById('loading').style.display='none'"
+              onerror="showError()"
+            ></iframe>
           </div>
           <script>
-            const embed = document.getElementById('pdfEmbed');
-            const fallback = document.getElementById('fallback');
-            const viewer = document.getElementById('viewer');
-            // Show fallback if embed fails to load after 4s
-            const timer = setTimeout(function() {
-              viewer.style.display = 'none';
-              fallback.style.display = 'flex';
-            }, 4000);
-            embed.onload = function() { clearTimeout(timer); };
+            let usingGdocs = true;
+            function toggleView() {
+              const frame = document.getElementById('frame');
+              const btn = document.getElementById('toggleBtn');
+              const loading = document.getElementById('loading');
+              if (usingGdocs) {
+                // Switch to direct embed
+                loading.style.display = 'flex';
+                loading.querySelector('span').textContent = 'Loading direct embed…';
+                frame.src = '${fixed}';
+                btn.textContent = '↗ Google Docs';
+                usingGdocs = false;
+              } else {
+                // Switch back to Google Docs
+                loading.style.display = 'flex';
+                loading.querySelector('span').textContent = 'Loading via Google Docs Viewer…';
+                frame.src = '${gdocsUrl}';
+                btn.textContent = '⧉ Direct View';
+                usingGdocs = true;
+              }
+              frame.onload = function() { loading.style.display = 'none'; };
+            }
+            function showError() {
+              document.getElementById('loading').innerHTML =
+                '<p style="color:#f87171;font-size:13px;">Failed to load. Try downloading instead.</p>';
+            }
           </script>
         </body>
       </html>
     `);
     win.document.close();
   } else {
-    // Popup blocked — fallback to Google Docs viewer
-    window.open(
-      `https://docs.google.com/viewer?url=${encodeURIComponent(fixed)}&embedded=true`,
-      "_blank",
-    );
+    // Popup blocked — go directly to Google Docs viewer
+    window.open(gdocsUrl, "_blank");
   }
 }
 
