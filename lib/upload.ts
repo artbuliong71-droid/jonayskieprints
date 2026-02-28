@@ -10,12 +10,10 @@ export async function uploadToCloudinary(
   fileBuffer: Buffer,
   filename: string,
 ): Promise<string> {
-  // Guard: reject empty buffers immediately
   if (!fileBuffer || fileBuffer.length === 0) {
     throw new Error("Empty file buffer");
   }
 
-  // Guard: check Cloudinary config is present
   if (
     !process.env.CLOUDINARY_CLOUD_NAME ||
     !process.env.CLOUDINARY_API_KEY ||
@@ -30,6 +28,8 @@ export async function uploadToCloudinary(
         folder: "orders",
         public_id: `${Date.now()}-${filename.replace(/\.[^/.]+$/, "")}`,
         resource_type: "auto",
+        access_mode: "public", // ← add this
+        type: "upload", // ← add this
       },
       (error, result) => {
         if (error) return reject(error);
