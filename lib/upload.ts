@@ -22,14 +22,16 @@ export async function uploadToCloudinary(
     throw new Error("Cloudinary environment variables are not set");
   }
 
+  const isPdf = filename.toLowerCase().endsWith(".pdf");
+
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: "orders",
         public_id: `${Date.now()}-${filename.replace(/\.[^/.]+$/, "")}`,
-        resource_type: "auto",
-        access_mode: "public", // ← add this
-        type: "upload", // ← add this
+        resource_type: isPdf ? "raw" : "auto",
+        access_mode: "public",
+        type: "upload",
       },
       (error, result) => {
         if (error) return reject(error);
