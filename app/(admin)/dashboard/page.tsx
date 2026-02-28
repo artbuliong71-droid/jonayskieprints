@@ -92,6 +92,118 @@ function fixCloudinaryUrl(url: string): string {
   return url;
 }
 
+// ─── PDF Viewer Helper ────────────────────────────────────────────────────────
+function openPdfInline(url: string) {
+  const fixed = fixCloudinaryUrl(url);
+  const win = window.open("", "_blank");
+  if (win) {
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>PDF Viewer — ${getFileName(url)}</title>
+          <style>
+            *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+            body, html { height: 100%; background: #1a1a2e; font-family: system-ui, sans-serif; }
+            .toolbar {
+              background: #16213e;
+              border-bottom: 1px solid #0f3460;
+              padding: 10px 16px;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              gap: 12px;
+            }
+            .toolbar-name {
+              font-size: 13px;
+              color: #e2e8f0;
+              font-weight: 600;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              flex: 1;
+            }
+            .toolbar-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 6px;
+              padding: 6px 14px;
+              border-radius: 6px;
+              font-size: 12px;
+              font-weight: 600;
+              cursor: pointer;
+              border: none;
+              text-decoration: none;
+              font-family: system-ui, sans-serif;
+            }
+            .btn-download { background: #22c55e; color: #fff; }
+            .btn-gdocs { background: #3b82f6; color: #fff; }
+            .viewer-wrap { height: calc(100vh - 49px); width: 100%; }
+            embed, iframe { width: 100%; height: 100%; border: none; display: block; }
+            .fallback {
+              display: none;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              height: 100%;
+              gap: 16px;
+              color: #94a3b8;
+              font-size: 14px;
+              text-align: center;
+              padding: 2rem;
+            }
+            .fallback svg { opacity: 0.4; }
+          </style>
+        </head>
+        <body>
+          <div class="toolbar">
+            <span class="toolbar-name">${getFileName(url)}</span>
+            <a href="${fixed}" download="${getFileName(url)}" class="toolbar-btn btn-download">
+              ⬇ Download
+            </a>
+            <a href="https://docs.google.com/viewer?url=${encodeURIComponent(fixed)}&embedded=true" target="_blank" class="toolbar-btn btn-gdocs">
+              ↗ Google Docs
+            </a>
+          </div>
+          <div class="viewer-wrap" id="viewer">
+            <embed
+              src="${fixed}#toolbar=1&navpanes=1&scrollbar=1&view=FitH"
+              type="application/pdf"
+              id="pdfEmbed"
+            />
+          </div>
+          <div class="fallback" id="fallback">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+              <polyline points="13 2 13 9 20 9"/>
+            </svg>
+            <p>Your browser couldn't display the PDF inline.</p>
+            <p style="font-size:12px; color:#64748b;">Use the buttons above to download or open in Google Docs.</p>
+          </div>
+          <script>
+            const embed = document.getElementById('pdfEmbed');
+            const fallback = document.getElementById('fallback');
+            const viewer = document.getElementById('viewer');
+            // Show fallback if embed fails to load after 4s
+            const timer = setTimeout(function() {
+              viewer.style.display = 'none';
+              fallback.style.display = 'flex';
+            }, 4000);
+            embed.onload = function() { clearTimeout(timer); };
+          </script>
+        </body>
+      </html>
+    `);
+    win.document.close();
+  } else {
+    // Popup blocked — fallback to Google Docs viewer
+    window.open(
+      `https://docs.google.com/viewer?url=${encodeURIComponent(fixed)}&embedded=true`,
+      "_blank",
+    );
+  }
+}
+
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
 const IC = {
   Menu: () => (
@@ -1061,6 +1173,10 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
     return /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url);
   }
 
+  function isPdf(url: string) {
+    return url.toLowerCase().endsWith(".pdf");
+  }
+
   async function handleDownload(url: string, filename: string) {
     try {
       const res = await fetch(fixCloudinaryUrl(url));
@@ -1297,7 +1413,113 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                           </div>
                         </div>
                       </div>
+                    ) : isPdf(url) ? (
+                      // ─── PDF File Row ───────────────────────────────────────
+                      <div
+                        style={{
+                          padding: ".75rem 1rem",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: ".75rem",
+                        }}
+                      >
+                        <div style={{ color: "#ef4444", flexShrink: 0 }}>
+                          {/* PDF icon */}
+                          <svg
+                            width="28"
+                            height="28"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                          >
+                            <path
+                              d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"
+                              fill="#fee2e2"
+                              stroke="#ef4444"
+                            />
+                            <polyline
+                              points="13 2 13 9 20 9"
+                              stroke="#ef4444"
+                            />
+                            <text
+                              x="5"
+                              y="19"
+                              fontSize="5"
+                              fontWeight="700"
+                              fill="#ef4444"
+                              stroke="none"
+                            >
+                              PDF
+                            </text>
+                          </svg>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: ".8rem",
+                            color: "#374151",
+                            flex: 1,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {getFileName(url)}
+                        </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: ".5rem",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {/* View — opens inline in new tab using openPdfInline() */}
+                          <button
+                            onClick={() => openPdfInline(url)}
+                            style={{
+                              fontSize: ".72rem",
+                              color: "#7c3aed",
+                              fontWeight: 600,
+                              border: "none",
+                              background: "none",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                              fontFamily: "inherit",
+                              padding: 0,
+                            }}
+                          >
+                            <IC.Eye /> View
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDownload(
+                                fixCloudinaryUrl(url),
+                                getFileName(url),
+                              )
+                            }
+                            style={{
+                              fontSize: ".72rem",
+                              color: "#16a34a",
+                              fontWeight: 600,
+                              border: "none",
+                              background: "none",
+                              cursor: "pointer",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                              fontFamily: "inherit",
+                              padding: 0,
+                            }}
+                          >
+                            <IC.Download /> Download
+                          </button>
+                        </div>
+                      </div>
                     ) : (
+                      // ─── Generic File Row ───────────────────────────────────
                       <div
                         style={{
                           padding: ".75rem 1rem",
@@ -1893,7 +2115,7 @@ export default function AdminDashboardPage() {
           </header>
 
           <main className="content">
-            {/* DASHBOARD */}
+            {/* ── DASHBOARD ── */}
             <section
               className={`panel ${section === "dashboard" ? "active" : ""}`}
             >
@@ -2047,7 +2269,7 @@ export default function AdminDashboardPage() {
               </div>
             </section>
 
-            {/* MANAGE ORDERS */}
+            {/* ── MANAGE ORDERS ── */}
             <section
               className={`panel ${section === "orders" ? "active" : ""}`}
             >
@@ -2277,7 +2499,7 @@ export default function AdminDashboardPage() {
               </div>
             </section>
 
-            {/* CUSTOMERS */}
+            {/* ── CUSTOMERS ── */}
             <section
               className={`panel ${section === "customers" ? "active" : ""}`}
             >
@@ -2364,7 +2586,7 @@ export default function AdminDashboardPage() {
               </div>
             </section>
 
-            {/* REPORTS */}
+            {/* ── REPORTS ── */}
             <section
               className={`panel ${section === "reports" ? "active" : ""}`}
             >
@@ -2427,7 +2649,7 @@ export default function AdminDashboardPage() {
               <ReportCharts stats={stats} />
             </section>
 
-            {/* SETTINGS */}
+            {/* ── SETTINGS ── */}
             <section
               className={`panel ${section === "settings" ? "active" : ""}`}
             >
@@ -2487,7 +2709,7 @@ export default function AdminDashboardPage() {
               </div>
             </section>
 
-            {/* DELETED TRANSACTIONS */}
+            {/* ── DELETED TRANSACTIONS ── */}
             <section
               className={`panel ${section === "deleted" ? "active" : ""}`}
             >
