@@ -83,17 +83,42 @@ function getFileName(url: string) {
   }
 }
 function fixCloudinaryUrl(url: string): string {
-  if (
-    url.includes("res.cloudinary.com") &&
-    url.toLowerCase().endsWith(".pdf")
-  ) {
+  if (url.includes("res.cloudinary.com")) {
+    // Fix regardless of extension — if Cloudinary stored it as image/upload
+    // but it's actually a PDF or non-image file, swap to raw/upload
     return url.replace("/image/upload/", "/raw/upload/");
   }
   return url;
 }
 
+/**
+ * Detect PDFs by:
+ * 1. URL ends with .pdf (with or without query params)
+ * 2. URL path contains .pdf before a slash or query
+ * 3. Filename (decoded) ends with .pdf
+ * 4. Cloudinary public_id has no image extension → treat as document/PDF
+ */
+function isPdfUrl(url: string): boolean {
+  const lower = url.toLowerCase();
+  // Check URL path for .pdf anywhere
+  if (/\.pdf(\?|#|\/|$)/.test(lower)) return true;
+  // Check decoded filename
+  try {
+    const filename = decodeURIComponent(
+      url.split("/").pop()?.split("?")[0] || "",
+    ).toLowerCase();
+    if (filename.endsWith(".pdf")) return true;
+    // Cloudinary files with no recognized image extension are likely docs/PDFs
+    const imageExts = /\.(jpg|jpeg|png|gif|webp|bmp|svg|tiff|ico)$/;
+    if (url.includes("res.cloudinary.com") && !imageExts.test(filename))
+      return true;
+  } catch {}
+  return false;
+}
+
 // ─── PDF Viewer Helper ────────────────────────────────────────────────────────
 function openPdfInline(url: string) {
+  // Always fix Cloudinary URL — swap image/upload → raw/upload so the file is accessible
   const fixed = fixCloudinaryUrl(url);
   const win = window.open("", "_blank");
   if (win) {
@@ -1173,10 +1198,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
     return /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url);
   }
 
-  function isPdf(url: string) {
-    return url.toLowerCase().endsWith(".pdf");
-  }
-
   async function handleDownload(url: string, filename: string) {
     try {
       const res = await fetch(fixCloudinaryUrl(url));
@@ -1413,7 +1434,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                           </div>
                         </div>
                       </div>
-                    ) : isPdf(url) ? (
+                    ) : isPdfUrl(url) ? (
                       // ─── PDF File Row ───────────────────────────────────────
                       <div
                         style={{
