@@ -31,14 +31,15 @@ export async function uploadToCloudinary(
 
   const sanitizedFilename = filename
     .replace(/\.[^/.]+$/, "") // remove extension
-    .replace(/\s+/g, "_"); // replace spaces with underscores
+    .replace(/\s+/g, "_") // replace spaces with underscores
+    .replace(/[^a-zA-Z0-9_\-]/g, "_"); // replace ALL other special chars (commas, etc.) with underscore
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: "orders",
         public_id: `${Date.now()}-${sanitizedFilename}`,
-        resource_type: isPdf ? "raw" : "image", // force raw for PDF, image for everything else
+        resource_type: isPdf ? "raw" : "image",
         access_mode: "public",
         type: "upload",
       },
