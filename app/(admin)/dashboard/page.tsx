@@ -1365,15 +1365,8 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                             <button
                               // REPLACE with:
                               onClick={() => {
-                                const w = window.open("", "_blank");
-                                if (w) {
-                                  w.document.write(
-                                    `<!DOCTYPE html><html><body style="margin:0;padding:0;overflow:hidden">` +
-                                      `<iframe src="${url}" style="width:100%;height:100vh;border:none;"></iframe>` +
-                                      `</body></html>`,
-                                  );
-                                  w.document.close();
-                                }
+                                const pdfUrl = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(url)}`;
+                                window.open(pdfUrl, "_blank");
                               }}
                               style={{
                                 fontSize: ".72rem",
