@@ -27,6 +27,8 @@ export async function uploadToCloudinary(
     throw new Error("Cloudinary environment variables are not set");
   }
 
+  const isPdf = filename.toLowerCase().endsWith(".pdf");
+
   const sanitizedFilename = filename
     .replace(/\.[^/.]+$/, "") // remove extension
     .replace(/\s+/g, "_"); // replace spaces with underscores
@@ -36,16 +38,24 @@ export async function uploadToCloudinary(
       {
         folder: "orders",
         public_id: `${Date.now()}-${sanitizedFilename}`,
-        resource_type: "auto", // auto-detects image, PDF, video, etc.
+        resource_type: isPdf ? "raw" : "image", // force raw for PDF, image for everything else
         access_mode: "public",
         type: "upload",
       },
       (error, result) => {
         if (error) return reject(error);
         if (!result) return reject(new Error("No result from Cloudinary"));
+
+        let url = result.secure_url;
+
+        // Safety net: if PDF but Cloudinary still returned /image/upload/, fix it
+        if (isPdf && url.includes("/image/upload/")) {
+          url = url.replace("/image/upload/", "/raw/upload/");
+        }
+
         resolve({
-          url: result.secure_url,
-          resource_type: result.resource_type, // "image" or "raw"
+          url,
+          resource_type: isPdf ? "raw" : "image",
         });
       },
     );
