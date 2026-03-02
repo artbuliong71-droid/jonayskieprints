@@ -23,28 +23,33 @@ const UserSchema = new Schema<IUser>({
     trim: true,
   },
   phone: { type: String, default: "" },
-  // ── No select:false — password must be returned for comparePassword ────────
-  password: { type: String, required: true },
+  password: { type: String, default: "" },
   role: { type: String, enum: ["customer", "admin"], default: "customer" },
   created_at: { type: Date, default: Date.now },
 });
 
-// Hash password before saving
+// ── Hash password before saving ───────────────────────────────────────────────
+// Only hash if:
+// 1. password field was explicitly modified
+// 2. the new value is NOT already a bcrypt hash (prevents double-hashing Google accounts)
 UserSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
+  if (!this.password) return;
+  // bcrypt hashes always start with $2a$ or $2b$ and are 60 chars
+  const alreadyHashed = /^\$2[ab]\$\d+\$/.test(this.password);
+  if (alreadyHashed) return;
   this.password = await bcrypt.hash(this.password, 12);
 });
 
-// Compare password method
+// ── Compare password ──────────────────────────────────────────────────────────
 UserSchema.methods.comparePassword = async function (
   candidate: string,
 ): Promise<boolean> {
-  // Guard: if password field is missing on document, return false instead of crashing bcrypt
   if (!this.password) return false;
   return bcrypt.compare(candidate, this.password);
 };
 
-// ── Correct pattern: reuse cached model to preserve methods across hot reloads
+// ── Reuse cached model to preserve methods across hot reloads ─────────────────
 export const User =
   (mongoose.models.User as mongoose.Model<IUser>) ||
   mongoose.model<IUser>("User", UserSchema);
