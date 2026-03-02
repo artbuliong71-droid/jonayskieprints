@@ -4,7 +4,7 @@ import { Order } from "@/models/order";
 import { User } from "@/models/user";
 import { getSession } from "@/lib/auth";
 import { Pricing } from "@/models/pricing";
-import { uploadToCloudinary } from "@/lib/upload";
+import { uploadToCloudinary, UploadResult } from "@/lib/upload";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,29 +55,30 @@ function calcTotal(
 }
 
 // ── Upload files to Cloudinary ────────────────────────────────────────────────
+
 async function saveUploadedFiles(
   formData: FormData,
   fieldName: string,
-): Promise<string[]> {
-  const fileUrls: string[] = [];
+): Promise<UploadResult[]> {
+  const fileData: UploadResult[] = [];
   const files = formData.getAll(fieldName) as File[];
 
-  if (!files || files.length === 0) return fileUrls;
+  if (!files || files.length === 0) return fileData;
 
   for (const file of files) {
     if (!file || file.size === 0) continue;
     try {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
-      const url = await uploadToCloudinary(buffer, file.name);
-      fileUrls.push(url);
+      const result = await uploadToCloudinary(buffer, file.name);
+      fileData.push(result); // { url, resource_type }
     } catch (err) {
       console.error(`[UPLOAD ERROR] Failed to upload ${file.name}:`, err);
       // skip failed file, don't crash the order
     }
   }
 
-  return fileUrls;
+  return fileData;
 }
 
 // ── GET ───────────────────────────────────────────────────────────────────────
@@ -239,8 +240,8 @@ export async function POST(req: NextRequest) {
         );
 
       console.log("[createOrder] uploading files...");
-      const fileUrls = await saveUploadedFiles(formData, "files[]");
-      console.log("[createOrder] fileUrls:", fileUrls);
+      const fileData = await saveUploadedFiles(formData, "files[]");
+      console.log("[createOrder] fileData:", fileData);
 
       const specsLines: string[] = [];
       if (["Print", "Photocopy", "Scanning"].includes(service))
@@ -280,7 +281,7 @@ export async function POST(req: NextRequest) {
         status: "pending",
         total_amount,
         payment_method: "cash",
-        files: fileUrls,
+        files: fileData, // [{ url, resource_type }]
       });
 
       console.log("[createOrder] success:", order.order_id);
@@ -319,9 +320,9 @@ export async function POST(req: NextRequest) {
           { status: 400 },
         );
 
-      const newFileUrls = await saveUploadedFiles(formData, "new_files[]");
+      const newFileData = await saveUploadedFiles(formData, "new_files[]");
       const updatedFiles =
-        newFileUrls.length > 0 ? newFileUrls : (order.files ?? []);
+        newFileData.length > 0 ? newFileData : (order.files ?? []);
 
       const specsLines: string[] = [];
       if (["Print", "Photocopy", "Scanning"].includes(service))

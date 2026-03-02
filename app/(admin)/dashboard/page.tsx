@@ -13,6 +13,12 @@ interface AdminStats {
   completedOrders: number;
   cancelledOrders: number;
 }
+
+interface FileData {
+  url: string;
+  resource_type: string;
+}
+
 interface Order {
   _id: string;
   order_id: string;
@@ -26,7 +32,7 @@ interface Order {
   delivery_address?: string;
   specifications: string;
   created_at: string;
-  files?: string[];
+  files?: FileData[];
 }
 interface DeletedOrder {
   _id: string;
@@ -81,55 +87,6 @@ function getFileName(url: string) {
   } catch {
     return url;
   }
-}
-function fixCloudinaryUrl(url: string): string {
-  if (url.includes("res.cloudinary.com")) {
-    // Fix regardless of extension — if Cloudinary stored it as image/upload
-    // but it's actually a PDF or non-image file, swap to raw/upload
-    return url.replace("/image/upload/", "/raw/upload/");
-  }
-  return url;
-}
-
-/**
- * Detect PDFs by:
- * 1. URL ends with .pdf (with or without query params)
- * 2. URL path contains .pdf before a slash or query
- * 3. Filename (decoded) ends with .pdf
- * 4. Cloudinary public_id has no image extension → treat as document/PDF
- */
-function isPdfUrl(url: string): boolean {
-  const lower = url.toLowerCase();
-  // Check URL path for .pdf anywhere
-  if (/\.pdf(\?|#|\/|$)/.test(lower)) return true;
-  // Check decoded filename
-  try {
-    const filename = decodeURIComponent(
-      url.split("/").pop()?.split("?")[0] || "",
-    ).toLowerCase();
-    if (filename.endsWith(".pdf")) return true;
-    // Cloudinary files with no recognized image extension are likely docs/PDFs
-    const imageExts = /\.(jpg|jpeg|png|gif|webp|bmp|svg|tiff|ico)$/;
-    if (url.includes("res.cloudinary.com") && !imageExts.test(filename))
-      return true;
-  } catch {}
-  return false;
-}
-
-// ─── PDF Viewer Helper ────────────────────────────────────────────────────────
-function openPdfInline(url: string) {
-  // Fix Cloudinary URL — swap image/upload → raw/upload so file is accessible
-  const fixed = fixCloudinaryUrl(url);
-  // Use Google Docs Viewer — handles extensionless files correctly by reading content
-  // Use anchor click instead of window.open() to avoid popup blocker
-  const gdocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(fixed)}`;
-  const a = document.createElement("a");
-  a.href = gdocsUrl;
-  a.target = "_blank";
-  a.rel = "noreferrer noopener";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
 }
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -1095,15 +1052,14 @@ function DetailsModal({
 
 // ─── Files Modal ──────────────────────────────────────────────────────────────
 function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
-  const files: string[] = order.files || [];
-
-  function isImage(url: string) {
-    return /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|$)/i.test(url);
-  }
+  // backward compat: old orders stored plain strings, new orders store { url, resource_type }
+  const files: FileData[] = (order.files || []).map((f: any) =>
+    typeof f === "string" ? { url: f, resource_type: "image" } : f,
+  );
 
   async function handleDownload(url: string, filename: string) {
     try {
-      const res = await fetch(fixCloudinaryUrl(url));
+      const res = await fetch(url);
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -1114,7 +1070,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
       a.remove();
       URL.revokeObjectURL(blobUrl);
     } catch {
-      window.open(fixCloudinaryUrl(url), "_blank");
+      window.open(url, "_blank");
     }
   }
 
@@ -1182,6 +1138,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
             <IC.X />
           </button>
         </div>
+
         <div style={{ padding: "1.1rem 1.2rem" }}>
           {files.length === 0 ? (
             <div
@@ -1209,8 +1166,8 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                 >
                   <button
                     onClick={() =>
-                      files.forEach((url) =>
-                        handleDownload(fixCloudinaryUrl(url), getFileName(url)),
+                      files.forEach((f) =>
+                        handleDownload(f.url, getFileName(f.url)),
                       )
                     }
                     style={{
@@ -1232,6 +1189,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                   </button>
                 </div>
               )}
+
               <div
                 style={{
                   display: "flex",
@@ -1239,51 +1197,156 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                   gap: ".75rem",
                 }}
               >
-                {files.map((url, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 10,
-                      overflow: "hidden",
-                      background: "#fafafa",
-                    }}
-                  >
-                    {isImage(url) ? (
-                      <div>
-                        <img
-                          src={fixCloudinaryUrl(url)}
-                          alt={`File ${i + 1}`}
-                          style={{
-                            width: "100%",
-                            maxHeight: 340,
-                            objectFit: "contain",
-                            display: "block",
-                            background: "#f3f4f6",
-                          }}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display =
-                              "none";
-                          }}
-                        />
+                {files.map((file, i) => {
+                  const { url, resource_type } = file;
+                  const isImage = resource_type === "image";
+                  const isPdf = resource_type === "raw";
+
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 10,
+                        overflow: "hidden",
+                        background: "#fafafa",
+                      }}
+                    >
+                      {isImage ? (
+                        // ── Image: show inline preview ──
+                        <div>
+                          <img
+                            src={url}
+                            alt={`File ${i + 1}`}
+                            style={{
+                              width: "100%",
+                              maxHeight: 340,
+                              objectFit: "contain",
+                              display: "block",
+                              background: "#f3f4f6",
+                            }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display =
+                                "none";
+                            }}
+                          />
+                          <div
+                            style={{
+                              padding: ".5rem .75rem",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: ".5rem",
+                              borderTop: "1px solid #e5e7eb",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: ".75rem",
+                                color: "#6b7280",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                flex: 1,
+                              }}
+                            >
+                              {getFileName(url)}
+                            </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: ".5rem",
+                                flexShrink: 0,
+                              }}
+                            >
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  fontSize: ".72rem",
+                                  color: "#7c3aed",
+                                  fontWeight: 600,
+                                  textDecoration: "none",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                <IC.Eye /> Open
+                              </a>
+                              <button
+                                onClick={() =>
+                                  handleDownload(url, getFileName(url))
+                                }
+                                style={{
+                                  fontSize: ".72rem",
+                                  color: "#16a34a",
+                                  fontWeight: 600,
+                                  border: "none",
+                                  background: "none",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  fontFamily: "inherit",
+                                  padding: 0,
+                                }}
+                              >
+                                <IC.Download /> Download
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : isPdf ? (
+                        // ── PDF: open via Google Docs viewer ──
                         <div
                           style={{
-                            padding: ".5rem .75rem",
+                            padding: ".75rem 1rem",
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: ".5rem",
-                            borderTop: "1px solid #e5e7eb",
+                            gap: ".75rem",
                           }}
                         >
+                          <div style={{ color: "#ef4444", flexShrink: 0 }}>
+                            <svg
+                              width="28"
+                              height="28"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              strokeLinecap="round"
+                            >
+                              <path
+                                d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"
+                                fill="#fee2e2"
+                                stroke="#ef4444"
+                                strokeWidth="1.5"
+                              />
+                              <polyline
+                                points="13 2 13 9 20 9"
+                                stroke="#ef4444"
+                                strokeWidth="1.5"
+                              />
+                              <text
+                                x="5"
+                                y="19"
+                                fontSize="5"
+                                fontWeight="700"
+                                fill="#ef4444"
+                                stroke="none"
+                              >
+                                PDF
+                              </text>
+                            </svg>
+                          </div>
                           <span
                             style={{
-                              fontSize: ".75rem",
-                              color: "#6b7280",
+                              fontSize: ".8rem",
+                              color: "#374151",
+                              flex: 1,
                               overflow: "hidden",
                               textOverflow: "ellipsis",
                               whiteSpace: "nowrap",
-                              flex: 1,
                             }}
                           >
                             {getFileName(url)}
@@ -1295,28 +1358,32 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                               flexShrink: 0,
                             }}
                           >
-                            <a
-                              href={fixCloudinaryUrl(url)}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              onClick={() =>
+                                window.open(
+                                  `https://docs.google.com/viewer?url=${encodeURIComponent(url)}`,
+                                  "_blank",
+                                )
+                              }
                               style={{
                                 fontSize: ".72rem",
                                 color: "#7c3aed",
                                 fontWeight: 600,
-                                textDecoration: "none",
+                                border: "none",
+                                background: "none",
+                                cursor: "pointer",
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 4,
+                                fontFamily: "inherit",
+                                padding: 0,
                               }}
                             >
-                              <IC.Eye /> Open
-                            </a>
+                              <IC.Eye /> View
+                            </button>
                             <button
                               onClick={() =>
-                                handleDownload(
-                                  fixCloudinaryUrl(url),
-                                  getFileName(url),
-                                )
+                                handleDownload(url, getFileName(url))
                               }
                               style={{
                                 fontSize: ".72rem",
@@ -1336,188 +1403,80 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                             </button>
                           </div>
                         </div>
-                      </div>
-                    ) : isPdfUrl(url) ? (
-                      // ─── PDF File Row ───────────────────────────────────────
-                      <div
-                        style={{
-                          padding: ".75rem 1rem",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: ".75rem",
-                        }}
-                      >
-                        <div style={{ color: "#ef4444", flexShrink: 0 }}>
-                          {/* PDF icon */}
-                          <svg
-                            width="28"
-                            height="28"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
+                      ) : (
+                        // ── Generic file ──
+                        <div
+                          style={{
+                            padding: ".75rem 1rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: ".75rem",
+                          }}
+                        >
+                          <div style={{ color: "#7c3aed", flexShrink: 0 }}>
+                            <IC.File />
+                          </div>
+                          <span
+                            style={{
+                              fontSize: ".8rem",
+                              color: "#374151",
+                              flex: 1,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
                           >
-                            <path
-                              d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"
-                              fill="#fee2e2"
-                              stroke="#ef4444"
-                            />
-                            <polyline
-                              points="13 2 13 9 20 9"
-                              stroke="#ef4444"
-                            />
-                            <text
-                              x="5"
-                              y="19"
-                              fontSize="5"
-                              fontWeight="700"
-                              fill="#ef4444"
-                              stroke="none"
+                            {getFileName(url)}
+                          </span>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: ".5rem",
+                              flexShrink: 0,
+                            }}
+                          >
+                            <a
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                fontSize: ".72rem",
+                                color: "#7c3aed",
+                                fontWeight: 600,
+                                textDecoration: "none",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                              }}
                             >
-                              PDF
-                            </text>
-                          </svg>
+                              <IC.Eye /> View
+                            </a>
+                            <button
+                              onClick={() =>
+                                handleDownload(url, getFileName(url))
+                              }
+                              style={{
+                                fontSize: ".72rem",
+                                color: "#16a34a",
+                                fontWeight: 600,
+                                border: "none",
+                                background: "none",
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                fontFamily: "inherit",
+                                padding: 0,
+                              }}
+                            >
+                              <IC.Download /> Download
+                            </button>
+                          </div>
                         </div>
-                        <span
-                          style={{
-                            fontSize: ".8rem",
-                            color: "#374151",
-                            flex: 1,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {getFileName(url)}
-                        </span>
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: ".5rem",
-                            flexShrink: 0,
-                          }}
-                        >
-                          {/* View — opens inline in new tab using openPdfInline() */}
-                          <button
-                            onClick={() => openPdfInline(url)}
-                            style={{
-                              fontSize: ".72rem",
-                              color: "#7c3aed",
-                              fontWeight: 600,
-                              border: "none",
-                              background: "none",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 4,
-                              fontFamily: "inherit",
-                              padding: 0,
-                            }}
-                          >
-                            <IC.Eye /> View
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleDownload(
-                                fixCloudinaryUrl(url),
-                                getFileName(url),
-                              )
-                            }
-                            style={{
-                              fontSize: ".72rem",
-                              color: "#16a34a",
-                              fontWeight: 600,
-                              border: "none",
-                              background: "none",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 4,
-                              fontFamily: "inherit",
-                              padding: 0,
-                            }}
-                          >
-                            <IC.Download /> Download
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      // ─── Generic File Row ───────────────────────────────────
-                      <div
-                        style={{
-                          padding: ".75rem 1rem",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: ".75rem",
-                        }}
-                      >
-                        <div style={{ color: "#7c3aed", flexShrink: 0 }}>
-                          <IC.File />
-                        </div>
-                        <span
-                          style={{
-                            fontSize: ".8rem",
-                            color: "#374151",
-                            flex: 1,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {getFileName(url)}
-                        </span>
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: ".5rem",
-                            flexShrink: 0,
-                          }}
-                        >
-                          <a
-                            href={fixCloudinaryUrl(url)}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              fontSize: ".72rem",
-                              color: "#7c3aed",
-                              fontWeight: 600,
-                              textDecoration: "none",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 4,
-                            }}
-                          >
-                            <IC.Eye /> View
-                          </a>
-                          <button
-                            onClick={() =>
-                              handleDownload(
-                                fixCloudinaryUrl(url),
-                                getFileName(url),
-                              )
-                            }
-                            style={{
-                              fontSize: ".72rem",
-                              color: "#16a34a",
-                              fontWeight: 600,
-                              border: "none",
-                              background: "none",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 4,
-                              fontFamily: "inherit",
-                              padding: 0,
-                            }}
-                          >
-                            <IC.Download /> Download
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}
