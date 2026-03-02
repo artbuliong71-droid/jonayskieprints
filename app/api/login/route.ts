@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/user";
 import { setSession, getSession } from "@/lib/auth";
+import bcrypt from "bcryptjs";
 
 // ── GET: auth-check ───────────────────────────────────────────────────────────
 export async function GET() {
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    // ── FIX: explicitly select password field (needed if schema ever uses select:false)
+    // Select password explicitly in case schema ever uses select:false
     const user = await User.findOne({ email }).select("+password");
 
     if (!user) {
@@ -52,18 +53,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── Google account with no password yet — auto-generate and save it ──────
     if (!user.password) {
-      console.error(
-        "[LOGIN ERROR] User found but password field is missing:",
-        user.email,
+      const autoPassword = await bcrypt.hash(
+        `google_${(user as any).googleId}_${process.env.JWT_SECRET || "jp_secret"}`,
+        12,
       );
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Account error. Please reset your password.",
-        },
-        { status: 401 },
-      );
+      user.password = autoPassword;
+      await user.save();
     }
 
     const isMatch = await user.comparePassword(password);

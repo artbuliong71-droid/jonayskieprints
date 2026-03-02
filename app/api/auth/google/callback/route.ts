@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { setSession } from "@/lib/auth";
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
@@ -26,7 +27,6 @@ export async function GET(req: NextRequest) {
     });
 
     const tokens = await tokenRes.json();
-    console.log("TOKEN RESPONSE:", JSON.stringify(tokens));
     if (!tokens.access_token) {
       return NextResponse.redirect(
         `${process.env.CLIENT_URL}/login?error=token_failed`,
@@ -47,21 +47,36 @@ export async function GET(req: NextRequest) {
     const db = mongoose.connection.db!;
     const users = db.collection("users");
 
+    // ── Auto-generate a stable password from Google ID so email/password
+    //    login also works. Uses googleId as the base — same google account
+    //    always produces the same auto-password.
+    const autoPassword = await bcrypt.hash(
+      `google_${googleUser.id}_${process.env.JWT_SECRET || "jp_secret"}`,
+      12,
+    );
+
     let user = await users.findOne({ googleId: googleUser.id });
 
     if (!user) {
-      // Check if email already exists (user registered manually before)
       const existingByEmail = await users.findOne({ email: googleUser.email });
 
       if (existingByEmail) {
-        // Link Google to existing account
+        // Link Google to existing email/password account
+        // Only set password if the account has none (pure Google signup before this fix)
+        const updateFields: Record<string, unknown> = {
+          googleId: googleUser.id,
+          avatar: googleUser.picture,
+        };
+        if (!existingByEmail.password) {
+          updateFields.password = autoPassword;
+        }
         await users.updateOne(
           { _id: existingByEmail._id },
-          { $set: { googleId: googleUser.id, avatar: googleUser.picture } },
+          { $set: updateFields },
         );
         user = await users.findOne({ _id: existingByEmail._id });
       } else {
-        // Brand new user — create account
+        // Brand new Google user — save with auto-generated password
         const result = await users.insertOne({
           googleId: googleUser.id,
           email: googleUser.email,
@@ -70,9 +85,19 @@ export async function GET(req: NextRequest) {
           avatar: googleUser.picture,
           phone: "",
           role: "customer",
-          createdAt: new Date(),
+          password: autoPassword, // ← stored so email/password login works
+          created_at: new Date(),
         });
         user = await users.findOne({ _id: result.insertedId });
+      }
+    } else {
+      // Existing Google user — backfill password if missing (fixes old accounts)
+      if (!user.password) {
+        await users.updateOne(
+          { _id: user._id },
+          { $set: { password: autoPassword } },
+        );
+        user = await users.findOne({ _id: user._id });
       }
     }
 
@@ -82,7 +107,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // 4. Set session cookie — same as your existing login
+    // 4. Set session
     await setSession({
       userId: user._id.toString(),
       email: user.email,
