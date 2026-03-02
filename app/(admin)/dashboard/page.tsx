@@ -1359,12 +1359,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                             }}
                           >
                             <button
-                              onClick={() =>
-                                window.open(
-                                  `https://docs.google.com/viewer?url=${encodeURIComponent(url)}`,
-                                  "_blank",
-                                )
-                              }
+                              onClick={() => window.open(url, "_blank")}
                               style={{
                                 fontSize: ".72rem",
                                 color: "#7c3aed",
