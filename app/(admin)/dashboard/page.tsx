@@ -1058,13 +1058,17 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
   );
 
   async function handleDownload(url: string, filename: string) {
+    // Ensure .pdf extension is preserved
+    const finalName = filename.toLowerCase().endsWith(".pdf")
+      ? filename
+      : filename + ".pdf";
     try {
       const res = await fetch(url);
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = blobUrl;
-      a.download = filename;
+      a.download = finalName;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1359,7 +1363,18 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                             }}
                           >
                             <button
-                              onClick={() => window.open(url, "_blank")}
+                              // REPLACE with:
+                              onClick={() => {
+                                const w = window.open("", "_blank");
+                                if (w) {
+                                  w.document.write(
+                                    `<!DOCTYPE html><html><body style="margin:0;padding:0;overflow:hidden">` +
+                                      `<iframe src="${url}" style="width:100%;height:100vh;border:none;"></iframe>` +
+                                      `</body></html>`,
+                                  );
+                                  w.document.close();
+                                }
+                              }}
                               style={{
                                 fontSize: ".72rem",
                                 color: "#7c3aed",
