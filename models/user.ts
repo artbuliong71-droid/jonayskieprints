@@ -14,11 +14,17 @@ export interface IUser extends Document {
 
 const UserSchema = new Schema<IUser>({
   first_name: { type: String, required: true, trim: true },
-  last_name:  { type: String, required: true, trim: true },
-  email:      { type: String, required: true, unique: true, lowercase: true, trim: true },
-  phone:      { type: String, default: "" },
-  password:   { type: String, required: true },
-  role:       { type: String, enum: ["customer", "admin"], default: "customer" },
+  last_name: { type: String, required: true, trim: true },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    trim: true,
+  },
+  phone: { type: String, default: "" },
+  password: { type: String, required: true },
+  role: { type: String, enum: ["customer", "admin"], default: "customer" },
   created_at: { type: Date, default: Date.now },
 });
 
@@ -29,14 +35,12 @@ UserSchema.pre("save", async function () {
 });
 
 // Compare password method
-UserSchema.methods.comparePassword = async function (candidate: string): Promise<boolean> {
+UserSchema.methods.comparePassword = async function (
+  candidate: string,
+): Promise<boolean> {
   return bcrypt.compare(candidate, this.password);
 };
 
-// ── FIX: Delete cached model before re-registering ──────────────────────────
-// This prevents Next.js hot reload from losing the methods on the cached model
-if (mongoose.models.User) {
-  delete mongoose.models.User;
-}
-
-export const User = mongoose.model<IUser>("User", UserSchema);
+export const User =
+  (mongoose.models.User as mongoose.Model<IUser>) ||
+  mongoose.model<IUser>("User", UserSchema);
