@@ -49,7 +49,6 @@ export async function uploadToCloudinary(
 
         let url = result.secure_url;
 
-        // Safety net: if PDF but Cloudinary still returned /image/upload/, fix it
         if (isPdf && url.includes("/image/upload/")) {
           url = url.replace("/image/upload/", "/raw/upload/");
         }
