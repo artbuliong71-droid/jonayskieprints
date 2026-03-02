@@ -23,6 +23,7 @@ const UserSchema = new Schema<IUser>({
     trim: true,
   },
   phone: { type: String, default: "" },
+  // ── No select:false — password must be returned for comparePassword ────────
   password: { type: String, required: true },
   role: { type: String, enum: ["customer", "admin"], default: "customer" },
   created_at: { type: Date, default: Date.now },
@@ -38,9 +39,12 @@ UserSchema.pre("save", async function () {
 UserSchema.methods.comparePassword = async function (
   candidate: string,
 ): Promise<boolean> {
+  // Guard: if password field is missing on document, return false instead of crashing bcrypt
+  if (!this.password) return false;
   return bcrypt.compare(candidate, this.password);
 };
 
+// ── Correct pattern: reuse cached model to preserve methods across hot reloads
 export const User =
   (mongoose.models.User as mongoose.Model<IUser>) ||
   mongoose.model<IUser>("User", UserSchema);

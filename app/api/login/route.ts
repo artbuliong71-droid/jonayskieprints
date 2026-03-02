@@ -19,34 +19,50 @@ export async function GET() {
 // ── POST: handle login ────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    let email = "", password = "";
+    let email = "",
+      password = "";
     const ct = req.headers.get("content-type") || "";
 
     if (ct.includes("application/json")) {
       const body = await req.json();
-      email    = (body.email    as string)?.trim().toLowerCase() ?? "";
+      email = (body.email as string)?.trim().toLowerCase() ?? "";
       password = (body.password as string) ?? "";
     } else {
       const fd = await req.formData();
-      email    = (fd.get("email")    as string)?.trim().toLowerCase() ?? "";
+      email = (fd.get("email") as string)?.trim().toLowerCase() ?? "";
       password = (fd.get("password") as string) ?? "";
     }
 
     if (!email || !password) {
       return NextResponse.json(
         { success: false, message: "Email and password are required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    // ── DB lookup for all users including admin ───────────────────────────────
     await connectDB();
 
-    const user = await User.findOne({ email });
+    // ── FIX: explicitly select password field (needed if schema ever uses select:false)
+    const user = await User.findOne({ email }).select("+password");
+
     if (!user) {
       return NextResponse.json(
         { success: false, message: "Invalid email or password." },
-        { status: 401 }
+        { status: 401 },
+      );
+    }
+
+    if (!user.password) {
+      console.error(
+        "[LOGIN ERROR] User found but password field is missing:",
+        user.email,
+      );
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Account error. Please reset your password.",
+        },
+        { status: 401 },
       );
     }
 
@@ -54,14 +70,14 @@ export async function POST(req: NextRequest) {
     if (!isMatch) {
       return NextResponse.json(
         { success: false, message: "Invalid email or password." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     await setSession({
-      userId:     user._id.toString(),
-      email:      user.email,
-      role:       user.role,
+      userId: user._id.toString(),
+      email: user.email,
+      role: user.role,
       first_name: user.first_name,
     });
 
@@ -72,18 +88,17 @@ export async function POST(req: NextRequest) {
       message: `Welcome back, ${user.first_name}!`,
       redirect,
       user: {
-        id:    user._id.toString(),
-        name:  `${user.first_name} ${user.last_name}`,
+        id: user._id.toString(),
+        name: `${user.first_name} ${user.last_name}`,
         email: user.email,
-        role:  user.role,
+        role: user.role,
       },
     });
-
   } catch (err) {
     console.error("[LOGIN ERROR]", err);
     return NextResponse.json(
       { success: false, message: "Server error. Please try again." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
