@@ -1070,7 +1070,7 @@ export default function DashboardPage() {
     if (!profLastName.trim()) errs.push("Last name is required.");
     if (!profEmail.trim() || !/\S+@\S+\.\S+/.test(profEmail))
       errs.push("Valid email is required.");
-    const chPw = profCurrentPw || profNewPw || profConfirmPw;
+    const chPw = profNewPw.trim().length > 0;
     if (chPw) {
       if (!profCurrentPw) errs.push("Current password required.");
       if (!profNewPw) errs.push("New password cannot be empty.");
