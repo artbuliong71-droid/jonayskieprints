@@ -70,7 +70,7 @@ const PAPER_MULTIPLIERS: Record<PaperSize, number> = {
   Long: 1.2,
 };
 
-// ── PDF page counter (no library needed) ─────────────────────────────────────
+// ── PDF page counter ──────────────────────────────────────────────────────────
 async function getPdfPageCount(file: File): Promise<number> {
   try {
     const arrayBuffer = await file.arrayBuffer();
@@ -96,7 +96,8 @@ function extractUserSpecs(specifications: string): string {
           !t.startsWith("Scan Type:") &&
           !t.startsWith("Photo Size:") &&
           !t.startsWith("Add Lamination: Yes") &&
-          !t.startsWith("PDF Pages:"))
+          !t.startsWith("PDF Pages:") &&
+          !t.startsWith("Copies:"))
       );
     })
     .join("\n")
@@ -514,7 +515,7 @@ function ToastNotification({ toast }: { toast: Toast }) {
           ? "translate(-50%,0)"
           : "translate(-50%,-12px)",
         width: "calc(100% - 2rem)",
-        maxWidth: "340px",
+        maxWidth: "380px",
         padding: "0.75rem 1rem",
         borderRadius: "10px",
         color: "#fff",
@@ -618,6 +619,7 @@ export default function DashboardPage() {
   const [step, setStep] = useState(0);
   const [noService, setNoService] = useState("");
   const [noQuantity, setNoQuantity] = useState<number | "">("");
+  const [noCopies, setNoCopies] = useState<number | "">(1); // ← copies
   const [noDelivery, setNoDelivery] = useState<DeliveryOption>("pickup");
   const [noAddress, setNoAddress] = useState("");
   const [noPaperSize, setNoPaperSize] = useState<PaperSize>("A4");
@@ -627,13 +629,14 @@ export default function DashboardPage() {
   const [noSpecs, setNoSpecs] = useState("");
   const [noFiles, setNoFiles] = useState<FileList | null>(null);
   const [noSubmitting, setNoSubmitting] = useState(false);
-  const [noPdfPages, setNoPdfPages] = useState(0); // ← PDF page count
+  const [noPdfPages, setNoPdfPages] = useState(0); // ← PDF pages
 
   // ── Edit Order state ──────────────────────────────────────────────────────
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editOrder, setEditOrder] = useState<Partial<Order> | null>(null);
   const [eoService, setEoService] = useState("");
   const [eoQuantity, setEoQuantity] = useState<number | "">("");
+  const [eoCopies, setEoCopies] = useState<number | "">(1); // ← copies
   const [eoDelivery, setEoDelivery] = useState<DeliveryOption>("pickup");
   const [eoAddress, setEoAddress] = useState("");
   const [eoPaperSize, setEoPaperSize] = useState<PaperSize>("A4");
@@ -642,7 +645,7 @@ export default function DashboardPage() {
   const [eoLamination, setEoLamination] = useState(false);
   const [eoSpecs, setEoSpecs] = useState("");
   const [eoSubmitting, setEoSubmitting] = useState(false);
-  const [eoPdfPages, setEoPdfPages] = useState(0); // ← PDF page count for edit
+  const [eoPdfPages, setEoPdfPages] = useState(0); // ← PDF pages
 
   // ── Profile state ─────────────────────────────────────────────────────────
   const [user, setUser] = useState<User>({
@@ -774,6 +777,8 @@ export default function DashboardPage() {
     "Scanning",
     "Photo Development",
   ].includes(noService);
+  const showsCopies = noService === "Print" || noService === "Photocopy";
+
   const eoShowsPaper = ["Print", "Photocopy", "Scanning"].includes(eoService);
   const eoShowsPhoto = eoService === "Photo Development";
   const eoShowsColor = eoService === "Print" || eoService === "Scanning";
@@ -783,6 +788,7 @@ export default function DashboardPage() {
     "Scanning",
     "Photo Development",
   ].includes(eoService);
+  const eoShowsCopies = eoService === "Print" || eoService === "Photocopy";
 
   const summaryTotal =
     noService && noQuantity !== "" && Number(noQuantity) >= 1
@@ -797,7 +803,7 @@ export default function DashboardPage() {
         )
       : 0;
 
-  // ── Handle PDF file selection with page counting ──────────────────────────
+  // ── Handle PDF file selection with page × copies counting ─────────────────
   async function handleFileChange(files: FileList | null) {
     setNoFiles(files);
     setNoPdfPages(0);
@@ -810,9 +816,11 @@ export default function DashboardPage() {
         const pages = await getPdfPageCount(pdfFile);
         if (pages > 0) {
           setNoPdfPages(pages);
-          setNoQuantity(pages);
+          const copies = Number(noCopies) || 1;
+          const total = pages * copies;
+          setNoQuantity(total);
           showToast(
-            `PDF has ${pages} pages — quantity set to ${pages}`,
+            `PDF: ${pages} pages × ${copies} copies = ${total} total`,
             "success",
           );
         }
@@ -831,13 +839,32 @@ export default function DashboardPage() {
         const pages = await getPdfPageCount(pdfFile);
         if (pages > 0) {
           setEoPdfPages(pages);
-          setEoQuantity(pages);
+          const copies = Number(eoCopies) || 1;
+          const total = pages * copies;
+          setEoQuantity(total);
           showToast(
-            `PDF has ${pages} pages — quantity set to ${pages}`,
+            `PDF: ${pages} pages × ${copies} copies = ${total} total`,
             "success",
           );
         }
       }
+    }
+  }
+
+  // ── When copies change, recalculate quantity if PDF is loaded ─────────────
+  function handleCopiesChange(val: number | "") {
+    setNoCopies(val);
+    if (noPdfPages > 0 && val !== "") {
+      const total = noPdfPages * Number(val);
+      setNoQuantity(total);
+    }
+  }
+
+  function handleEoCopiesChange(val: number | "") {
+    setEoCopies(val);
+    if (eoPdfPages > 0 && val !== "") {
+      const total = eoPdfPages * Number(val);
+      setEoQuantity(total);
     }
   }
 
@@ -886,6 +913,7 @@ export default function DashboardPage() {
       fd.append("photo_size", noPhotoSize);
       fd.append("color_option", noColorOption);
       if (noLamination) fd.append("add_lamination", "on");
+      if (showsCopies) fd.append("copies", String(noCopies || 1));
       if (noFiles) Array.from(noFiles).forEach((f) => fd.append("files[]", f));
       const res = await fetch("/api/dashboard?action=createOrder", {
         method: "POST",
@@ -893,10 +921,7 @@ export default function DashboardPage() {
       });
       const r = await res.json();
       if (r.success) {
-        const pageMsg = r.data.pdf_pages
-          ? ` (${r.data.pdf_pages} pages auto-counted)`
-          : "";
-        showToast(`Order placed! ID: ${r.data.order_id}${pageMsg}`);
+        showToast(`Order placed! ID: ${r.data.order_id}`);
         resetForm();
         setActiveSection("dashboard");
         fetchStats();
@@ -915,6 +940,7 @@ export default function DashboardPage() {
     setStep(0);
     setNoService("");
     setNoQuantity("");
+    setNoCopies(1);
     setNoDelivery("pickup");
     setNoAddress("");
     setNoPaperSize("A4");
@@ -923,7 +949,7 @@ export default function DashboardPage() {
     setNoLamination(false);
     setNoSpecs("");
     setNoFiles(null);
-    setNoPdfPages(0); // ← reset PDF pages
+    setNoPdfPages(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -941,6 +967,7 @@ export default function DashboardPage() {
       setEditOrder(o);
       setEoService(o.service);
       setEoQuantity(o.quantity);
+      setEoCopies(1);
       setEoDelivery(o.delivery_option as DeliveryOption);
       setEoAddress(o.delivery_address || "");
       setEoSpecs(extractUserSpecs(o.specifications));
@@ -987,6 +1014,7 @@ export default function DashboardPage() {
       fd.append("photo_size", eoPhotoSize);
       fd.append("color_option", eoColorOption);
       if (eoLamination) fd.append("add_lamination", "on");
+      if (eoShowsCopies) fd.append("copies", String(eoCopies || 1));
       if (editFileInputRef.current?.files?.length)
         Array.from(editFileInputRef.current.files).forEach((f) =>
           fd.append("new_files[]", f),
@@ -1136,10 +1164,10 @@ export default function DashboardPage() {
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         :root{
           --grad:linear-gradient(135deg,#5b6dee 0%,#7c3aed 50%,#a855f7 100%);
-          --sidebar:#5b4fa8; --active:#7c3aed;
-          --bg:#f3f4f6; --surface:#fff; --border:#e5e7eb;
-          --text:#111827; --muted:#6b7280; --success:#22c55e;
-          --sw:220px; --hh:56px; --r:12px;
+          --sidebar:#5b4fa8;--active:#7c3aed;
+          --bg:#f3f4f6;--surface:#fff;--border:#e5e7eb;
+          --text:#111827;--muted:#6b7280;--success:#22c55e;
+          --sw:220px;--hh:56px;--r:12px;
         }
         html,body{height:100%}
         body{font-family:'Inter',sans-serif;background:var(--bg);min-height:100dvh}
@@ -1269,7 +1297,8 @@ export default function DashboardPage() {
         .pw-wrap{position:relative}
         .pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
         .pw-toggle:hover{color:var(--text)}
-        .pdf-info{background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:8px;padding:.5rem .75rem;margin-top:.4rem;display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:#7c3aed;font-weight:600}
+        .pdf-info{background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:8px;padding:.5rem .75rem;margin-top:.5rem;display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:#7c3aed;font-weight:600}
+        .copies-info{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:.45rem .75rem;margin-top:.4rem;font-size:.7rem;color:#16a34a;font-weight:600;display:flex;align-items:center;gap:.4rem}
         .sb-overlay{display:none;position:fixed;inset:0;background:rgba(30,27,75,.5);z-index:190}
         .sb-overlay.on{display:block}
         .empty-state{padding:2.2rem;text-align:center;color:var(--muted);font-size:.82rem}
@@ -1509,7 +1538,7 @@ export default function DashboardPage() {
                 </div>
 
                 <form onSubmit={handleSubmitOrder}>
-                  {/* ── Step 0: Service ── */}
+                  {/* ── Step 0: Service & Quantity ── */}
                   <div className={`step-box ${step === 0 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">Select Service</label>
@@ -1524,6 +1553,7 @@ export default function DashboardPage() {
                           setNoLamination(false);
                           setNoPdfPages(0);
                           setNoQuantity("");
+                          setNoCopies(1);
                         }}
                       >
                         <option value="">-- Select Service --</option>
@@ -1534,42 +1564,72 @@ export default function DashboardPage() {
                         ))}
                       </select>
                     </div>
+
                     <div className="form-row-2">
-                      <div className="form-group">
-                        <label className="form-label">
-                          Quantity
-                          {noPdfPages > 0 && (
-                            <span
-                              style={{
-                                fontSize: ".58rem",
-                                color: "#7c3aed",
-                                fontWeight: 400,
-                                textTransform: "none",
-                                letterSpacing: 0,
-                                marginLeft: 6,
-                              }}
-                            >
-                              (auto-set from PDF)
-                            </span>
+                      {/* Copies — only for Print/Photocopy */}
+                      {showsCopies ? (
+                        <div className="form-group">
+                          <label className="form-label">Number of Copies</label>
+                          <input
+                            className="form-input"
+                            type="number"
+                            min={1}
+                            inputMode="numeric"
+                            placeholder="How many copies?"
+                            value={noCopies}
+                            onChange={(e) => {
+                              const val =
+                                e.target.value === ""
+                                  ? ""
+                                  : Math.max(1, parseInt(e.target.value) || 1);
+                              handleCopiesChange(val);
+                            }}
+                          />
+                          {noPdfPages > 0 && Number(noCopies) > 0 && (
+                            <div className="copies-info">
+                              ✓ {noPdfPages} pages × {noCopies} copies ={" "}
+                              {noPdfPages * Number(noCopies)} total pages
+                            </div>
                           )}
-                        </label>
-                        <input
-                          className="form-input"
-                          type="number"
-                          min={1}
-                          inputMode="numeric"
-                          placeholder="Enter quantity"
-                          value={noQuantity}
-                          onChange={(e) => {
-                            setNoQuantity(
-                              e.target.value === ""
-                                ? ""
-                                : Math.max(1, parseInt(e.target.value) || 1),
-                            );
-                            setNoPdfPages(0);
-                          }}
-                        />
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="form-group">
+                          <label className="form-label">
+                            Quantity
+                            {noPdfPages > 0 && (
+                              <span
+                                style={{
+                                  fontSize: ".58rem",
+                                  color: "#7c3aed",
+                                  fontWeight: 400,
+                                  textTransform: "none",
+                                  letterSpacing: 0,
+                                  marginLeft: 6,
+                                }}
+                              >
+                                (auto-set from PDF)
+                              </span>
+                            )}
+                          </label>
+                          <input
+                            className="form-input"
+                            type="number"
+                            min={1}
+                            inputMode="numeric"
+                            placeholder="Enter quantity"
+                            value={noQuantity}
+                            onChange={(e) => {
+                              setNoQuantity(
+                                e.target.value === ""
+                                  ? ""
+                                  : Math.max(1, parseInt(e.target.value) || 1),
+                              );
+                              setNoPdfPages(0);
+                            }}
+                          />
+                        </div>
+                      )}
+
                       <div className="form-group">
                         <label className="form-label">Delivery</label>
                         <div
@@ -1601,6 +1661,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
+
                     {noDelivery === "delivery" && (
                       <div className="form-group">
                         <label className="form-label">Delivery Address</label>
@@ -1731,7 +1792,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* ── Step 2: Review & Upload ── */}
+                  {/* ── Step 2: Upload & Review ── */}
                   <div className={`step-box ${step === 2 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">
@@ -1754,8 +1815,8 @@ export default function DashboardPage() {
                         type="file"
                         multiple
                         ref={fileInputRef}
-                        onChange={(e) => handleFileChange(e.target.files)}
                         accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        onChange={(e) => handleFileChange(e.target.files)}
                       />
                       {noFiles &&
                         Array.from(noFiles).map((f, fi) => (
@@ -1773,15 +1834,17 @@ export default function DashboardPage() {
                             📎 {f.name}
                           </div>
                         ))}
-                      {/* ── PDF page count info ── */}
+                      {/* PDF page info */}
                       {noPdfPages > 0 && (
                         <div className="pdf-info">
                           <IC.PDF />
-                          {noPdfPages} page{noPdfPages !== 1 ? "s" : ""}{" "}
-                          detected — quantity auto-set to {noPdfPages}
+                          {showsCopies
+                            ? `${noPdfPages} pages × ${noCopies} copies = ${noPdfPages * Number(noCopies)} total pages`
+                            : `${noPdfPages} pages detected — quantity auto-set to ${noPdfPages}`}
                         </div>
                       )}
                     </div>
+
                     <div
                       style={{
                         fontSize: ".8rem",
@@ -1795,6 +1858,7 @@ export default function DashboardPage() {
                     >
                       <IC.Card /> Payment: Cash Only
                     </div>
+
                     <div className="sum-box">
                       <div
                         style={{
@@ -1810,8 +1874,20 @@ export default function DashboardPage() {
                         <span>Service</span>
                         <span>{noService || "—"}</span>
                       </div>
+                      {showsCopies && (
+                        <div className="sum-row">
+                          <span>Copies</span>
+                          <span>{noCopies || 1}</span>
+                        </div>
+                      )}
+                      {noPdfPages > 0 && (
+                        <div className="sum-row">
+                          <span>Pages per Copy</span>
+                          <span>{noPdfPages}</span>
+                        </div>
+                      )}
                       <div className="sum-row">
-                        <span>Quantity</span>
+                        <span>Total Pages</span>
                         <span>
                           {noQuantity || "—"}
                           {noPdfPages > 0 && (
@@ -1822,7 +1898,7 @@ export default function DashboardPage() {
                                 marginLeft: 4,
                               }}
                             >
-                              (from PDF)
+                              (auto)
                             </span>
                           )}
                         </span>
@@ -1869,6 +1945,7 @@ export default function DashboardPage() {
                         <span>₱{summaryTotal.toFixed(2)}</span>
                       </div>
                     </div>
+
                     <div
                       className="btn-row between"
                       style={{ marginTop: ".9rem" }}
@@ -2134,7 +2211,55 @@ export default function DashboardPage() {
                   ))}
                 </select>
               </div>
+
               <div className="form-row-2">
+                {eoShowsCopies ? (
+                  <div className="form-group">
+                    <label className="form-label">Number of Copies</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      min={1}
+                      inputMode="numeric"
+                      placeholder="How many copies?"
+                      value={eoCopies}
+                      onChange={(e) => {
+                        const val =
+                          e.target.value === ""
+                            ? ""
+                            : Math.max(1, parseInt(e.target.value) || 1);
+                        handleEoCopiesChange(val);
+                      }}
+                    />
+                    {eoPdfPages > 0 && Number(eoCopies) > 0 && (
+                      <div className="copies-info">
+                        ✓ {eoPdfPages} pages × {eoCopies} copies ={" "}
+                        {eoPdfPages * Number(eoCopies)} total pages
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label className="form-label">Quantity</label>
+                    <input
+                      className="form-input"
+                      type="number"
+                      inputMode="numeric"
+                      min={1}
+                      placeholder="Enter quantity"
+                      value={eoQuantity}
+                      onChange={(e) => {
+                        setEoQuantity(
+                          e.target.value === ""
+                            ? ""
+                            : Math.max(1, parseInt(e.target.value) || 1),
+                        );
+                        setEoPdfPages(0);
+                      }}
+                    />
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label className="form-label">Delivery</label>
                   <div className="radio-group" style={{ marginTop: ".5rem" }}>
@@ -2160,42 +2285,8 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">
-                    Quantity
-                    {eoPdfPages > 0 && (
-                      <span
-                        style={{
-                          fontSize: ".58rem",
-                          color: "#7c3aed",
-                          fontWeight: 400,
-                          textTransform: "none",
-                          letterSpacing: 0,
-                          marginLeft: 6,
-                        }}
-                      >
-                        (auto-set from PDF)
-                      </span>
-                    )}
-                  </label>
-                  <input
-                    className="form-input"
-                    type="number"
-                    inputMode="numeric"
-                    min={1}
-                    placeholder="Enter quantity"
-                    value={eoQuantity}
-                    onChange={(e) => {
-                      setEoQuantity(
-                        e.target.value === ""
-                          ? ""
-                          : Math.max(1, parseInt(e.target.value) || 1),
-                      );
-                      setEoPdfPages(0);
-                    }}
-                  />
-                </div>
               </div>
+
               {eoDelivery === "delivery" && (
                 <div className="form-group">
                   <label className="form-label">Delivery Address</label>
@@ -2313,8 +2404,9 @@ export default function DashboardPage() {
                 {eoPdfPages > 0 && (
                   <div className="pdf-info">
                     <IC.PDF />
-                    {eoPdfPages} page{eoPdfPages !== 1 ? "s" : ""} detected —
-                    quantity auto-set to {eoPdfPages}
+                    {eoShowsCopies
+                      ? `${eoPdfPages} pages × ${eoCopies} copies = ${eoPdfPages * Number(eoCopies)} total pages`
+                      : `${eoPdfPages} pages detected — quantity auto-set to ${eoPdfPages}`}
                   </div>
                 )}
               </div>
