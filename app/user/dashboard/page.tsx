@@ -70,7 +70,6 @@ const PAPER_MULTIPLIERS: Record<PaperSize, number> = {
   Long: 1.2,
 };
 
-// ── PDF page counter ──────────────────────────────────────────────────────────
 async function getPdfPageCount(file: File): Promise<number> {
   try {
     const arrayBuffer = await file.arrayBuffer();
@@ -150,24 +149,23 @@ function calcTotal(
   if (!service || isNaN(qty) || qty < 1) return 0;
   const sl = service.toLowerCase().trim();
   const m = PAPER_MULTIPLIERS[paperSize] ?? 1.0;
-  const pBw = sp(prices.print_bw, 1);
-  const pColor = sp(prices.print_color, 2);
-  const pCopy = sp(prices.photocopying, 2);
-  const pScan = sp(prices.scanning, 5);
-  const pPhoto = sp(prices.photo_development, 15);
-  const pLam = sp(prices.laminating, 20);
   let unitPrice = 0;
-  if (sl === "print") unitPrice = (colorOption === "color" ? pColor : pBw) * m;
-  else if (sl === "photocopy") unitPrice = pCopy * m;
-  else if (sl === "scanning") unitPrice = pScan * m;
-  else if (sl === "photo development") unitPrice = pPhoto;
-  else if (sl === "laminating") unitPrice = pLam;
+  if (sl === "print")
+    unitPrice =
+      (colorOption === "color"
+        ? sp(prices.print_color, 2)
+        : sp(prices.print_bw, 1)) * m;
+  else if (sl === "photocopy") unitPrice = sp(prices.photocopying, 2) * m;
+  else if (sl === "scanning") unitPrice = sp(prices.scanning, 5) * m;
+  else if (sl === "photo development")
+    unitPrice = sp(prices.photo_development, 15);
+  else if (sl === "laminating") unitPrice = sp(prices.laminating, 20);
   let total = unitPrice * qty;
-  if (addLamination && sl !== "laminating") total += pLam * qty;
+  if (addLamination && sl !== "laminating")
+    total += sp(prices.laminating, 20) * qty;
   return total;
 }
 
-// ─── SVG Icons ────────────────────────────────────────────────────────────────
 const IC = {
   Menu: () => (
     <svg
@@ -515,7 +513,7 @@ function ToastNotification({ toast }: { toast: Toast }) {
           ? "translate(-50%,0)"
           : "translate(-50%,-12px)",
         width: "calc(100% - 2rem)",
-        maxWidth: "380px",
+        maxWidth: "400px",
         padding: "0.75rem 1rem",
         borderRadius: "10px",
         color: "#fff",
@@ -615,11 +613,11 @@ export default function DashboardPage() {
   const [orderFilter, setOrderFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
 
-  // ── New Order state ───────────────────────────────────────────────────────
+  // ── New Order ─────────────────────────────────────────────────────────────
   const [step, setStep] = useState(0);
   const [noService, setNoService] = useState("");
   const [noQuantity, setNoQuantity] = useState<number | "">("");
-  const [noCopies, setNoCopies] = useState<number | "">(1); // ← copies
+  const [noCopies, setNoCopies] = useState<number | "">(1);
   const [noDelivery, setNoDelivery] = useState<DeliveryOption>("pickup");
   const [noAddress, setNoAddress] = useState("");
   const [noPaperSize, setNoPaperSize] = useState<PaperSize>("A4");
@@ -629,14 +627,14 @@ export default function DashboardPage() {
   const [noSpecs, setNoSpecs] = useState("");
   const [noFiles, setNoFiles] = useState<FileList | null>(null);
   const [noSubmitting, setNoSubmitting] = useState(false);
-  const [noPdfPages, setNoPdfPages] = useState(0); // ← PDF pages
+  const [noPdfPages, setNoPdfPages] = useState(0);
 
-  // ── Edit Order state ──────────────────────────────────────────────────────
+  // ── Edit Order ────────────────────────────────────────────────────────────
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editOrder, setEditOrder] = useState<Partial<Order> | null>(null);
   const [eoService, setEoService] = useState("");
   const [eoQuantity, setEoQuantity] = useState<number | "">("");
-  const [eoCopies, setEoCopies] = useState<number | "">(1); // ← copies
+  const [eoCopies, setEoCopies] = useState<number | "">(1);
   const [eoDelivery, setEoDelivery] = useState<DeliveryOption>("pickup");
   const [eoAddress, setEoAddress] = useState("");
   const [eoPaperSize, setEoPaperSize] = useState<PaperSize>("A4");
@@ -645,9 +643,9 @@ export default function DashboardPage() {
   const [eoLamination, setEoLamination] = useState(false);
   const [eoSpecs, setEoSpecs] = useState("");
   const [eoSubmitting, setEoSubmitting] = useState(false);
-  const [eoPdfPages, setEoPdfPages] = useState(0); // ← PDF pages
+  const [eoPdfPages, setEoPdfPages] = useState(0);
 
-  // ── Profile state ─────────────────────────────────────────────────────────
+  // ── Profile ───────────────────────────────────────────────────────────────
   const [user, setUser] = useState<User>({
     first_name: "",
     last_name: "",
@@ -706,7 +704,6 @@ export default function DashboardPage() {
       if (r.success) setStats(r.data);
     } catch {}
   }, []);
-
   const fetchRecentOrders = useCallback(async () => {
     try {
       const res = await fetch("/api/dashboard?action=getOrders");
@@ -714,7 +711,6 @@ export default function DashboardPage() {
       if (r.success) setRecentOrders(r.data.orders.slice(0, 5));
     } catch {}
   }, []);
-
   const fetchOrders = useCallback(async (status = "") => {
     setOrdersLoading(true);
     try {
@@ -727,7 +723,6 @@ export default function DashboardPage() {
     } catch {}
     setOrdersLoading(false);
   }, []);
-
   const fetchUser = useCallback(async () => {
     try {
       const res = await fetch("/api/dashboard?action=getUser");
@@ -790,11 +785,18 @@ export default function DashboardPage() {
   ].includes(eoService);
   const eoShowsCopies = eoService === "Print" || eoService === "Photocopy";
 
+  // Effective quantity for summary — for Print/Photocopy use copies if no quantity yet
+  const effectiveQuantity = (() => {
+    if (noQuantity !== "" && Number(noQuantity) >= 1) return Number(noQuantity);
+    if (showsCopies) return Number(noCopies) || 1;
+    return 0;
+  })();
+
   const summaryTotal =
-    noService && noQuantity !== "" && Number(noQuantity) >= 1
+    noService && effectiveQuantity >= 1
       ? calcTotal(
           noService,
-          Number(noQuantity),
+          effectiveQuantity,
           noColorOption,
           noPaperSize,
           noPhotoSize,
@@ -803,7 +805,7 @@ export default function DashboardPage() {
         )
       : 0;
 
-  // ── Handle PDF file selection with page × copies counting ─────────────────
+  // ── PDF file handling ─────────────────────────────────────────────────────
   async function handleFileChange(files: FileList | null) {
     setNoFiles(files);
     setNoPdfPages(0);
@@ -851,32 +853,38 @@ export default function DashboardPage() {
     }
   }
 
-  // ── When copies change, recalculate quantity if PDF is loaded ─────────────
   function handleCopiesChange(val: number | "") {
     setNoCopies(val);
     if (noPdfPages > 0 && val !== "") {
-      const total = noPdfPages * Number(val);
-      setNoQuantity(total);
+      setNoQuantity(noPdfPages * Number(val));
     }
   }
 
   function handleEoCopiesChange(val: number | "") {
     setEoCopies(val);
     if (eoPdfPages > 0 && val !== "") {
-      const total = eoPdfPages * Number(val);
-      setEoQuantity(total);
+      setEoQuantity(eoPdfPages * Number(val));
     }
   }
 
+  // ── Validation — FIX: don't require quantity for Print/Photocopy at step 0 ─
   function validateStep(n: number): boolean {
     if (n === 1) {
       if (!noService) {
         showToast("Service is required.", "error");
         return false;
       }
-      if (noQuantity === "" || Number(noQuantity) < 1) {
-        showToast("Quantity must be at least 1.", "error");
-        return false;
+      if (showsCopies) {
+        // For Print/Photocopy: only validate copies count, quantity comes from PDF upload
+        if (noCopies === "" || Number(noCopies) < 1) {
+          showToast("Number of copies must be at least 1.", "error");
+          return false;
+        }
+      } else {
+        if (noQuantity === "" || Number(noQuantity) < 1) {
+          showToast("Quantity must be at least 1.", "error");
+          return false;
+        }
       }
       if (noDelivery === "delivery" && !noAddress.trim()) {
         showToast("Delivery address is required.", "error");
@@ -901,11 +909,16 @@ export default function DashboardPage() {
       showToast("Please upload at least one file.", "error");
       return;
     }
+    // Final quantity: if Print/Photocopy and no PDF was counted, use copies directly
+    let finalQuantity = Number(noQuantity);
+    if (showsCopies && (finalQuantity < 1 || noQuantity === "")) {
+      finalQuantity = Number(noCopies) || 1;
+    }
     setNoSubmitting(true);
     try {
       const fd = new FormData();
       fd.append("service", noService);
-      fd.append("quantity", String(noQuantity));
+      fd.append("quantity", String(finalQuantity));
       fd.append("specifications", noSpecs);
       fd.append("delivery_option", noDelivery);
       if (noDelivery === "delivery") fd.append("delivery_address", noAddress);
@@ -988,25 +1001,35 @@ export default function DashboardPage() {
   async function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!editOrder) return;
-    if (
-      !eoService ||
-      eoQuantity === "" ||
-      Number(eoQuantity) < 1 ||
-      !eoSpecs.trim()
-    ) {
+    if (!eoService || !eoSpecs.trim()) {
       showToast("Fill in all required fields", "error");
+      return;
+    }
+    // Validate quantity for non-copy services
+    if (!eoShowsCopies && (eoQuantity === "" || Number(eoQuantity) < 1)) {
+      showToast("Quantity must be at least 1.", "error");
+      return;
+    }
+    if (eoShowsCopies && (eoCopies === "" || Number(eoCopies) < 1)) {
+      showToast("Number of copies must be at least 1.", "error");
       return;
     }
     if (eoDelivery === "delivery" && !eoAddress.trim()) {
       showToast("Delivery address is required", "error");
       return;
     }
+
+    let finalQty = Number(eoQuantity);
+    if (eoShowsCopies && (finalQty < 1 || eoQuantity === "")) {
+      finalQty = Number(eoCopies) || 1;
+    }
+
     setEoSubmitting(true);
     try {
       const fd = new FormData();
       fd.append("order_id", String(editOrder.order_id));
       fd.append("service", eoService);
-      fd.append("quantity", String(eoQuantity));
+      fd.append("quantity", String(finalQty));
       fd.append("specifications", eoSpecs);
       fd.append("delivery_option", eoDelivery);
       if (eoDelivery === "delivery") fd.append("delivery_address", eoAddress);
@@ -1143,12 +1166,6 @@ export default function DashboardPage() {
     { id: "profile", icon: <IC.User />, label: "Profile" },
   ];
 
-  const filterOpts = [
-    { val: "", label: "All" },
-    { val: "pending", label: "Pending" },
-    { val: "completed", label: "Done" },
-  ];
-
   function badgeClass(s: string) {
     return s === "pending"
       ? "badge-pending"
@@ -1162,13 +1179,7 @@ export default function DashboardPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        :root{
-          --grad:linear-gradient(135deg,#5b6dee 0%,#7c3aed 50%,#a855f7 100%);
-          --sidebar:#5b4fa8;--active:#7c3aed;
-          --bg:#f3f4f6;--surface:#fff;--border:#e5e7eb;
-          --text:#111827;--muted:#6b7280;--success:#22c55e;
-          --sw:220px;--hh:56px;--r:12px;
-        }
+        :root{--grad:linear-gradient(135deg,#5b6dee 0%,#7c3aed 50%,#a855f7 100%);--sidebar:#5b4fa8;--active:#7c3aed;--bg:#f3f4f6;--surface:#fff;--border:#e5e7eb;--text:#111827;--muted:#6b7280;--success:#22c55e;--sw:220px;--hh:56px;--r:12px}
         html,body{height:100%}
         body{font-family:'Inter',sans-serif;background:var(--bg);min-height:100dvh}
         .shell{display:flex;height:100dvh;overflow:hidden}
@@ -1227,14 +1238,9 @@ export default function DashboardPage() {
         .ro-row td{padding:.7rem .85rem;font-size:.78rem;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text)}
         .ro-row:last-child td{border-bottom:none}
         .ro-row:hover td{background:#f9fafb}
-        .ro-id{font-weight:700;color:var(--text)}
-        .ro-svc{color:var(--muted)}
-        .ro-date{color:var(--muted);white-space:nowrap}
-        .ro-amount{font-weight:700;color:var(--text);text-align:right}
+        .ro-id{font-weight:700}.ro-svc{color:var(--muted)}.ro-date{color:var(--muted);white-space:nowrap}.ro-amount{font-weight:700;text-align:right}
         .badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:99px;font-size:.58rem;font-weight:600;white-space:nowrap}
-        .badge-pending{background:#fef3c7;color:#92400e}
-        .badge-completed{background:#d1fae5;color:#065f46}
-        .badge-progress{background:#dbeafe;color:#1e40af}
+        .badge-pending{background:#fef3c7;color:#92400e}.badge-completed{background:#d1fae5;color:#065f46}.badge-progress{background:#dbeafe;color:#1e40af}
         .form-group{margin-bottom:.8rem}
         .form-label{display:block;font-size:.64rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text);margin-bottom:.32rem}
         .form-input,.form-select,.form-textarea{width:100%;padding:.58rem .78rem;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:max(16px,.875rem);color:var(--text);background:#fff;transition:border-color .2s,box-shadow .2s;outline:none;-webkit-appearance:none}
@@ -1298,7 +1304,8 @@ export default function DashboardPage() {
         .pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
         .pw-toggle:hover{color:var(--text)}
         .pdf-info{background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:8px;padding:.5rem .75rem;margin-top:.5rem;display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:#7c3aed;font-weight:600}
-        .copies-info{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:.45rem .75rem;margin-top:.4rem;font-size:.7rem;color:#16a34a;font-weight:600;display:flex;align-items:center;gap:.4rem}
+        .copies-info{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:.4rem .75rem;margin-top:.4rem;font-size:.7rem;color:#16a34a;font-weight:600}
+        .hint-text{font-size:.68rem;color:var(--muted);margin-top:.25rem}
         .sb-overlay{display:none;position:fixed;inset:0;background:rgba(30,27,75,.5);z-index:190}
         .sb-overlay.on{display:block}
         .empty-state{padding:2.2rem;text-align:center;color:var(--muted);font-size:.82rem}
@@ -1538,7 +1545,7 @@ export default function DashboardPage() {
                 </div>
 
                 <form onSubmit={handleSubmitOrder}>
-                  {/* ── Step 0: Service & Quantity ── */}
+                  {/* ── Step 0 ── */}
                   <div className={`step-box ${step === 0 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">Select Service</label>
@@ -1558,7 +1565,7 @@ export default function DashboardPage() {
                       >
                         <option value="">-- Select Service --</option>
                         {SERVICES.map((s) => (
-                          <option key={`svc-${s}`} value={s}>
+                          <option key={s} value={s}>
                             {s}
                           </option>
                         ))}
@@ -1566,7 +1573,6 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="form-row-2">
-                      {/* Copies — only for Print/Photocopy */}
                       {showsCopies ? (
                         <div className="form-group">
                           <label className="form-label">Number of Copies</label>
@@ -1575,7 +1581,7 @@ export default function DashboardPage() {
                             type="number"
                             min={1}
                             inputMode="numeric"
-                            placeholder="How many copies?"
+                            placeholder="e.g. 3"
                             value={noCopies}
                             onChange={(e) => {
                               const val =
@@ -1585,6 +1591,9 @@ export default function DashboardPage() {
                               handleCopiesChange(val);
                             }}
                           />
+                          <div className="hint-text">
+                            Upload PDF in Step 3 — pages will be auto-counted
+                          </div>
                           {noPdfPages > 0 && Number(noCopies) > 0 && (
                             <div className="copies-info">
                               ✓ {noPdfPages} pages × {noCopies} copies ={" "}
@@ -1594,23 +1603,7 @@ export default function DashboardPage() {
                         </div>
                       ) : (
                         <div className="form-group">
-                          <label className="form-label">
-                            Quantity
-                            {noPdfPages > 0 && (
-                              <span
-                                style={{
-                                  fontSize: ".58rem",
-                                  color: "#7c3aed",
-                                  fontWeight: 400,
-                                  textTransform: "none",
-                                  letterSpacing: 0,
-                                  marginLeft: 6,
-                                }}
-                              >
-                                (auto-set from PDF)
-                              </span>
-                            )}
-                          </label>
+                          <label className="form-label">Quantity</label>
                           <input
                             className="form-input"
                             type="number"
@@ -1629,7 +1622,6 @@ export default function DashboardPage() {
                           />
                         </div>
                       )}
-
                       <div className="form-group">
                         <label className="form-label">Delivery</label>
                         <div
@@ -1638,7 +1630,7 @@ export default function DashboardPage() {
                         >
                           {(["pickup", "delivery"] as DeliveryOption[]).map(
                             (d) => (
-                              <label key={`del-${d}`} className="radio-label">
+                              <label key={d} className="radio-label">
                                 <input
                                   type="radio"
                                   name="no_del"
@@ -1686,7 +1678,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* ── Step 1: Details ── */}
+                  {/* ── Step 1 ── */}
                   <div className={`step-box ${step === 1 ? "active" : ""}`}>
                     {showsPaper && (
                       <div className="form-group">
@@ -1699,7 +1691,7 @@ export default function DashboardPage() {
                           }
                         >
                           {(["A4", "Short", "Long"] as PaperSize[]).map((s) => (
-                            <option key={`ps-${s}`} value={s}>
+                            <option key={s} value={s}>
                               {s}
                             </option>
                           ))}
@@ -1792,7 +1784,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* ── Step 2: Upload & Review ── */}
+                  {/* ── Step 2 ── */}
                   <div className={`step-box ${step === 2 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">
@@ -1821,26 +1813,22 @@ export default function DashboardPage() {
                       {noFiles &&
                         Array.from(noFiles).map((f, fi) => (
                           <div
-                            key={`file-${fi}-${f.name}`}
+                            key={`${fi}-${f.name}`}
                             style={{
                               fontSize: ".7rem",
                               color: "var(--muted)",
                               marginTop: 3,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 4,
                             }}
                           >
                             📎 {f.name}
                           </div>
                         ))}
-                      {/* PDF page info */}
                       {noPdfPages > 0 && (
                         <div className="pdf-info">
                           <IC.PDF />
                           {showsCopies
                             ? `${noPdfPages} pages × ${noCopies} copies = ${noPdfPages * Number(noCopies)} total pages`
-                            : `${noPdfPages} pages detected — quantity auto-set to ${noPdfPages}`}
+                            : `${noPdfPages} pages detected`}
                         </div>
                       )}
                     </div>
@@ -1887,9 +1875,9 @@ export default function DashboardPage() {
                         </div>
                       )}
                       <div className="sum-row">
-                        <span>Total Pages</span>
+                        <span>{showsCopies ? "Total Pages" : "Quantity"}</span>
                         <span>
-                          {noQuantity || "—"}
+                          {effectiveQuantity || "—"}
                           {noPdfPages > 0 && (
                             <span
                               style={{
@@ -1933,10 +1921,8 @@ export default function DashboardPage() {
                       <div className="sum-row">
                         <span>Lamination</span>
                         <span>
-                          {noLamination &&
-                          noQuantity !== "" &&
-                          Number(noQuantity) >= 1
-                            ? `Yes (+₱${(sp(prices.laminating, 20) * Number(noQuantity)).toFixed(2)})`
+                          {noLamination && effectiveQuantity >= 1
+                            ? `Yes (+₱${(sp(prices.laminating, 20) * effectiveQuantity).toFixed(2)})`
                             : "No"}
                         </span>
                       </div>
@@ -1977,9 +1963,13 @@ export default function DashboardPage() {
               <div className="filter-bar">
                 <div className="filter-title">My Orders</div>
                 <div className="filter-chips">
-                  {filterOpts.map(({ val, label }) => (
+                  {[
+                    { val: "", label: "All" },
+                    { val: "pending", label: "Pending" },
+                    { val: "completed", label: "Done" },
+                  ].map(({ val, label }) => (
                     <button
-                      key={`filter-${val || "all"}`}
+                      key={val || "all"}
                       className={`fchip ${orderFilter === val ? "active" : ""}`}
                       onClick={() => setOrderFilter(val)}
                     >
@@ -2132,7 +2122,7 @@ export default function DashboardPage() {
                         ph: "Confirm password",
                       },
                     ].map((f) => (
-                      <div key={`pwfield-${f.label}`} className="form-group">
+                      <div key={f.label} className="form-group">
                         <label className="form-label">{f.label}</label>
                         <div className="pw-wrap">
                           <input
@@ -2205,7 +2195,7 @@ export default function DashboardPage() {
                 >
                   <option value="">-- Select Service --</option>
                   {SERVICES.map((s) => (
-                    <option key={`eosvc-${s}`} value={s}>
+                    <option key={s} value={s}>
                       {s}
                     </option>
                   ))}
@@ -2221,7 +2211,7 @@ export default function DashboardPage() {
                       type="number"
                       min={1}
                       inputMode="numeric"
-                      placeholder="How many copies?"
+                      placeholder="e.g. 3"
                       value={eoCopies}
                       onChange={(e) => {
                         const val =
@@ -2234,7 +2224,7 @@ export default function DashboardPage() {
                     {eoPdfPages > 0 && Number(eoCopies) > 0 && (
                       <div className="copies-info">
                         ✓ {eoPdfPages} pages × {eoCopies} copies ={" "}
-                        {eoPdfPages * Number(eoCopies)} total pages
+                        {eoPdfPages * Number(eoCopies)} total
                       </div>
                     )}
                   </div>
@@ -2259,12 +2249,11 @@ export default function DashboardPage() {
                     />
                   </div>
                 )}
-
                 <div className="form-group">
                   <label className="form-label">Delivery</label>
                   <div className="radio-group" style={{ marginTop: ".5rem" }}>
                     {(["pickup", "delivery"] as DeliveryOption[]).map((d) => (
-                      <label key={`eodel-${d}`} className="radio-label">
+                      <label key={d} className="radio-label">
                         <input
                           type="radio"
                           name="eo_del"
@@ -2308,7 +2297,7 @@ export default function DashboardPage() {
                     }
                   >
                     {(["A4", "Short", "Long"] as PaperSize[]).map((s) => (
-                      <option key={`eops-${s}`} value={s}>
+                      <option key={s} value={s}>
                         {s}
                       </option>
                     ))}
@@ -2368,6 +2357,7 @@ export default function DashboardPage() {
                   </label>
                 </div>
               )}
+
               <div className="form-group">
                 <label className="form-label">Specifications</label>
                 <textarea
@@ -2379,7 +2369,7 @@ export default function DashboardPage() {
               </div>
               <div className="form-group">
                 <label className="form-label">
-                  Replace Files
+                  Replace Files{" "}
                   <span
                     style={{
                       fontSize: ".6rem",
@@ -2405,11 +2395,12 @@ export default function DashboardPage() {
                   <div className="pdf-info">
                     <IC.PDF />
                     {eoShowsCopies
-                      ? `${eoPdfPages} pages × ${eoCopies} copies = ${eoPdfPages * Number(eoCopies)} total pages`
-                      : `${eoPdfPages} pages detected — quantity auto-set to ${eoPdfPages}`}
+                      ? `${eoPdfPages} pages × ${eoCopies} copies = ${eoPdfPages * Number(eoCopies)} total`
+                      : `${eoPdfPages} pages detected`}
                   </div>
                 )}
               </div>
+
               <button
                 type="submit"
                 className="btn btn-accent btn-full"

@@ -224,6 +224,8 @@ export async function POST(req: NextRequest) {
 
       const service = (formData.get("service") as string)?.trim();
       let quantity = parseInt(formData.get("quantity") as string) || 1;
+      // ── NEW: read copies sent from frontend ──
+      const copies = parseInt(formData.get("copies") as string) || 1;
       const specifications = (formData.get("specifications") as string)?.trim();
       const delivery_option = (
         formData.get("delivery_option") as string
@@ -261,16 +263,19 @@ export async function POST(req: NextRequest) {
         pdfPageCount,
       );
 
-      // ── Auto-set quantity from PDF page count for Print/Photocopy ──
       const serviceUpper = service.toLowerCase();
-      if (
-        pdfPageCount > 0 &&
-        (serviceUpper === "print" || serviceUpper === "photocopy")
-      ) {
+      const isCopyService =
+        serviceUpper === "print" || serviceUpper === "photocopy";
+
+      // ── Auto-set quantity: pages × copies for Print/Photocopy ──
+      if (pdfPageCount > 0 && isCopyService) {
+        quantity = pdfPageCount * copies;
         console.log(
-          `[createOrder] Auto-setting quantity to PDF page count: ${pdfPageCount}`,
+          `[createOrder] PDF pages: ${pdfPageCount} × copies: ${copies} = ${quantity}`,
         );
-        quantity = pdfPageCount;
+      } else if (isCopyService && quantity < 1) {
+        // No PDF uploaded — use copies count directly
+        quantity = copies;
       }
 
       const specsLines: string[] = [];
@@ -283,11 +288,12 @@ export async function POST(req: NextRequest) {
       if (service === "Photo Development")
         specsLines.push(`Photo Size: Glossy ${photo_size}`);
       if (add_lamination) specsLines.push("Add Lamination: Yes");
-      if (
-        pdfPageCount > 0 &&
-        (serviceUpper === "print" || serviceUpper === "photocopy")
-      )
-        specsLines.push(`PDF Pages: ${pdfPageCount} (auto-counted)`);
+      if (pdfPageCount > 0 && isCopyService)
+        specsLines.push(
+          `PDF Pages: ${pdfPageCount} pages × ${copies} copies = ${quantity} total`,
+        );
+      else if (copies > 1 && isCopyService)
+        specsLines.push(`Copies: ${copies}`);
       if (specifications) specsLines.push(specifications);
       const fullSpecs = specsLines.join("\n");
 
@@ -327,6 +333,7 @@ export async function POST(req: NextRequest) {
           order_id: order.order_id,
           quantity,
           pdf_pages: pdfPageCount > 0 ? pdfPageCount : null,
+          copies,
         },
       });
     }
@@ -336,6 +343,8 @@ export async function POST(req: NextRequest) {
       const order_id = (formData.get("order_id") as string)?.trim();
       const service = (formData.get("service") as string)?.trim();
       let quantity = parseInt(formData.get("quantity") as string) || 1;
+      // ── NEW: read copies ──
+      const copies = parseInt(formData.get("copies") as string) || 1;
       const specifications = (formData.get("specifications") as string)?.trim();
       const delivery_option = (
         formData.get("delivery_option") as string
@@ -366,13 +375,15 @@ export async function POST(req: NextRequest) {
       const updatedFiles =
         newFileData.length > 0 ? newFileData : (order.files ?? []);
 
-      // ── Auto-set quantity from PDF page count for Print/Photocopy ──
       const serviceUpper = service.toLowerCase();
-      if (
-        pdfPageCount > 0 &&
-        (serviceUpper === "print" || serviceUpper === "photocopy")
-      ) {
-        quantity = pdfPageCount;
+      const isCopyService =
+        serviceUpper === "print" || serviceUpper === "photocopy";
+
+      // ── Auto-set quantity: pages × copies ──
+      if (pdfPageCount > 0 && isCopyService) {
+        quantity = pdfPageCount * copies;
+      } else if (isCopyService && quantity < 1) {
+        quantity = copies;
       }
 
       const specsLines: string[] = [];
@@ -385,11 +396,12 @@ export async function POST(req: NextRequest) {
       if (service === "Photo Development")
         specsLines.push(`Photo Size: Glossy ${photo_size}`);
       if (add_lamination) specsLines.push("Add Lamination: Yes");
-      if (
-        pdfPageCount > 0 &&
-        (serviceUpper === "print" || serviceUpper === "photocopy")
-      )
-        specsLines.push(`PDF Pages: ${pdfPageCount} (auto-counted)`);
+      if (pdfPageCount > 0 && isCopyService)
+        specsLines.push(
+          `PDF Pages: ${pdfPageCount} pages × ${copies} copies = ${quantity} total`,
+        );
+      else if (copies > 1 && isCopyService)
+        specsLines.push(`Copies: ${copies}`);
       if (specifications) specsLines.push(specifications);
 
       const prices = await getPricing();
