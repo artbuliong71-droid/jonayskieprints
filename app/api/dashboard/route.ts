@@ -5,6 +5,7 @@ import { User } from "@/models/user";
 import { getSession } from "@/lib/auth";
 import { Pricing } from "@/models/pricing";
 import { uploadToCloudinary, UploadResult } from "@/lib/upload";
+import { PDFDocument } from "pdf-lib";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -54,31 +55,49 @@ function calcTotal(
   return total;
 }
 
+// ── Count PDF pages ───────────────────────────────────────────────────────────
+
+async function getPdfPageCount(buffer: Buffer): Promise<number> {
+  try {
+    const pdfDoc = await PDFDocument.load(buffer, { ignoreEncryption: true });
+    return pdfDoc.getPageCount();
+  } catch {
+    return 0;
+  }
+}
+
 // ── Upload files to Cloudinary ────────────────────────────────────────────────
 
 async function saveUploadedFiles(
   formData: FormData,
   fieldName: string,
-): Promise<UploadResult[]> {
+): Promise<{ files: UploadResult[]; pdfPageCount: number }> {
   const fileData: UploadResult[] = [];
   const files = formData.getAll(fieldName) as File[];
+  let pdfPageCount = 0;
 
-  if (!files || files.length === 0) return fileData;
+  if (!files || files.length === 0) return { files: fileData, pdfPageCount };
 
   for (const file of files) {
     if (!file || file.size === 0) continue;
     try {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
+
+      // Count pages if PDF
+      if (file.name.toLowerCase().endsWith(".pdf")) {
+        const pages = await getPdfPageCount(buffer);
+        if (pages > 0) pdfPageCount += pages;
+      }
+
       const result = await uploadToCloudinary(buffer, file.name);
-      fileData.push(result); // { url, resource_type }
+      fileData.push(result);
     } catch (err) {
       console.error(`[UPLOAD ERROR] Failed to upload ${file.name}:`, err);
-      // skip failed file, don't crash the order
     }
   }
 
-  return fileData;
+  return { files: fileData, pdfPageCount };
 }
 
 // ── GET ───────────────────────────────────────────────────────────────────────
@@ -204,7 +223,7 @@ export async function POST(req: NextRequest) {
       console.log("[createOrder] hit");
 
       const service = (formData.get("service") as string)?.trim();
-      const quantity = parseInt(formData.get("quantity") as string) || 1;
+      let quantity = parseInt(formData.get("quantity") as string) || 1;
       const specifications = (formData.get("specifications") as string)?.trim();
       const delivery_option = (
         formData.get("delivery_option") as string
@@ -215,15 +234,6 @@ export async function POST(req: NextRequest) {
       const photo_size = (formData.get("photo_size") as string) || "A4";
       const color_option = (formData.get("color_option") as string) || "bw";
       const add_lamination = formData.get("add_lamination") === "on";
-
-      console.log(
-        "[createOrder] service:",
-        service,
-        "qty:",
-        quantity,
-        "delivery:",
-        delivery_option,
-      );
 
       if (!service || !specifications || !delivery_option) {
         return NextResponse.json(
@@ -240,8 +250,28 @@ export async function POST(req: NextRequest) {
         );
 
       console.log("[createOrder] uploading files...");
-      const fileData = await saveUploadedFiles(formData, "files[]");
-      console.log("[createOrder] fileData:", fileData);
+      const { files: fileData, pdfPageCount } = await saveUploadedFiles(
+        formData,
+        "files[]",
+      );
+      console.log(
+        "[createOrder] fileData:",
+        fileData,
+        "pdfPages:",
+        pdfPageCount,
+      );
+
+      // ── Auto-set quantity from PDF page count for Print/Photocopy ──
+      const serviceUpper = service.toLowerCase();
+      if (
+        pdfPageCount > 0 &&
+        (serviceUpper === "print" || serviceUpper === "photocopy")
+      ) {
+        console.log(
+          `[createOrder] Auto-setting quantity to PDF page count: ${pdfPageCount}`,
+        );
+        quantity = pdfPageCount;
+      }
 
       const specsLines: string[] = [];
       if (["Print", "Photocopy", "Scanning"].includes(service))
@@ -253,6 +283,11 @@ export async function POST(req: NextRequest) {
       if (service === "Photo Development")
         specsLines.push(`Photo Size: Glossy ${photo_size}`);
       if (add_lamination) specsLines.push("Add Lamination: Yes");
+      if (
+        pdfPageCount > 0 &&
+        (serviceUpper === "print" || serviceUpper === "photocopy")
+      )
+        specsLines.push(`PDF Pages: ${pdfPageCount} (auto-counted)`);
       if (specifications) specsLines.push(specifications);
       const fullSpecs = specsLines.join("\n");
 
@@ -281,14 +316,18 @@ export async function POST(req: NextRequest) {
         status: "pending",
         total_amount,
         payment_method: "cash",
-        files: fileData, // [{ url, resource_type }]
+        files: fileData,
       });
 
       console.log("[createOrder] success:", order.order_id);
       return NextResponse.json({
         success: true,
         message: "Order placed successfully!",
-        data: { order_id: order.order_id },
+        data: {
+          order_id: order.order_id,
+          quantity,
+          pdf_pages: pdfPageCount > 0 ? pdfPageCount : null,
+        },
       });
     }
 
@@ -296,7 +335,7 @@ export async function POST(req: NextRequest) {
     if (action === "updateOrder") {
       const order_id = (formData.get("order_id") as string)?.trim();
       const service = (formData.get("service") as string)?.trim();
-      const quantity = parseInt(formData.get("quantity") as string) || 1;
+      let quantity = parseInt(formData.get("quantity") as string) || 1;
       const specifications = (formData.get("specifications") as string)?.trim();
       const delivery_option = (
         formData.get("delivery_option") as string
@@ -320,9 +359,21 @@ export async function POST(req: NextRequest) {
           { status: 400 },
         );
 
-      const newFileData = await saveUploadedFiles(formData, "new_files[]");
+      const { files: newFileData, pdfPageCount } = await saveUploadedFiles(
+        formData,
+        "new_files[]",
+      );
       const updatedFiles =
         newFileData.length > 0 ? newFileData : (order.files ?? []);
+
+      // ── Auto-set quantity from PDF page count for Print/Photocopy ──
+      const serviceUpper = service.toLowerCase();
+      if (
+        pdfPageCount > 0 &&
+        (serviceUpper === "print" || serviceUpper === "photocopy")
+      ) {
+        quantity = pdfPageCount;
+      }
 
       const specsLines: string[] = [];
       if (["Print", "Photocopy", "Scanning"].includes(service))
@@ -334,6 +385,11 @@ export async function POST(req: NextRequest) {
       if (service === "Photo Development")
         specsLines.push(`Photo Size: Glossy ${photo_size}`);
       if (add_lamination) specsLines.push("Add Lamination: Yes");
+      if (
+        pdfPageCount > 0 &&
+        (serviceUpper === "print" || serviceUpper === "photocopy")
+      )
+        specsLines.push(`PDF Pages: ${pdfPageCount} (auto-counted)`);
       if (specifications) specsLines.push(specifications);
 
       const prices = await getPricing();

@@ -48,7 +48,6 @@ type PaperSize = "A4" | "Short" | "Long";
 type ColorOption = "bw" | "color";
 type DeliveryOption = "pickup" | "delivery";
 
-// ─── MOVED TO MODULE LEVEL so it's always available ──────────────────────────
 const SERVICES = [
   "Print",
   "Photocopy",
@@ -71,6 +70,19 @@ const PAPER_MULTIPLIERS: Record<PaperSize, number> = {
   Long: 1.2,
 };
 
+// ── PDF page counter (no library needed) ─────────────────────────────────────
+async function getPdfPageCount(file: File): Promise<number> {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    const text = new TextDecoder("latin1").decode(bytes);
+    const matches = text.match(/\/Type\s*\/Page[^s]/g);
+    return matches ? matches.length : 0;
+  } catch {
+    return 0;
+  }
+}
+
 function extractUserSpecs(specifications: string): string {
   return specifications
     .split("\n")
@@ -83,7 +95,8 @@ function extractUserSpecs(specifications: string): string {
           !t.startsWith("Copy Type:") &&
           !t.startsWith("Scan Type:") &&
           !t.startsWith("Photo Size:") &&
-          !t.startsWith("Add Lamination: Yes"))
+          !t.startsWith("Add Lamination: Yes") &&
+          !t.startsWith("PDF Pages:"))
       );
     })
     .join("\n")
@@ -117,12 +130,10 @@ function parseSpecsOptions(specifications: string) {
   return result;
 }
 
-// ─── Safe number coercion: handles strings like "1.00" from API ──────────────
 function sp(val: unknown, fallback: number): number {
   const parsed = Number(val);
   return isNaN(parsed) || parsed <= 0 ? fallback : parsed;
 }
-// alias for readability
 const safePrice = sp;
 
 function calcTotal(
@@ -476,6 +487,20 @@ const IC = {
       <circle cx="18.5" cy="18.5" r="2.5" />
     </svg>
   ),
+  PDF: () => (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z" />
+      <polyline points="13 2 13 9 20 9" />
+    </svg>
+  ),
 };
 
 function ToastNotification({ toast }: { toast: Toast }) {
@@ -589,6 +614,7 @@ export default function DashboardPage() {
   const [orderFilter, setOrderFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
 
+  // ── New Order state ───────────────────────────────────────────────────────
   const [step, setStep] = useState(0);
   const [noService, setNoService] = useState("");
   const [noQuantity, setNoQuantity] = useState<number | "">("");
@@ -601,7 +627,9 @@ export default function DashboardPage() {
   const [noSpecs, setNoSpecs] = useState("");
   const [noFiles, setNoFiles] = useState<FileList | null>(null);
   const [noSubmitting, setNoSubmitting] = useState(false);
+  const [noPdfPages, setNoPdfPages] = useState(0); // ← PDF page count
 
+  // ── Edit Order state ──────────────────────────────────────────────────────
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editOrder, setEditOrder] = useState<Partial<Order> | null>(null);
   const [eoService, setEoService] = useState("");
@@ -614,7 +642,9 @@ export default function DashboardPage() {
   const [eoLamination, setEoLamination] = useState(false);
   const [eoSpecs, setEoSpecs] = useState("");
   const [eoSubmitting, setEoSubmitting] = useState(false);
+  const [eoPdfPages, setEoPdfPages] = useState(0); // ← PDF page count for edit
 
+  // ── Profile state ─────────────────────────────────────────────────────────
   const [user, setUser] = useState<User>({
     first_name: "",
     last_name: "",
@@ -649,7 +679,6 @@ export default function DashboardPage() {
     try {
       const res = await fetch(`/api/pricing?t=${Date.now()}`);
       const data = await res.json();
-      // ─── Coerce every field — API may return strings like "1.00" ────────────
       setPrices({
         print_bw: sp(data.print_bw, DEFAULT_PRICES.print_bw),
         print_color: sp(data.print_color, DEFAULT_PRICES.print_color),
@@ -755,7 +784,6 @@ export default function DashboardPage() {
     "Photo Development",
   ].includes(eoService);
 
-  // ─── FIX: guard against empty/invalid quantity before calling calcTotal ─────
   const summaryTotal =
     noService && noQuantity !== "" && Number(noQuantity) >= 1
       ? calcTotal(
@@ -769,11 +797,49 @@ export default function DashboardPage() {
         )
       : 0;
 
-  // ─── FIX: lamination cost in summary also guarded ──────────────────────────
-  const laminationCost =
-    noLamination && noQuantity !== "" && Number(noQuantity) >= 1
-      ? safePrice(prices.laminating, 20) * Number(noQuantity)
-      : 0;
+  // ── Handle PDF file selection with page counting ──────────────────────────
+  async function handleFileChange(files: FileList | null) {
+    setNoFiles(files);
+    setNoPdfPages(0);
+    if (!files || files.length === 0) return;
+    if (noService === "Print" || noService === "Photocopy") {
+      const pdfFile = Array.from(files).find((f) =>
+        f.name.toLowerCase().endsWith(".pdf"),
+      );
+      if (pdfFile) {
+        const pages = await getPdfPageCount(pdfFile);
+        if (pages > 0) {
+          setNoPdfPages(pages);
+          setNoQuantity(pages);
+          showToast(
+            `PDF has ${pages} pages — quantity set to ${pages}`,
+            "success",
+          );
+        }
+      }
+    }
+  }
+
+  async function handleEditFileChange(files: FileList | null) {
+    setEoPdfPages(0);
+    if (!files || files.length === 0) return;
+    if (eoService === "Print" || eoService === "Photocopy") {
+      const pdfFile = Array.from(files).find((f) =>
+        f.name.toLowerCase().endsWith(".pdf"),
+      );
+      if (pdfFile) {
+        const pages = await getPdfPageCount(pdfFile);
+        if (pages > 0) {
+          setEoPdfPages(pages);
+          setEoQuantity(pages);
+          showToast(
+            `PDF has ${pages} pages — quantity set to ${pages}`,
+            "success",
+          );
+        }
+      }
+    }
+  }
 
   function validateStep(n: number): boolean {
     if (n === 1) {
@@ -827,7 +893,10 @@ export default function DashboardPage() {
       });
       const r = await res.json();
       if (r.success) {
-        showToast(`Order placed! ID: ${r.data.order_id}`);
+        const pageMsg = r.data.pdf_pages
+          ? ` (${r.data.pdf_pages} pages auto-counted)`
+          : "";
+        showToast(`Order placed! ID: ${r.data.order_id}${pageMsg}`);
         resetForm();
         setActiveSection("dashboard");
         fetchStats();
@@ -854,6 +923,7 @@ export default function DashboardPage() {
     setNoLamination(false);
     setNoSpecs("");
     setNoFiles(null);
+    setNoPdfPages(0); // ← reset PDF pages
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -881,6 +951,7 @@ export default function DashboardPage() {
         p.colorOption || (o.service === "Photocopy" ? "color" : "bw"),
       );
       setEoLamination(p.addLamination);
+      setEoPdfPages(0);
       setEditModalOpen(true);
     } catch {
       showToast("Error loading order", "error");
@@ -1095,8 +1166,7 @@ export default function DashboardPage() {
         .welcome strong{color:#fff;font-weight:600}
         .avatar{width:32px;height:32px;background:rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;border:2px solid rgba(255,255,255,.4);flex-shrink:0}
         .content{flex:1;overflow-y:auto;overflow-x:hidden;padding:.85rem;background:#f3f4f6}
-        .panel{display:none}
-        .panel.active{display:block}
+        .panel{display:none}.panel.active{display:block}
         .p-board{border-radius:var(--r);padding:.8rem .8rem .85rem;margin-bottom:.75rem;background:var(--grad);position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(91,109,238,.3)}
         .p-board::before{content:'';position:absolute;top:-60px;right:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 70%);pointer-events:none}
         .p-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:.4rem;position:relative;z-index:1}
@@ -1156,8 +1226,7 @@ export default function DashboardPage() {
         .step-dot.active{background:#7c3aed;border-color:#7c3aed;color:#fff}
         .step-line{flex:1;height:2px;background:var(--border);margin:12px 4px 0}
         .step-line.done{background:var(--success)}
-        .step-box{display:none}
-        .step-box.active{display:block}
+        .step-box{display:none}.step-box.active{display:block}
         .sum-box{background:#f9fafb;border:1.5px solid var(--border);border-radius:10px;padding:.8rem .9rem;margin-top:.9rem}
         .sum-row{display:flex;justify-content:space-between;font-size:.78rem;padding:3px 0;color:var(--muted)}
         .sum-row span:last-child{color:var(--text);font-weight:500}
@@ -1200,6 +1269,7 @@ export default function DashboardPage() {
         .pw-wrap{position:relative}
         .pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
         .pw-toggle:hover{color:var(--text)}
+        .pdf-info{background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:8px;padding:.5rem .75rem;margin-top:.4rem;display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:#7c3aed;font-weight:600}
         .sb-overlay{display:none;position:fixed;inset:0;background:rgba(30,27,75,.5);z-index:190}
         .sb-overlay.on{display:block}
         .empty-state{padding:2.2rem;text-align:center;color:var(--muted);font-size:.82rem}
@@ -1437,8 +1507,9 @@ export default function DashboardPage() {
                     </Fragment>
                   ))}
                 </div>
+
                 <form onSubmit={handleSubmitOrder}>
-                  {/* step 0 */}
+                  {/* ── Step 0: Service ── */}
                   <div className={`step-box ${step === 0 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">Select Service</label>
@@ -1451,6 +1522,8 @@ export default function DashboardPage() {
                             e.target.value === "Photocopy" ? "color" : "bw",
                           );
                           setNoLamination(false);
+                          setNoPdfPages(0);
+                          setNoQuantity("");
                         }}
                       >
                         <option value="">-- Select Service --</option>
@@ -1463,7 +1536,23 @@ export default function DashboardPage() {
                     </div>
                     <div className="form-row-2">
                       <div className="form-group">
-                        <label className="form-label">Quantity</label>
+                        <label className="form-label">
+                          Quantity
+                          {noPdfPages > 0 && (
+                            <span
+                              style={{
+                                fontSize: ".58rem",
+                                color: "#7c3aed",
+                                fontWeight: 400,
+                                textTransform: "none",
+                                letterSpacing: 0,
+                                marginLeft: 6,
+                              }}
+                            >
+                              (auto-set from PDF)
+                            </span>
+                          )}
+                        </label>
                         <input
                           className="form-input"
                           type="number"
@@ -1471,13 +1560,14 @@ export default function DashboardPage() {
                           inputMode="numeric"
                           placeholder="Enter quantity"
                           value={noQuantity}
-                          onChange={(e) =>
+                          onChange={(e) => {
                             setNoQuantity(
                               e.target.value === ""
                                 ? ""
                                 : Math.max(1, parseInt(e.target.value) || 1),
-                            )
-                          }
+                            );
+                            setNoPdfPages(0);
+                          }}
                         />
                       </div>
                       <div className="form-group">
@@ -1535,7 +1625,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* step 1 */}
+                  {/* ── Step 1: Details ── */}
                   <div className={`step-box ${step === 1 ? "active" : ""}`}>
                     {showsPaper && (
                       <div className="form-group">
@@ -1641,11 +1731,11 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* step 2 */}
+                  {/* ── Step 2: Review & Upload ── */}
                   <div className={`step-box ${step === 2 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">
-                        Upload Files{" "}
+                        Upload Files
                         <span
                           style={{
                             fontSize: ".6rem",
@@ -1664,7 +1754,8 @@ export default function DashboardPage() {
                         type="file"
                         multiple
                         ref={fileInputRef}
-                        onChange={(e) => setNoFiles(e.target.files)}
+                        onChange={(e) => handleFileChange(e.target.files)}
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                       />
                       {noFiles &&
                         Array.from(noFiles).map((f, fi) => (
@@ -1674,11 +1765,22 @@ export default function DashboardPage() {
                               fontSize: ".7rem",
                               color: "var(--muted)",
                               marginTop: 3,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
                             }}
                           >
                             📎 {f.name}
                           </div>
                         ))}
+                      {/* ── PDF page count info ── */}
+                      {noPdfPages > 0 && (
+                        <div className="pdf-info">
+                          <IC.PDF />
+                          {noPdfPages} page{noPdfPages !== 1 ? "s" : ""}{" "}
+                          detected — quantity auto-set to {noPdfPages}
+                        </div>
+                      )}
                     </div>
                     <div
                       style={{
@@ -1710,7 +1812,20 @@ export default function DashboardPage() {
                       </div>
                       <div className="sum-row">
                         <span>Quantity</span>
-                        <span>{noQuantity || "—"}</span>
+                        <span>
+                          {noQuantity || "—"}
+                          {noPdfPages > 0 && (
+                            <span
+                              style={{
+                                color: "#7c3aed",
+                                fontSize: ".68rem",
+                                marginLeft: 4,
+                              }}
+                            >
+                              (from PDF)
+                            </span>
+                          )}
+                        </span>
                       </div>
                       <div className="sum-row">
                         <span>Delivery</span>
@@ -2008,6 +2123,7 @@ export default function DashboardPage() {
                       e.target.value === "Photocopy" ? "color" : "bw",
                     );
                     setEoLamination(false);
+                    setEoPdfPages(0);
                   }}
                 >
                   <option value="">-- Select Service --</option>
@@ -2045,7 +2161,23 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Quantity</label>
+                  <label className="form-label">
+                    Quantity
+                    {eoPdfPages > 0 && (
+                      <span
+                        style={{
+                          fontSize: ".58rem",
+                          color: "#7c3aed",
+                          fontWeight: 400,
+                          textTransform: "none",
+                          letterSpacing: 0,
+                          marginLeft: 6,
+                        }}
+                      >
+                        (auto-set from PDF)
+                      </span>
+                    )}
+                  </label>
                   <input
                     className="form-input"
                     type="number"
@@ -2053,13 +2185,14 @@ export default function DashboardPage() {
                     min={1}
                     placeholder="Enter quantity"
                     value={eoQuantity}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setEoQuantity(
                         e.target.value === ""
                           ? ""
                           : Math.max(1, parseInt(e.target.value) || 1),
-                      )
-                    }
+                      );
+                      setEoPdfPages(0);
+                    }}
                   />
                 </div>
               </div>
@@ -2155,7 +2288,7 @@ export default function DashboardPage() {
               </div>
               <div className="form-group">
                 <label className="form-label">
-                  Replace Files{" "}
+                  Replace Files
                   <span
                     style={{
                       fontSize: ".6rem",
@@ -2174,7 +2307,16 @@ export default function DashboardPage() {
                   type="file"
                   multiple
                   ref={editFileInputRef}
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  onChange={(e) => handleEditFileChange(e.target.files)}
                 />
+                {eoPdfPages > 0 && (
+                  <div className="pdf-info">
+                    <IC.PDF />
+                    {eoPdfPages} page{eoPdfPages !== 1 ? "s" : ""} detected —
+                    quantity auto-set to {eoPdfPages}
+                  </div>
+                )}
               </div>
               <button
                 type="submit"
