@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 interface User {
   first_name: string;
@@ -134,7 +133,6 @@ function sp(val: unknown, fallback: number): number {
   const parsed = Number(val);
   return isNaN(parsed) || parsed <= 0 ? fallback : parsed;
 }
-const safePrice = sp;
 
 function calcTotal(
   service: string,
@@ -166,6 +164,7 @@ function calcTotal(
   return total;
 }
 
+// ── Icons ─────────────────────────────────────────────────────────────────
 const IC = {
   Menu: () => (
     <svg
@@ -500,6 +499,51 @@ const IC = {
       <polyline points="13 2 13 9 20 9" />
     </svg>
   ),
+  Lock: () => (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0110 0v4" />
+    </svg>
+  ),
+  Info: () => (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+  ),
+  Calendar: () => (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  ),
 };
 
 function ToastNotification({ toast }: { toast: Toast }) {
@@ -514,19 +558,19 @@ function ToastNotification({ toast }: { toast: Toast }) {
           : "translate(-50%,-12px)",
         width: "calc(100% - 2rem)",
         maxWidth: "400px",
-        padding: "0.75rem 1rem",
+        padding: ".75rem 1rem",
         borderRadius: "10px",
         color: "#fff",
         fontWeight: 600,
-        fontSize: "0.84rem",
+        fontSize: ".84rem",
         zIndex: 9999,
         opacity: toast.visible ? 1 : 0,
         transition: "all 0.3s",
         pointerEvents: "none",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+        boxShadow: "0 8px 24px rgba(0,0,0,.2)",
         display: "flex",
         alignItems: "center",
-        gap: "0.5rem",
+        gap: ".5rem",
         background: toast.type === "success" ? "#22c55e" : "#ef4444",
         fontFamily: "'Inter',sans-serif",
       }}
@@ -592,7 +636,6 @@ function StatCard({
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState<Toast>({
@@ -613,7 +656,7 @@ export default function DashboardPage() {
   const [orderFilter, setOrderFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
 
-  // ── New Order ─────────────────────────────────────────────────────────────
+  // ── New Order ──────────────────────────────────────────────────────────────
   const [step, setStep] = useState(0);
   const [noService, setNoService] = useState("");
   const [noQuantity, setNoQuantity] = useState<number | "">("");
@@ -629,7 +672,7 @@ export default function DashboardPage() {
   const [noSubmitting, setNoSubmitting] = useState(false);
   const [noPdfPages, setNoPdfPages] = useState(0);
 
-  // ── Edit Order ────────────────────────────────────────────────────────────
+  // ── Edit Order ─────────────────────────────────────────────────────────────
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editOrder, setEditOrder] = useState<Partial<Order> | null>(null);
   const [eoService, setEoService] = useState("");
@@ -645,7 +688,7 @@ export default function DashboardPage() {
   const [eoSubmitting, setEoSubmitting] = useState(false);
   const [eoPdfPages, setEoPdfPages] = useState(0);
 
-  // ── Profile ───────────────────────────────────────────────────────────────
+  // ── Profile ────────────────────────────────────────────────────────────────
   const [user, setUser] = useState<User>({
     first_name: "",
     last_name: "",
@@ -664,6 +707,10 @@ export default function DashboardPage() {
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [profSubmitting, setProfSubmitting] = useState(false);
+  // ── NEW profile state ──
+  const [profTab, setProfTab] = useState<"info" | "password">("info");
+  const [profAvatar, setProfAvatar] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
@@ -704,6 +751,7 @@ export default function DashboardPage() {
       if (r.success) setStats(r.data);
     } catch {}
   }, []);
+
   const fetchRecentOrders = useCallback(async () => {
     try {
       const res = await fetch("/api/dashboard?action=getOrders");
@@ -711,6 +759,7 @@ export default function DashboardPage() {
       if (r.success) setRecentOrders(r.data.orders.slice(0, 5));
     } catch {}
   }, []);
+
   const fetchOrders = useCallback(async (status = "") => {
     setOrdersLoading(true);
     try {
@@ -723,6 +772,7 @@ export default function DashboardPage() {
     } catch {}
     setOrdersLoading(false);
   }, []);
+
   const fetchUser = useCallback(async () => {
     try {
       const res = await fetch("/api/dashboard?action=getUser");
@@ -773,7 +823,6 @@ export default function DashboardPage() {
     "Photo Development",
   ].includes(noService);
   const showsCopies = noService === "Print" || noService === "Photocopy";
-
   const eoShowsPaper = ["Print", "Photocopy", "Scanning"].includes(eoService);
   const eoShowsPhoto = eoService === "Photo Development";
   const eoShowsColor = eoService === "Print" || eoService === "Scanning";
@@ -785,7 +834,6 @@ export default function DashboardPage() {
   ].includes(eoService);
   const eoShowsCopies = eoService === "Print" || eoService === "Photocopy";
 
-  // Effective quantity for summary — for Print/Photocopy use copies if no quantity yet
   const effectiveQuantity = (() => {
     if (noQuantity !== "" && Number(noQuantity) >= 1) return Number(noQuantity);
     if (showsCopies) return Number(noCopies) || 1;
@@ -805,7 +853,6 @@ export default function DashboardPage() {
         )
       : 0;
 
-  // ── PDF file handling ─────────────────────────────────────────────────────
   async function handleFileChange(files: FileList | null) {
     setNoFiles(files);
     setNoPdfPages(0);
@@ -819,10 +866,9 @@ export default function DashboardPage() {
         if (pages > 0) {
           setNoPdfPages(pages);
           const copies = Number(noCopies) || 1;
-          const total = pages * copies;
-          setNoQuantity(total);
+          setNoQuantity(pages * copies);
           showToast(
-            `PDF: ${pages} pages × ${copies} copies = ${total} total`,
+            `PDF: ${pages} pages × ${copies} copies = ${pages * copies} total`,
             "success",
           );
         }
@@ -842,10 +888,9 @@ export default function DashboardPage() {
         if (pages > 0) {
           setEoPdfPages(pages);
           const copies = Number(eoCopies) || 1;
-          const total = pages * copies;
-          setEoQuantity(total);
+          setEoQuantity(pages * copies);
           showToast(
-            `PDF: ${pages} pages × ${copies} copies = ${total} total`,
+            `PDF: ${pages} pages × ${copies} copies = ${pages * copies} total`,
             "success",
           );
         }
@@ -855,19 +900,13 @@ export default function DashboardPage() {
 
   function handleCopiesChange(val: number | "") {
     setNoCopies(val);
-    if (noPdfPages > 0 && val !== "") {
-      setNoQuantity(noPdfPages * Number(val));
-    }
+    if (noPdfPages > 0 && val !== "") setNoQuantity(noPdfPages * Number(val));
   }
-
   function handleEoCopiesChange(val: number | "") {
     setEoCopies(val);
-    if (eoPdfPages > 0 && val !== "") {
-      setEoQuantity(eoPdfPages * Number(val));
-    }
+    if (eoPdfPages > 0 && val !== "") setEoQuantity(eoPdfPages * Number(val));
   }
 
-  // ── Validation — FIX: don't require quantity for Print/Photocopy at step 0 ─
   function validateStep(n: number): boolean {
     if (n === 1) {
       if (!noService) {
@@ -875,7 +914,6 @@ export default function DashboardPage() {
         return false;
       }
       if (showsCopies) {
-        // For Print/Photocopy: only validate copies count, quantity comes from PDF upload
         if (noCopies === "" || Number(noCopies) < 1) {
           showToast("Number of copies must be at least 1.", "error");
           return false;
@@ -909,11 +947,9 @@ export default function DashboardPage() {
       showToast("Please upload at least one file.", "error");
       return;
     }
-    // Final quantity: if Print/Photocopy and no PDF was counted, use copies directly
     let finalQuantity = Number(noQuantity);
-    if (showsCopies && (finalQuantity < 1 || noQuantity === "")) {
+    if (showsCopies && (finalQuantity < 1 || noQuantity === ""))
       finalQuantity = Number(noCopies) || 1;
-    }
     setNoSubmitting(true);
     try {
       const fd = new FormData();
@@ -1005,7 +1041,6 @@ export default function DashboardPage() {
       showToast("Fill in all required fields", "error");
       return;
     }
-    // Validate quantity for non-copy services
     if (!eoShowsCopies && (eoQuantity === "" || Number(eoQuantity) < 1)) {
       showToast("Quantity must be at least 1.", "error");
       return;
@@ -1018,12 +1053,9 @@ export default function DashboardPage() {
       showToast("Delivery address is required", "error");
       return;
     }
-
     let finalQty = Number(eoQuantity);
-    if (eoShowsCopies && (finalQty < 1 || eoQuantity === "")) {
+    if (eoShowsCopies && (finalQty < 1 || eoQuantity === ""))
       finalQty = Number(eoCopies) || 1;
-    }
-
     setEoSubmitting(true);
     try {
       const fd = new FormData();
@@ -1063,6 +1095,7 @@ export default function DashboardPage() {
     setEoSubmitting(false);
   }
 
+  // ── FIXED handleProfileSubmit ──────────────────────────────────────────────
   async function handleProfileSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: string[] = [];
@@ -1070,16 +1103,15 @@ export default function DashboardPage() {
     if (!profLastName.trim()) errs.push("Last name is required.");
     if (!profEmail.trim() || !/\S+@\S+\.\S+/.test(profEmail))
       errs.push("Valid email is required.");
+    // ✅ FIXED: only validate password if user typed a new one
     const chPw = profNewPw.trim().length > 0;
     if (chPw) {
       if (!profCurrentPw) errs.push("Current password required.");
-      if (!profNewPw) errs.push("New password cannot be empty.");
       if (profNewPw !== profConfirmPw) errs.push("Passwords do not match.");
       if (
-        profNewPw &&
-        (profNewPw.length < 8 ||
-          !/[A-Z]/.test(profNewPw) ||
-          !/[0-9]/.test(profNewPw))
+        profNewPw.length < 8 ||
+        !/[A-Z]/.test(profNewPw) ||
+        !/[0-9]/.test(profNewPw)
       )
         errs.push("Password needs 8+ chars, 1 uppercase, 1 number.");
     }
@@ -1102,7 +1134,11 @@ export default function DashboardPage() {
       }
       const res = await fetch("/api/dashboard", { method: "POST", body: fd });
       if (res.ok) {
-        showToast("Profile updated!");
+        showToast(
+          chPw
+            ? "Profile & password updated!"
+            : "Profile updated successfully!",
+        );
         setUser((u) => ({
           ...u,
           first_name: profFirstName,
@@ -1120,40 +1156,75 @@ export default function DashboardPage() {
     setProfSubmitting(false);
   }
 
+  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      showToast("Image must be under 2MB.", "error");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => setProfAvatar(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  // Password strength
+  const pwStrength = (() => {
+    if (!profNewPw) return 0;
+    let s = 0;
+    if (profNewPw.length >= 8) s++;
+    if (/[A-Z]/.test(profNewPw)) s++;
+    if (/[0-9]/.test(profNewPw)) s++;
+    if (/[^a-zA-Z0-9]/.test(profNewPw)) s++;
+    return s;
+  })();
+  const pwLabel = ["", "Weak", "Fair", "Good", "Strong"][pwStrength];
+  const pwColor = ["", "#ef4444", "#f59e0b", "#3b82f6", "#22c55e"][pwStrength];
+  const pwMatch =
+    profNewPw && profConfirmPw
+      ? profNewPw === profConfirmPw
+        ? "match"
+        : "mismatch"
+      : "";
+
+  const profInitials =
+    `${profFirstName?.[0] ?? ""}${profLastName?.[0] ?? ""}`.toUpperCase() ||
+    "U";
+
   const pricingCards = [
     {
       name: "Print B&W",
-      price: safePrice(prices.print_bw, 1),
+      price: sp(prices.print_bw, 1),
       icon: <IC.Printer />,
       unit: "per page",
     },
     {
       name: "Print Color",
-      price: safePrice(prices.print_color, 2),
+      price: sp(prices.print_color, 2),
       icon: <IC.Printer />,
       unit: "per page",
     },
     {
       name: "Photocopy",
-      price: safePrice(prices.photocopying, 2),
+      price: sp(prices.photocopying, 2),
       icon: <IC.Copy />,
       unit: "per page",
     },
     {
       name: "Scanning",
-      price: safePrice(prices.scanning, 5),
+      price: sp(prices.scanning, 5),
       icon: <IC.Scan />,
       unit: "per page",
     },
     {
       name: "Photo Dev.",
-      price: safePrice(prices.photo_development, 15),
+      price: sp(prices.photo_development, 15),
       icon: <IC.Camera />,
       unit: "per photo",
     },
     {
       name: "Laminating",
-      price: safePrice(prices.laminating, 20),
+      price: sp(prices.laminating, 20),
       icon: <IC.Layers />,
       unit: "per item",
     },
@@ -1177,7 +1248,7 @@ export default function DashboardPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         :root{--grad:linear-gradient(135deg,#5b6dee 0%,#7c3aed 50%,#a855f7 100%);--sidebar:#5b4fa8;--active:#7c3aed;--bg:#f3f4f6;--surface:#fff;--border:#e5e7eb;--text:#111827;--muted:#6b7280;--success:#22c55e;--sw:220px;--hh:56px;--r:12px}
         html,body{height:100%}
@@ -1203,7 +1274,8 @@ export default function DashboardPage() {
         .header-r{display:flex;align-items:center;gap:.45rem;flex-shrink:0}
         .welcome{font-size:.76rem;color:rgba(255,255,255,.82);white-space:nowrap}
         .welcome strong{color:#fff;font-weight:600}
-        .avatar{width:32px;height:32px;background:rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;border:2px solid rgba(255,255,255,.4);flex-shrink:0}
+        .avatar{width:32px;height:32px;background:rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;border:2px solid rgba(255,255,255,.4);flex-shrink:0;overflow:hidden}
+        .avatar img{width:100%;height:100%;object-fit:cover}
         .content{flex:1;overflow-y:auto;overflow-x:hidden;padding:.85rem;background:#f3f4f6}
         .panel{display:none}.panel.active{display:block}
         .p-board{border-radius:var(--r);padding:.8rem .8rem .85rem;margin-bottom:.75rem;background:var(--grad);position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(91,109,238,.3)}
@@ -1296,10 +1368,7 @@ export default function DashboardPage() {
         .modal-title{font-size:.93rem;font-weight:700;color:var(--text)}
         .modal-close{background:none;border:none;font-size:1.5rem;color:var(--muted);cursor:pointer;line-height:1;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
         .modal-close:hover{color:var(--text)}
-        .sec-title{font-size:.93rem;font-weight:700;color:var(--text);margin-bottom:.95rem}
         .divider{border:none;border-top:1px solid var(--border);margin:1.15rem 0}
-        .sec-sub{font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:.22rem}
-        .sec-hint{font-size:.72rem;color:var(--muted);margin-bottom:.8rem}
         .pw-wrap{position:relative}
         .pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
         .pw-toggle:hover{color:var(--text)}
@@ -1309,10 +1378,75 @@ export default function DashboardPage() {
         .sb-overlay{display:none;position:fixed;inset:0;background:rgba(30,27,75,.5);z-index:190}
         .sb-overlay.on{display:block}
         .empty-state{padding:2.2rem;text-align:center;color:var(--muted);font-size:.82rem}
+
+        /* ════════════════════════════════════════
+           NEW PROFILE STYLES
+        ════════════════════════════════════════ */
+        .np-card{background:#fff;border-radius:16px;border:1px solid #e5e7eb;box-shadow:0 2px 16px rgba(0,0,0,.07);overflow:hidden;max-width:700px;font-family:'Inter',sans-serif}
+        .np-bar{height:5px;background:linear-gradient(90deg,#5b6dee 0%,#7c3aed 55%,#a855f7 100%)}
+        .np-hero{position:relative;padding:1.5rem 1.5rem 1.2rem;background:linear-gradient(135deg,#f5f3ff 0%,#ede9fe 60%,#e9d5ff 100%);border-bottom:1px solid #ddd6fe;display:flex;align-items:flex-end;gap:1.1rem}
+        .np-hero::before{content:'';position:absolute;top:0;right:0;width:220px;height:100%;background:radial-gradient(ellipse at top right,rgba(167,139,250,.25) 0%,transparent 70%);pointer-events:none}
+        .np-avatar-wrap{position:relative;flex-shrink:0;cursor:pointer}
+        .np-avatar{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,#5b6dee 0%,#7c3aed 60%,#a855f7 100%);display:flex;align-items:center;justify-content:center;font-size:1.55rem;font-weight:800;color:#fff;border:3px solid #fff;box-shadow:0 4px 18px rgba(124,58,237,.35);overflow:hidden;transition:filter .2s;user-select:none}
+        .np-avatar img{width:100%;height:100%;object-fit:cover}
+        .np-avatar-wrap:hover .np-avatar{filter:brightness(.82)}
+        .np-avatar-overlay{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45);opacity:0;transition:opacity .2s;font-size:.55rem;color:#fff;font-weight:700;letter-spacing:.04em;text-transform:uppercase;flex-direction:column;gap:2px}
+        .np-avatar-wrap:hover .np-avatar-overlay{opacity:1}
+        .np-avatar-input{display:none}
+        .np-hero-info{min-width:0;flex:1;position:relative;z-index:1}
+        .np-hero-name{font-size:1.1rem;font-weight:800;color:#111827;line-height:1.25}
+        .np-hero-email{font-size:.75rem;color:#6b7280;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .np-hero-badges{display:flex;align-items:center;gap:.4rem;margin-top:.45rem;flex-wrap:wrap}
+        .np-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:99px;font-size:.59rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+        .np-badge-purple{background:#ede9fe;color:#7c3aed}
+        .np-badge-green{background:#dcfce7;color:#16a34a}
+        .np-tabs{display:flex;border-bottom:1px solid #e5e7eb;background:#fafafa;padding:0 1.5rem}
+        .np-tab{padding:.72rem 0;margin-right:1.8rem;font-size:.81rem;font-weight:600;color:#6b7280;cursor:pointer;border:none;background:none;font-family:'Inter',sans-serif;border-bottom:2.5px solid transparent;transition:all .18s;display:flex;align-items:center;gap:.38rem;-webkit-tap-highlight-color:transparent}
+        .np-tab:hover{color:#7c3aed}
+        .np-tab.active{color:#7c3aed;border-bottom-color:#7c3aed}
+        .np-body{padding:1.4rem 1.5rem 1.7rem}
+        .np-g2{display:grid;grid-template-columns:1fr 1fr;gap:.88rem}
+        .np-g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem} /* unused but keeping */
+        .np-group{display:flex;flex-direction:column;gap:.28rem}
+        .np-label{font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#374151}
+        .np-hint{font-size:.62rem;color:#9ca3af;margin-top:.12rem}
+        .np-iw{position:relative}
+        .np-input{width:100%;padding:.62rem .85rem;border:1.5px solid #e5e7eb;border-radius:9px;font-family:'Inter',sans-serif;font-size:max(16px,.875rem);color:#111827;background:#fff;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
+        .np-input:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.1)}
+        .np-input::placeholder{color:#c4c9d4}
+        .np-input.has-icon{padding-right:2.6rem}
+        .np-input.inp-err{border-color:#ef4444}
+        .np-input.inp-ok{border-color:#22c55e}
+        .np-ico{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#9ca3af;cursor:pointer;min-width:34px;min-height:34px;display:flex;align-items:center;justify-content:center;transition:color .15s;-webkit-tap-highlight-color:transparent}
+        .np-ico:hover{color:#7c3aed}
+        .np-ico-static{pointer-events:none}
+        .np-pw-bar-wrap{display:flex;align-items:center;gap:.4rem;margin-top:.32rem}
+        .np-pw-bars{display:flex;gap:3px;flex:1}
+        .np-pw-bar{height:3px;border-radius:99px;flex:1;background:#e5e7eb;transition:background .25s}
+        .np-pw-lbl{font-size:.62rem;font-weight:700;min-width:38px;text-align:right}
+        .np-match{display:flex;align-items:center;gap:.3rem;font-size:.63rem;font-weight:600;margin-top:.28rem}
+        .np-divider{border:none;border-top:1px solid #f3f4f6;margin:1.25rem 0}
+        .np-ro-row{display:flex;align-items:center;gap:.55rem;padding:.62rem .85rem;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:9px;margin-bottom:.5rem}
+        .np-ro-icon{color:#9ca3af;flex-shrink:0}
+        .np-ro-lbl{font-size:.6rem;color:#9ca3af;font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+        .np-ro-val{font-size:.83rem;color:#374151;font-weight:500}
+        .np-save-row{display:flex;align-items:center;justify-content:space-between;margin-top:1.35rem;flex-wrap:wrap;gap:.6rem}
+        .np-save-hint{font-size:.68rem;color:#9ca3af}
+        .np-btn{display:inline-flex;align-items:center;gap:.42rem;padding:.68rem 1.45rem;background:linear-gradient(135deg,#5b6dee 0%,#7c3aed 100%);color:#fff;font-family:'Inter',sans-serif;font-size:.86rem;font-weight:700;border:none;border-radius:10px;cursor:pointer;box-shadow:0 4px 14px rgba(91,109,238,.35);transition:all .2s;-webkit-tap-highlight-color:transparent}
+        .np-btn:hover:not(:disabled){box-shadow:0 6px 22px rgba(91,109,238,.48);transform:translateY(-1px)}
+        .np-btn:disabled{opacity:.55;cursor:not-allowed;transform:none!important}
+        .np-btn-ghost{display:inline-flex;align-items:center;gap:.38rem;padding:.63rem 1.1rem;background:transparent;color:#6b7280;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:600;border:1.5px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+        .np-btn-ghost:hover{border-color:#7c3aed;color:#7c3aed;background:#faf5ff}
+        .np-pw-info{background:#faf5ff;border:1.5px solid #ddd6fe;border-radius:10px;padding:.7rem 1rem;margin-bottom:1.1rem;display:flex;align-items:flex-start;gap:.5rem;font-size:.73rem;color:#7c3aed;font-weight:500;line-height:1.5}
+        @keyframes np-spin{to{transform:rotate(360deg)}}
+        .np-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:np-spin .65s linear infinite}
+        @keyframes np-fadeup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+        .np-fadein{animation:np-fadeup .24s ease both}
+
         @media(min-width:1025px){.hamburger{display:none}.p-grid{grid-template-columns:repeat(6,1fr)}.stats-grid{grid-template-columns:repeat(4,1fr)}}
         @media(max-width:1024px){.sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%)}.sidebar.open{transform:translateX(0);box-shadow:4px 0 30px rgba(0,0,0,.25)}.hamburger{display:flex}}
-        @media(max-width:640px){.ro-thead th:nth-child(3),.ro-row td:nth-child(3){display:none}}
-        @media(max-width:480px){.hamburger{display:flex}.welcome{display:none}.content{padding:.6rem}.p-board{padding:.65rem .65rem .7rem;margin-bottom:.6rem}.stats-wrap{margin-bottom:.6rem}.form-row-2{grid-template-columns:1fr}.form-row-3{grid-template-columns:1fr}.modal{padding:.95rem .85rem;max-height:94dvh}.modal-head{top:-.95rem}.ro-thead th,.ro-row td{padding:.5rem .6rem;font-size:.72rem}}
+        @media(max-width:640px){.ro-thead th:nth-child(3),.ro-row td:nth-child(3){display:none}.np-g2{grid-template-columns:1fr}}
+        @media(max-width:480px){.hamburger{display:flex}.welcome{display:none}.content{padding:.6rem}.p-board{padding:.65rem .65rem .7rem;margin-bottom:.6rem}.stats-wrap{margin-bottom:.6rem}.form-row-2{grid-template-columns:1fr}.form-row-3{grid-template-columns:1fr}.modal{padding:.95rem .85rem;max-height:94dvh}.modal-head{top:-.95rem}.ro-thead th,.ro-row td{padding:.5rem .6rem;font-size:.72rem}.np-hero{padding:1.1rem 1rem 1rem}.np-avatar{width:62px;height:62px;font-size:1.3rem}.np-body{padding:1.1rem 1rem 1.4rem}.np-tabs{padding:0 1rem}}
         @media(max-width:359px){.p-grid{grid-template-columns:repeat(2,1fr)}.btn-row{flex-direction:column-reverse}.btn-row.between{flex-direction:row}}
         @media(min-width:641px){.modal-overlay{align-items:center;padding:1rem}.modal{border-radius:14px;max-width:560px;max-height:90vh}.modal-head{top:-1.2rem}}
         @media(min-width:768px){.modal{padding:1.4rem 1.6rem}.modal-head{top:-1.4rem}}
@@ -1389,7 +1523,11 @@ export default function DashboardPage() {
                 Welcome, <strong>{user.first_name || "User"}</strong>
               </span>
               <div className="avatar">
-                {(user.first_name?.[0] || "U").toUpperCase()}
+                {profAvatar ? (
+                  <img src={profAvatar} alt="avatar" />
+                ) : (
+                  (user.first_name?.[0] || "U").toUpperCase()
+                )}
               </div>
             </div>
           </header>
@@ -1445,7 +1583,7 @@ export default function DashboardPage() {
                     iconColor="#d97706"
                   />
                   <StatCard
-                    label="Completed Orders"
+                    label="Completed"
                     value={stats.completedOrders}
                     icon={<IC.Check />}
                     iconBg="#d1fae5"
@@ -1543,9 +1681,8 @@ export default function DashboardPage() {
                     </Fragment>
                   ))}
                 </div>
-
                 <form onSubmit={handleSubmitOrder}>
-                  {/* ── Step 0 ── */}
+                  {/* Step 0 */}
                   <div className={`step-box ${step === 0 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">Select Service</label>
@@ -1571,7 +1708,6 @@ export default function DashboardPage() {
                         ))}
                       </select>
                     </div>
-
                     <div className="form-row-2">
                       {showsCopies ? (
                         <div className="form-group">
@@ -1653,7 +1789,6 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
-
                     {noDelivery === "delivery" && (
                       <div className="form-group">
                         <label className="form-label">Delivery Address</label>
@@ -1678,7 +1813,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* ── Step 1 ── */}
+                  {/* Step 1 */}
                   <div className={`step-box ${step === 1 ? "active" : ""}`}>
                     {showsPaper && (
                       <div className="form-group">
@@ -1784,11 +1919,11 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* ── Step 2 ── */}
+                  {/* Step 2 */}
                   <div className={`step-box ${step === 2 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">
-                        Upload Files
+                        Upload Files{" "}
                         <span
                           style={{
                             fontSize: ".6rem",
@@ -1832,7 +1967,6 @@ export default function DashboardPage() {
                         </div>
                       )}
                     </div>
-
                     <div
                       style={{
                         fontSize: ".8rem",
@@ -1846,7 +1980,6 @@ export default function DashboardPage() {
                     >
                       <IC.Card /> Payment: Cash Only
                     </div>
-
                     <div className="sum-box">
                       <div
                         style={{
@@ -1931,7 +2064,6 @@ export default function DashboardPage() {
                         <span>₱{summaryTotal.toFixed(2)}</span>
                       </div>
                     </div>
-
                     <div
                       className="btn-row between"
                       style={{ marginTop: ".9rem" }}
@@ -2033,132 +2165,543 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* ══ PROFILE ══ */}
+            {/* ══ PROFILE (NEW) ══ */}
             <section
               className={`panel ${activeSection === "profile" ? "active" : ""}`}
             >
-              <div
-                className="card"
-                style={{ padding: "1rem 1rem 1.2rem", maxWidth: "680px" }}
-              >
-                <div className="sec-title">Update Your Profile</div>
-                <form onSubmit={handleProfileSubmit}>
-                  <div className="form-row-2">
-                    <div className="form-group">
-                      <label className="form-label">First Name *</label>
-                      <input
-                        className="form-input"
-                        type="text"
-                        value={profFirstName}
-                        onChange={(e) => setProfFirstName(e.target.value)}
-                        placeholder="Jane"
-                      />
+              <div className="np-card">
+                <div className="np-bar" />
+
+                {/* Hero */}
+                <div className="np-hero">
+                  <div
+                    className="np-avatar-wrap"
+                    onClick={() => avatarInputRef.current?.click()}
+                    title="Change photo"
+                  >
+                    <div className="np-avatar">
+                      {profAvatar ? (
+                        <img src={profAvatar} alt="avatar" />
+                      ) : (
+                        profInitials
+                      )}
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Last Name *</label>
-                      <input
-                        className="form-input"
-                        type="text"
-                        value={profLastName}
-                        onChange={(e) => setProfLastName(e.target.value)}
-                        placeholder="Doe"
-                      />
+                    <div className="np-avatar-overlay">
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#fff"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      >
+                        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                        <circle cx="12" cy="13" r="4" />
+                      </svg>
+                      <span
+                        style={{
+                          fontSize: ".55rem",
+                          letterSpacing: ".04em",
+                          textTransform: "uppercase",
+                          fontWeight: 700,
+                        }}
+                      >
+                        Change
+                      </span>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Email *</label>
-                      <input
-                        className="form-input"
-                        type="email"
-                        inputMode="email"
-                        value={profEmail}
-                        onChange={(e) => setProfEmail(e.target.value)}
-                        placeholder="you@example.com"
-                      />
+                    <input
+                      ref={avatarInputRef}
+                      type="file"
+                      className="np-avatar-input"
+                      accept="image/*"
+                      onChange={handleAvatarChange}
+                    />
+                  </div>
+                  <div className="np-hero-info">
+                    <div className="np-hero-name">
+                      {profFirstName || user.first_name}{" "}
+                      {profLastName || user.last_name}
                     </div>
-                    <div className="form-group">
-                      <label className="form-label">Phone</label>
-                      <input
-                        className="form-input"
-                        type="tel"
-                        inputMode="numeric"
-                        value={profPhone}
-                        onChange={(e) =>
-                          setProfPhone(e.target.value.replace(/[^0-9]/g, ""))
-                        }
-                        placeholder="09123456789"
-                        maxLength={15}
-                      />
+                    <div className="np-hero-email">
+                      {profEmail || user.email}
+                    </div>
+                    <div className="np-hero-badges">
+                      <span className="np-badge np-badge-purple">
+                        <svg
+                          width="9"
+                          height="9"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        >
+                          <circle cx="12" cy="8" r="4" />
+                          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                        </svg>
+                        Customer
+                      </span>
+                      <span className="np-badge np-badge-green">
+                        <svg
+                          width="9"
+                          height="9"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        Active
+                      </span>
                     </div>
                   </div>
-                  <hr className="divider" />
-                  <div className="sec-sub">Change Password</div>
-                  <div className="sec-hint">
-                    Leave blank if you don't want to change your password.
-                  </div>
-                  <div className="form-row-3">
-                    {[
-                      {
-                        label: "Current Password",
-                        val: profCurrentPw,
-                        set: setProfCurrentPw,
-                        show: showCurrPw,
-                        toggle: () => setShowCurrPw((v) => !v),
-                        ph: "Current password",
-                      },
-                      {
-                        label: "New Password",
-                        val: profNewPw,
-                        set: setProfNewPw,
-                        show: showNewPw,
-                        toggle: () => setShowNewPw((v) => !v),
-                        ph: "New password",
-                      },
-                      {
-                        label: "Confirm New",
-                        val: profConfirmPw,
-                        set: setProfConfirmPw,
-                        show: showConfirmPw,
-                        toggle: () => setShowConfirmPw((v) => !v),
-                        ph: "Confirm password",
-                      },
-                    ].map((f) => (
-                      <div key={f.label} className="form-group">
-                        <label className="form-label">{f.label}</label>
-                        <div className="pw-wrap">
-                          <input
-                            className="form-input"
-                            style={{ paddingRight: "2.4rem" }}
-                            type={f.show ? "text" : "password"}
-                            value={f.val}
-                            onChange={(e) => f.set(e.target.value)}
-                            placeholder={f.ph}
-                          />
+                </div>
+
+                {/* Tabs */}
+                <div className="np-tabs">
+                  <button
+                    className={`np-tab ${profTab === "info" ? "active" : ""}`}
+                    onClick={() => setProfTab("info")}
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      <circle cx="12" cy="8" r="4" />
+                      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                    </svg>
+                    Personal Info
+                  </button>
+                  <button
+                    className={`np-tab ${profTab === "password" ? "active" : ""}`}
+                    onClick={() => setProfTab("password")}
+                  >
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    >
+                      <rect x="3" y="11" width="18" height="11" rx="2" />
+                      <path d="M7 11V7a5 5 0 0110 0v4" />
+                    </svg>
+                    Change Password
+                  </button>
+                </div>
+
+                {/* Form */}
+                <div className="np-body">
+                  <form onSubmit={handleProfileSubmit}>
+                    {/* ── Tab: Personal Info ── */}
+                    {profTab === "info" && (
+                      <div className="np-fadein">
+                        <div
+                          className="np-g2"
+                          style={{ marginBottom: ".9rem" }}
+                        >
+                          <div className="np-group">
+                            <label className="np-label">First Name *</label>
+                            <input
+                              className="np-input"
+                              type="text"
+                              value={profFirstName}
+                              onChange={(e) => setProfFirstName(e.target.value)}
+                              placeholder="Jane"
+                            />
+                          </div>
+                          <div className="np-group">
+                            <label className="np-label">Last Name *</label>
+                            <input
+                              className="np-input"
+                              type="text"
+                              value={profLastName}
+                              onChange={(e) => setProfLastName(e.target.value)}
+                              placeholder="Doe"
+                            />
+                          </div>
+                        </div>
+                        <div className="np-g2">
+                          <div className="np-group">
+                            <label className="np-label">Email Address *</label>
+                            <div className="np-iw">
+                              <input
+                                className="np-input has-icon"
+                                type="email"
+                                inputMode="email"
+                                value={profEmail}
+                                onChange={(e) => setProfEmail(e.target.value)}
+                                placeholder="you@example.com"
+                              />
+                              <span className="np-ico np-ico-static">
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                >
+                                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                  <polyline points="22,6 12,13 2,6" />
+                                </svg>
+                              </span>
+                            </div>
+                          </div>
+                          <div className="np-group">
+                            <label className="np-label">Phone Number</label>
+                            <div className="np-iw">
+                              <input
+                                className="np-input has-icon"
+                                type="tel"
+                                inputMode="numeric"
+                                value={profPhone}
+                                onChange={(e) =>
+                                  setProfPhone(
+                                    e.target.value.replace(/[^0-9]/g, ""),
+                                  )
+                                }
+                                placeholder="09123456789"
+                                maxLength={15}
+                              />
+                              <span className="np-ico np-ico-static">
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                >
+                                  <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.69A2 2 0 012 .18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7a2 2 0 011.72 2.02z" />
+                                </svg>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <hr className="np-divider" />
+
+                        <div
+                          style={{
+                            fontSize: ".7rem",
+                            fontWeight: 700,
+                            color: "#9ca3af",
+                            letterSpacing: ".07em",
+                            textTransform: "uppercase",
+                            marginBottom: ".65rem",
+                          }}
+                        >
+                          Account Details
+                        </div>
+                        <div className="np-ro-row">
+                          <span className="np-ro-icon">
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            >
+                              <circle cx="12" cy="8" r="4" />
+                              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                            </svg>
+                          </span>
+                          <div style={{ flex: 1 }}>
+                            <div className="np-ro-lbl">Role</div>
+                            <div className="np-ro-val">Customer</div>
+                          </div>
+                        </div>
+                        <div className="np-ro-row">
+                          <span className="np-ro-icon">
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            >
+                              <rect x="3" y="4" width="18" height="18" rx="2" />
+                              <line x1="16" y1="2" x2="16" y2="6" />
+                              <line x1="8" y1="2" x2="8" y2="6" />
+                              <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                          </span>
+                          <div style={{ flex: 1 }}>
+                            <div className="np-ro-lbl">Member Since</div>
+                            <div className="np-ro-val">
+                              {new Date().toLocaleDateString("en-PH", {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              })}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="np-save-row">
+                          <span className="np-save-hint">
+                            * Required fields
+                          </span>
                           <button
-                            type="button"
-                            className="pw-toggle"
-                            onClick={f.toggle}
+                            type="submit"
+                            className="np-btn"
+                            disabled={profSubmitting}
                           >
-                            {f.show ? <IC.EyeOff /> : <IC.Eye />}
+                            {profSubmitting ? (
+                              <>
+                                <div className="np-spinner" /> Saving…
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#fff"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>{" "}
+                                Save Changes
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={profSubmitting}
-                  >
-                    {profSubmitting ? "Saving..." : "Save Changes"}
-                  </button>
-                </form>
+                    )}
+
+                    {/* ── Tab: Change Password ── */}
+                    {profTab === "password" && (
+                      <div className="np-fadein">
+                        <div className="np-pw-info">
+                          <svg
+                            width="15"
+                            height="15"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            style={{ flexShrink: 0, marginTop: 1 }}
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <line x1="12" y1="8" x2="12" y2="12" />
+                            <line x1="12" y1="16" x2="12.01" y2="16" />
+                          </svg>
+                          Leave all fields blank if you don't want to change
+                          your password. Your name and email will still be
+                          saved.
+                        </div>
+
+                        <div
+                          className="np-group"
+                          style={{ marginBottom: ".9rem" }}
+                        >
+                          <label className="np-label">Current Password</label>
+                          <div className="np-iw">
+                            <input
+                              className="np-input has-icon"
+                              type={showCurrPw ? "text" : "password"}
+                              value={profCurrentPw}
+                              onChange={(e) => setProfCurrentPw(e.target.value)}
+                              placeholder="Enter your current password"
+                            />
+                            <button
+                              type="button"
+                              className="np-ico"
+                              onClick={() => setShowCurrPw((v) => !v)}
+                            >
+                              {showCurrPw ? <IC.EyeOff /> : <IC.Eye />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="np-g2">
+                          <div className="np-group">
+                            <label className="np-label">New Password</label>
+                            <div className="np-iw">
+                              <input
+                                className={`np-input has-icon ${profNewPw ? (pwStrength >= 3 ? "inp-ok" : pwStrength === 1 ? "inp-err" : "") : ""}`}
+                                type={showNewPw ? "text" : "password"}
+                                value={profNewPw}
+                                onChange={(e) => setProfNewPw(e.target.value)}
+                                placeholder="New password"
+                              />
+                              <button
+                                type="button"
+                                className="np-ico"
+                                onClick={() => setShowNewPw((v) => !v)}
+                              >
+                                {showNewPw ? <IC.EyeOff /> : <IC.Eye />}
+                              </button>
+                            </div>
+                            {profNewPw && (
+                              <div className="np-pw-bar-wrap">
+                                <div className="np-pw-bars">
+                                  {[1, 2, 3, 4].map((i) => (
+                                    <div
+                                      key={i}
+                                      className="np-pw-bar"
+                                      style={{
+                                        background:
+                                          i <= pwStrength ? pwColor : "#e5e7eb",
+                                      }}
+                                    />
+                                  ))}
+                                </div>
+                                <div
+                                  className="np-pw-lbl"
+                                  style={{ color: pwColor }}
+                                >
+                                  {pwLabel}
+                                </div>
+                              </div>
+                            )}
+                            <div className="np-hint">
+                              8+ chars · 1 uppercase · 1 number
+                            </div>
+                          </div>
+
+                          <div className="np-group">
+                            <label className="np-label">
+                              Confirm New Password
+                            </label>
+                            <div className="np-iw">
+                              <input
+                                className={`np-input has-icon ${pwMatch === "match" ? "inp-ok" : pwMatch === "mismatch" ? "inp-err" : ""}`}
+                                type={showConfirmPw ? "text" : "password"}
+                                value={profConfirmPw}
+                                onChange={(e) =>
+                                  setProfConfirmPw(e.target.value)
+                                }
+                                placeholder="Confirm password"
+                              />
+                              <button
+                                type="button"
+                                className="np-ico"
+                                onClick={() => setShowConfirmPw((v) => !v)}
+                              >
+                                {showConfirmPw ? <IC.EyeOff /> : <IC.Eye />}
+                              </button>
+                            </div>
+                            {pwMatch === "match" && (
+                              <div
+                                className="np-match"
+                                style={{ color: "#22c55e" }}
+                              >
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                Passwords match
+                              </div>
+                            )}
+                            {pwMatch === "mismatch" && (
+                              <div
+                                className="np-match"
+                                style={{ color: "#ef4444" }}
+                              >
+                                <svg
+                                  width="12"
+                                  height="12"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                >
+                                  <line x1="18" y1="6" x2="6" y2="18" />
+                                  <line x1="6" y1="6" x2="18" y2="18" />
+                                </svg>
+                                Passwords don't match
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="np-save-row">
+                          <button
+                            type="button"
+                            className="np-btn-ghost"
+                            onClick={() => {
+                              setProfCurrentPw("");
+                              setProfNewPw("");
+                              setProfConfirmPw("");
+                            }}
+                          >
+                            Clear
+                          </button>
+                          <button
+                            type="submit"
+                            className="np-btn"
+                            disabled={profSubmitting}
+                          >
+                            {profSubmitting ? (
+                              <>
+                                <div className="np-spinner" /> Saving…
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="#fff"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                >
+                                  <rect
+                                    x="3"
+                                    y="11"
+                                    width="18"
+                                    height="11"
+                                    rx="2"
+                                  />
+                                  <path d="M7 11V7a5 5 0 0110 0v4" />
+                                </svg>{" "}
+                                Update Password
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </form>
+                </div>
               </div>
             </section>
           </main>
         </div>
       </div>
 
-      {/* ══ EDIT MODAL ══ */}
+      {/* ══ EDIT ORDER MODAL ══ */}
       {editModalOpen && editOrder && (
         <div
           className="modal-overlay"
@@ -2201,7 +2744,6 @@ export default function DashboardPage() {
                   ))}
                 </select>
               </div>
-
               <div className="form-row-2">
                 {eoShowsCopies ? (
                   <div className="form-group">
@@ -2275,7 +2817,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-
               {eoDelivery === "delivery" && (
                 <div className="form-group">
                   <label className="form-label">Delivery Address</label>
@@ -2357,7 +2898,6 @@ export default function DashboardPage() {
                   </label>
                 </div>
               )}
-
               <div className="form-group">
                 <label className="form-label">Specifications</label>
                 <textarea
@@ -2400,7 +2940,6 @@ export default function DashboardPage() {
                   </div>
                 )}
               </div>
-
               <button
                 type="submit"
                 className="btn btn-accent btn-full"
