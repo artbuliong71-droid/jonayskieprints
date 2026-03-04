@@ -1226,7 +1226,6 @@ export default function DashboardPage() {
     { id: "dashboard", icon: <IC.Grid />, label: "Dashboard" },
     { id: "new-order", icon: <IC.Plus />, label: "New Order" },
     { id: "orders", icon: <IC.List />, label: "My Orders" },
-    { id: "profile", icon: <IC.User />, label: "Profile" },
   ];
 
   function badgeClass(s: string) {
@@ -1322,7 +1321,8 @@ export default function DashboardPage() {
         .header-r{display:flex;align-items:center;gap:.45rem;flex-shrink:0}
         .welcome{font-size:.76rem;color:rgba(255,255,255,.82);white-space:nowrap}
         .welcome strong{color:#fff;font-weight:600}
-        .avatar{width:32px;height:32px;background:rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;border:2px solid rgba(255,255,255,.4);flex-shrink:0;overflow:hidden}
+        .avatar{width:32px;height:32px;background:rgba(255,255,255,.25);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;border:2px solid rgba(255,255,255,.4);flex-shrink:0;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s}
+        .avatar:hover{transform:scale(1.08);box-shadow:0 0 0 3px rgba(255,255,255,.5)}
         .avatar img{width:100%;height:100%;object-fit:cover}
         .content{flex:1;overflow-y:auto;overflow-x:hidden;padding:.85rem;background:#f3f4f6}
         .panel{display:none}.panel.active{display:block}
@@ -1567,7 +1567,12 @@ export default function DashboardPage() {
               <span className="welcome">
                 Welcome, <strong>{user.first_name || "User"}</strong>
               </span>
-              <div className="avatar">
+              <div
+                className="avatar"
+                onClick={() => setActiveSection("profile")}
+                title="Go to Profile"
+                style={{ cursor: "pointer" }}
+              >
                 {profAvatar ? (
                   <img src={profAvatar} alt="avatar" />
                 ) : (
