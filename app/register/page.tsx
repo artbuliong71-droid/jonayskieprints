@@ -648,7 +648,7 @@ export default function RegisterPage() {
                   className={`form-input with-toggle ${errors.password ? "has-error" : ""}`}
                   type={showPassword ? "text" : "password"}
                   id="password"
-                  placeholder="Min. 8 characters"
+                  placeholder="Password"
                   autoComplete="new-password"
                   value={formData.password}
                   onChange={(e) => setField("password", e.target.value)}

@@ -656,7 +656,6 @@ export default function DashboardPage() {
   const [orderFilter, setOrderFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
 
-  // ── New Order ──────────────────────────────────────────────────────────────
   const [step, setStep] = useState(0);
   const [noService, setNoService] = useState("");
   const [noQuantity, setNoQuantity] = useState<number | "">("");
@@ -672,7 +671,6 @@ export default function DashboardPage() {
   const [noSubmitting, setNoSubmitting] = useState(false);
   const [noPdfPages, setNoPdfPages] = useState(0);
 
-  // ── Edit Order ─────────────────────────────────────────────────────────────
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editOrder, setEditOrder] = useState<Partial<Order> | null>(null);
   const [eoService, setEoService] = useState("");
@@ -688,7 +686,6 @@ export default function DashboardPage() {
   const [eoSubmitting, setEoSubmitting] = useState(false);
   const [eoPdfPages, setEoPdfPages] = useState(0);
 
-  // ── Profile ────────────────────────────────────────────────────────────────
   const [user, setUser] = useState<User>({
     first_name: "",
     last_name: "",
@@ -707,7 +704,6 @@ export default function DashboardPage() {
   const [showNewPw, setShowNewPw] = useState(false);
   const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [profSubmitting, setProfSubmitting] = useState(false);
-  // ── NEW profile state ──
   const [profTab, setProfTab] = useState<"info" | "password">("info");
   const [profAvatar, setProfAvatar] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -1095,7 +1091,6 @@ export default function DashboardPage() {
     setEoSubmitting(false);
   }
 
-  // ── FIXED handleProfileSubmit ──────────────────────────────────────────────
   async function handleProfileSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: string[] = [];
@@ -1103,7 +1098,6 @@ export default function DashboardPage() {
     if (!profLastName.trim()) errs.push("Last name is required.");
     if (!profEmail.trim() || !/\S+@\S+\.\S+/.test(profEmail))
       errs.push("Valid email is required.");
-    // ✅ FIXED: only validate password if user typed a new one
     const chPw = profNewPw.trim().length > 0;
     if (chPw) {
       if (!profCurrentPw) errs.push("Current password required.");
@@ -1168,7 +1162,6 @@ export default function DashboardPage() {
     reader.readAsDataURL(file);
   }
 
-  // Password strength
   const pwStrength = (() => {
     if (!profNewPw) return 0;
     let s = 0;
@@ -1186,7 +1179,6 @@ export default function DashboardPage() {
         ? "match"
         : "mismatch"
       : "";
-
   const profInitials =
     `${profFirstName?.[0] ?? ""}${profLastName?.[0] ?? ""}`.toUpperCase() ||
     "U";
@@ -1250,22 +1242,78 @@ export default function DashboardPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        :root{--grad:linear-gradient(135deg,#5b6dee 0%,#7c3aed 50%,#a855f7 100%);--sidebar:#5b4fa8;--active:#7c3aed;--bg:#f3f4f6;--surface:#fff;--border:#e5e7eb;--text:#111827;--muted:#6b7280;--success:#22c55e;--sw:220px;--hh:56px;--r:12px}
+        :root{
+          --grad:linear-gradient(135deg,#5b6dee 0%,#7c3aed 50%,#a855f7 100%);
+          --sidebar:#ffffff;
+          --sidebar-border:#e5e7eb;
+          --active:#7c3aed;
+          --bg:#f3f4f6;
+          --surface:#fff;
+          --border:#e5e7eb;
+          --text:#111827;
+          --muted:#6b7280;
+          --success:#22c55e;
+          --sw:220px;--hh:56px;--r:12px
+        }
         html,body{height:100%}
         body{font-family:'Inter',sans-serif;background:var(--bg);min-height:100dvh}
         .shell{display:flex;height:100dvh;overflow:hidden}
-        .sidebar{width:var(--sw);background:var(--sidebar);display:flex;flex-direction:column;flex-shrink:0;height:100%;z-index:200;transition:transform .28s cubic-bezier(.4,0,.2,1)}
-        .sb-brand{display:flex;align-items:center;gap:.6rem;padding:.9rem .9rem .8rem;border-bottom:1px solid rgba(255,255,255,.1)}
-        .sb-icon{width:34px;height:34px;background:rgba(255,255,255,.2);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
+
+        /* ── WHITE SIDEBAR ── */
+        .sidebar{
+          width:var(--sw);
+          background:var(--sidebar);
+          border-right:1px solid var(--sidebar-border);
+          display:flex;flex-direction:column;flex-shrink:0;
+          height:100%;z-index:200;
+          transition:transform .28s cubic-bezier(.4,0,.2,1);
+          box-shadow:2px 0 12px rgba(0,0,0,.06);
+        }
+        .sb-brand{
+          display:flex;align-items:center;gap:.6rem;
+          padding:.9rem .9rem .8rem;
+          background:#2563eb;
+          border-bottom:none;
+        }
+        .sb-icon{
+          width:34px;height:34px;
+          background:rgba(255,255,255,.2);
+          border-radius:9px;
+          display:flex;align-items:center;justify-content:center;
+          color:#fff;flex-shrink:0;
+        }
         .sb-name{font-size:.82rem;font-weight:700;color:#fff;line-height:1.25}
-        .sb-name span{display:block;font-size:.56rem;font-weight:400;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.07em}
+        .sb-name span{
+          display:block;font-size:.56rem;font-weight:400;
+          color:rgba(255,255,255,.7);text-transform:uppercase;
+          letter-spacing:.07em;
+        }
         .sb-nav{flex:1;padding:.65rem .55rem;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
-        .nav-btn{display:flex;align-items:center;gap:.55rem;padding:.55rem .75rem;border-radius:8px;color:rgba(255,255,255,.75);font-size:.83rem;font-weight:500;cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all .15s;-webkit-tap-highlight-color:transparent}
-        .nav-btn:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.9)}
-        .nav-btn.active{background:var(--active);color:#fff}
-        .sb-foot{padding:.55rem;border-top:1px solid rgba(255,255,255,.1)}
-        .logout-btn{display:flex;align-items:center;gap:.55rem;padding:.55rem .75rem;border-radius:8px;color:rgba(255,255,255,.4);font-size:.8rem;font-weight:500;cursor:pointer;transition:all .15s;text-decoration:none;width:100%;border:none;background:none;-webkit-tap-highlight-color:transparent}
-        .logout-btn:hover{background:rgba(239,68,68,.2);color:#fca5a5}
+        .nav-btn{
+          display:flex;align-items:center;gap:.55rem;
+          padding:.55rem .75rem;border-radius:8px;
+          color:#6b7280;font-size:.83rem;font-weight:500;
+          cursor:pointer;border:none;background:none;
+          width:100%;text-align:left;
+          transition:all .15s;-webkit-tap-highlight-color:transparent;
+        }
+        .nav-btn:hover{background:#f3f4f6;color:#7c3aed}
+        .nav-btn.active{
+          background:#ede9fe;color:#7c3aed;
+          font-weight:600;
+        }
+        .nav-btn.active svg{color:#7c3aed}
+        .sb-foot{padding:.55rem;border-top:1px solid var(--sidebar-border)}
+        .logout-btn{
+          display:flex;align-items:center;gap:.55rem;
+          padding:.55rem .75rem;border-radius:8px;
+          color:#9ca3af;font-size:.8rem;font-weight:500;
+          cursor:pointer;transition:all .15s;
+          text-decoration:none;width:100%;border:none;background:none;
+          -webkit-tap-highlight-color:transparent;
+        }
+        .logout-btn:hover{background:#fee2e2;color:#ef4444}
+
         .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
         .header{height:var(--hh);background:var(--grad);display:flex;align-items:center;justify-content:space-between;padding:0 1rem;flex-shrink:0;box-shadow:0 2px 12px rgba(91,109,238,.25)}
         .header-l{display:flex;align-items:center;gap:.55rem;min-width:0}
@@ -1379,9 +1427,7 @@ export default function DashboardPage() {
         .sb-overlay.on{display:block}
         .empty-state{padding:2.2rem;text-align:center;color:var(--muted);font-size:.82rem}
 
-        /* ════════════════════════════════════════
-           NEW PROFILE STYLES
-        ════════════════════════════════════════ */
+        /* ── PROFILE ── */
         .np-card{background:#fff;border-radius:16px;border:1px solid #e5e7eb;box-shadow:0 2px 16px rgba(0,0,0,.07);overflow:hidden;max-width:700px;font-family:'Inter',sans-serif}
         .np-bar{height:5px;background:linear-gradient(90deg,#5b6dee 0%,#7c3aed 55%,#a855f7 100%)}
         .np-hero{position:relative;padding:1.5rem 1.5rem 1.2rem;background:linear-gradient(135deg,#f5f3ff 0%,#ede9fe 60%,#e9d5ff 100%);border-bottom:1px solid #ddd6fe;display:flex;align-items:flex-end;gap:1.1rem}
@@ -1406,7 +1452,6 @@ export default function DashboardPage() {
         .np-tab.active{color:#7c3aed;border-bottom-color:#7c3aed}
         .np-body{padding:1.4rem 1.5rem 1.7rem}
         .np-g2{display:grid;grid-template-columns:1fr 1fr;gap:.88rem}
-        .np-g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem} /* unused but keeping */
         .np-group{display:flex;flex-direction:column;gap:.28rem}
         .np-label{font-size:.62rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#374151}
         .np-hint{font-size:.62rem;color:#9ca3af;margin-top:.12rem}
@@ -2165,14 +2210,12 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* ══ PROFILE (NEW) ══ */}
+            {/* ══ PROFILE ══ */}
             <section
               className={`panel ${activeSection === "profile" ? "active" : ""}`}
             >
               <div className="np-card">
                 <div className="np-bar" />
-
-                {/* Hero */}
                 <div className="np-hero">
                   <div
                     className="np-avatar-wrap"
@@ -2259,8 +2302,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
-
-                {/* Tabs */}
                 <div className="np-tabs">
                   <button
                     className={`np-tab ${profTab === "info" ? "active" : ""}`}
@@ -2299,11 +2340,8 @@ export default function DashboardPage() {
                     Change Password
                   </button>
                 </div>
-
-                {/* Form */}
                 <div className="np-body">
                   <form onSubmit={handleProfileSubmit}>
-                    {/* ── Tab: Personal Info ── */}
                     {profTab === "info" && (
                       <div className="np-fadein">
                         <div
@@ -2391,9 +2429,7 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         </div>
-
                         <hr className="np-divider" />
-
                         <div
                           style={{
                             fontSize: ".7rem",
@@ -2454,7 +2490,6 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         </div>
-
                         <div className="np-save-row">
                           <span className="np-save-hint">
                             * Required fields
@@ -2488,8 +2523,6 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     )}
-
-                    {/* ── Tab: Change Password ── */}
                     {profTab === "password" && (
                       <div className="np-fadein">
                         <div className="np-pw-info">
@@ -2511,7 +2544,6 @@ export default function DashboardPage() {
                           your password. Your name and email will still be
                           saved.
                         </div>
-
                         <div
                           className="np-group"
                           style={{ marginBottom: ".9rem" }}
@@ -2534,7 +2566,6 @@ export default function DashboardPage() {
                             </button>
                           </div>
                         </div>
-
                         <div className="np-g2">
                           <div className="np-group">
                             <label className="np-label">New Password</label>
@@ -2580,7 +2611,6 @@ export default function DashboardPage() {
                               8+ chars · 1 uppercase · 1 number
                             </div>
                           </div>
-
                           <div className="np-group">
                             <label className="np-label">
                               Confirm New Password
@@ -2644,7 +2674,6 @@ export default function DashboardPage() {
                             )}
                           </div>
                         </div>
-
                         <div className="np-save-row">
                           <button
                             type="button"

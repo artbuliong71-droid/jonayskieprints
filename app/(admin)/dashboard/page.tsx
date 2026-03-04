@@ -597,7 +597,6 @@ function DashboardDonut({ stats }: { stats: AdminStats }) {
   );
 }
 
-// ─── Recharts ─────────────────────────────────────────────────────────────────
 import {
   PieChart,
   Pie,
@@ -841,7 +840,6 @@ function ReportCharts({ stats }: { stats: AdminStats }) {
   );
 }
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
 function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
   return (
     <div
@@ -895,7 +893,6 @@ function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
   );
 }
 
-// ─── Details Modal ────────────────────────────────────────────────────────────
 function DetailsModal({
   order,
   onClose,
@@ -1050,15 +1047,12 @@ function DetailsModal({
   );
 }
 
-// ─── Files Modal ──────────────────────────────────────────────────────────────
 function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
-  // backward compat: old orders stored plain strings, new orders store { url, resource_type }
   const files: FileData[] = (order.files || []).map((f: any) =>
     typeof f === "string" ? { url: f, resource_type: "image" } : f,
   );
 
   async function handleDownload(url: string, filename: string) {
-    // Ensure .pdf extension is preserved
     const finalName = filename.toLowerCase().endsWith(".pdf")
       ? filename
       : filename + ".pdf";
@@ -1142,7 +1136,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
             <IC.X />
           </button>
         </div>
-
         <div style={{ padding: "1.1rem 1.2rem" }}>
           {files.length === 0 ? (
             <div
@@ -1193,7 +1186,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                   </button>
                 </div>
               )}
-
               <div
                 style={{
                   display: "flex",
@@ -1205,7 +1197,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                   const { url, resource_type } = file;
                   const isImage = resource_type === "image";
                   const isPdf = resource_type === "raw";
-
                   return (
                     <div
                       key={i}
@@ -1217,7 +1208,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                       }}
                     >
                       {isImage ? (
-                        // ── Image: show inline preview ──
                         <div>
                           <img
                             src={url}
@@ -1303,7 +1293,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                           </div>
                         </div>
                       ) : isPdf ? (
-                        // ── PDF: open via Google Docs viewer ──
                         <div
                           style={{
                             padding: ".75rem 1rem",
@@ -1363,7 +1352,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                             }}
                           >
                             <button
-                              // REPLACE with:
                               onClick={() => {
                                 const pdfUrl = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(url)}`;
                                 window.open(pdfUrl, "_blank");
@@ -1407,7 +1395,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                           </div>
                         </div>
                       ) : (
-                        // ── Generic file ──
                         <div
                           style={{
                             padding: ".75rem 1rem",
@@ -1728,22 +1715,71 @@ export default function AdminDashboardPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        :root { --sb: #5b4fa8; --active: #7c3aed; --grad: linear-gradient(135deg, #5b6dee 0%, #7c3aed 50%, #a855f7 100%); --surface: #fff; --bg: #f3f4f6; --border: #e5e7eb; --text: #111827; --muted: #6b7280; --sw: 235px; --hh: 56px; --r: 12px; }
+        :root {
+          --active: #7c3aed;
+          --grad: linear-gradient(135deg, #5b6dee 0%, #7c3aed 50%, #a855f7 100%);
+          --surface: #fff; --bg: #f3f4f6; --border: #e5e7eb;
+          --text: #111827; --muted: #6b7280; --sw: 235px; --hh: 56px; --r: 12px;
+        }
         html, body { height: 100%; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100dvh; }
         .shell { display: flex; height: 100dvh; overflow: hidden; }
-        .sidebar { width: var(--sw); background: var(--sb); display: flex; flex-direction: column; height: 100%; flex-shrink: 0; z-index: 200; transition: transform .28s cubic-bezier(.4,0,.2,1); }
-        .sb-brand { display: flex; align-items: center; gap: .6rem; padding: .9rem .95rem .8rem; border-bottom: 1px solid rgba(255,255,255,.1); }
-        .sb-icon { width: 34px; height: 34px; background: rgba(255,255,255,.18); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
+
+        /* ── WHITE SIDEBAR ── */
+        .sidebar {
+          width: var(--sw);
+          background: #ffffff;
+          border-right: 1px solid #e5e7eb;
+          box-shadow: 2px 0 12px rgba(0,0,0,.06);
+          display: flex; flex-direction: column;
+          height: 100%; flex-shrink: 0; z-index: 200;
+          transition: transform .28s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* ── BLUE BRAND TOP ── */
+        .sb-brand {
+          display: flex; align-items: center; gap: .6rem;
+          padding: .9rem .95rem .8rem;
+          background: #2563eb;
+          border-bottom: none;
+        }
+        .sb-icon {
+          width: 34px; height: 34px;
+          background: rgba(255,255,255,.2);
+          border-radius: 8px;
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; flex-shrink: 0;
+        }
         .sb-name { font-size: .88rem; font-weight: 700; color: #fff; line-height: 1.25; }
-        .sb-sub { font-size: .58rem; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .08em; }
+        .sb-sub { font-size: .58rem; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: .08em; }
+
+        /* ── NAV ── */
         .sb-nav { flex: 1; padding: .65rem .6rem; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-        .nav-btn { display: flex; align-items: center; gap: .55rem; padding: .58rem .75rem; border-radius: 8px; color: rgba(255,255,255,.72); font-size: .83rem; font-weight: 500; cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; -webkit-tap-highlight-color: transparent; }
-        .nav-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
-        .nav-btn.active { background: var(--active); color: #fff; }
-        .sb-foot { padding: .55rem; border-top: 1px solid rgba(255,255,255,.1); }
-        .logout-btn { display: flex; align-items: center; gap: .55rem; padding: .58rem .75rem; border-radius: 8px; color: rgba(255,255,255,.4); font-size: .82rem; font-weight: 500; cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; -webkit-tap-highlight-color: transparent; }
-        .logout-btn:hover { background: rgba(239,68,68,.18); color: #fca5a5; }
+        .nav-btn {
+          display: flex; align-items: center; gap: .55rem;
+          padding: .58rem .75rem; border-radius: 8px;
+          color: #6b7280; font-size: .83rem; font-weight: 500;
+          cursor: pointer; border: none; background: none;
+          width: 100%; text-align: left;
+          transition: background .15s, color .15s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .nav-btn:hover { background: #f3f4f6; color: #7c3aed; }
+        .nav-btn.active { background: #ede9fe; color: #7c3aed; font-weight: 600; }
+
+        /* ── FOOTER ── */
+        .sb-foot { padding: .55rem; border-top: 1px solid #e5e7eb; }
+        .logout-btn {
+          display: flex; align-items: center; gap: .55rem;
+          padding: .58rem .75rem; border-radius: 8px;
+          color: #9ca3af; font-size: .82rem; font-weight: 500;
+          cursor: pointer; border: none; background: none;
+          width: 100%; text-align: left;
+          transition: background .15s, color .15s;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .logout-btn:hover { background: #fee2e2; color: #ef4444; }
+
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
         .header { height: var(--hh); background: var(--grad); display: flex; align-items: center; justify-content: space-between; padding: 0 1rem; flex-shrink: 0; box-shadow: 0 2px 12px rgba(91,109,238,.25); }
         .hdr-l { display: flex; align-items: center; gap: .55rem; min-width: 0; }
