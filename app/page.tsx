@@ -317,8 +317,8 @@ const CONTACT_ITEMS: ContactItem[] = [
     label: "Address",
     value: "Brgy. San Joseph, Santa Rosa, Nueva Ecija",
   },
-  { icon: <IcoPhone />, label: "Phone", value: "+6393 5033 6938" },
-  { icon: <IcoMail />, label: "Email", value: "info@jonayskieprints.com" },
+  { icon: <IcoPhone />, label: "Phone", value: "+63 935 033 6938" },
+  { icon: <IcoMail />, label: "Email", value: "jonalynpascual2704@gmail.com" },
   {
     icon: <IcoClock />,
     label: "Business Hours",
@@ -426,32 +426,17 @@ export default function HomePage() {
         }
         .nav.scrolled { background: #ffffff; box-shadow: 0 1px 8px rgba(0,0,0,0.08); }
 
-        .nav-logo {
-          display: flex; align-items: center; gap: 0.6rem;
-          text-decoration: none; cursor: pointer;
-        }
-        .nav-logo-icon {
-          width: 38px; height: 38px;
-          display: flex; align-items: center; justify-content: center;
-        }
+        .nav-logo { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; cursor: pointer; }
+        .nav-logo-icon { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; }
         .nav-logo-icon img { width: 38px; height: 38px; object-fit: contain; }
-        .nav-logo-text {
-          font-family: 'Playfair Display', serif;
-          font-size: 1.05rem; color: var(--ink);
-          line-height: 1.1; letter-spacing: -0.01em;
-        }
-        .nav-logo-sub {
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.62rem; font-weight: 300; color: var(--muted);
-          letter-spacing: 0.1em; text-transform: uppercase; display: block;
-        }
+        .nav-logo-text { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--ink); line-height: 1.1; letter-spacing: -0.01em; }
+        .nav-logo-sub { font-family: 'DM Sans', sans-serif; font-size: 0.62rem; font-weight: 300; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; display: block; }
 
         .nav-links { display: flex; align-items: center; gap: 0.25rem; list-style: none; }
         .nav-link-btn {
           background: none; border: none; cursor: pointer;
           padding: 0.45rem 0.85rem; border-radius: 6px;
-          font-family: 'DM Sans', sans-serif;
-          font-size: 0.9rem; font-weight: 500; color: var(--ink);
+          font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; color: var(--ink);
           transition: color 0.2s, background 0.2s;
         }
         .nav-link-btn:hover { color: var(--accent); background: rgba(37,99,235,0.06); }
@@ -474,10 +459,7 @@ export default function HomePage() {
           display: inline-flex; align-items: center;
         }
         .btn-register:hover { background: rgba(37,99,235,0.06); }
-        .hamburger {
-          display: none; background: none; border: none; cursor: pointer;
-          color: var(--ink); padding: 4px;
-        }
+        .hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--ink); padding: 4px; }
 
         .mobile-menu {
           position: fixed; top: 68px; left: 0; right: 0;
@@ -532,39 +514,28 @@ export default function HomePage() {
           gap: 3rem; position: relative; z-index: 1; text-align: center;
         }
         .hero-content { flex: 1; max-width: 720px; display: flex; flex-direction: column; align-items: center; }
-
         .hero-tag {
           display: inline-flex; align-items: center; gap: 0.5rem;
-          background: rgba(255,255,255,0.15);
-          border: 1px solid rgba(37,99,235,0.3);
-          color: rgba(255,255,255,0.9);
-          font-size: 0.75rem; font-weight: 600;
+          background: rgba(255,255,255,0.15); border: 1px solid rgba(37,99,235,0.3);
+          color: rgba(255,255,255,0.9); font-size: 0.75rem; font-weight: 600;
           letter-spacing: 0.1em; text-transform: uppercase;
-          padding: 4px 14px; border-radius: 99px;
-          margin-bottom: 1.5rem;
+          padding: 4px 14px; border-radius: 99px; margin-bottom: 1.5rem;
           animation: fadeUp 0.6s ease both;
         }
         .hero-tag svg { color: rgba(255,255,255,0.8); }
-
         .hero-title {
           font-family: 'Playfair Display', serif;
           font-size: clamp(2.8rem, 5.5vw, 4.5rem);
-          line-height: 1.12; color: #fff;
-          margin-bottom: 1.25rem; letter-spacing: -0.02em;
+          line-height: 1.12; color: #fff; margin-bottom: 1.25rem; letter-spacing: -0.02em;
           animation: fadeUp 0.65s 0.1s ease both;
         }
         .hero-title em { color: #93c5fd; font-style: italic; }
-
         .hero-subtitle {
-          font-size: 1rem; color: rgba(255,255,255,0.55);
-          line-height: 1.7; max-width: 520px; font-weight: 300;
-          margin-bottom: 2.25rem; animation: fadeUp 0.65s 0.2s ease both;
+          font-size: 1rem; color: rgba(255,255,255,0.55); line-height: 1.7;
+          max-width: 520px; font-weight: 300; margin-bottom: 2.25rem;
+          animation: fadeUp 0.65s 0.2s ease both;
         }
-
-        .hero-cta {
-          display: flex; gap: 0.85rem; flex-wrap: wrap;
-          animation: fadeUp 0.65s 0.3s ease both; justify-content: center;
-        }
+        .hero-cta { display: flex; gap: 0.85rem; flex-wrap: wrap; animation: fadeUp 0.65s 0.3s ease both; justify-content: center; }
         .cta-primary {
           padding: 0.9rem 2rem; background: #2563eb; color: #fff;
           border: none; border-radius: 99px;
@@ -582,7 +553,6 @@ export default function HomePage() {
           display: inline-flex; align-items: center; gap: 0.4rem;
         }
         .cta-secondary:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.9); }
-
         .hero-stats {
           display: flex; gap: 2.5rem; margin-top: 3rem;
           animation: fadeUp 0.65s 0.45s ease both; justify-content: center;
@@ -597,19 +567,9 @@ export default function HomePage() {
           text-transform: uppercase; color: var(--accent);
           margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.4rem;
         }
-        .section-tag::before {
-          content: ''; display: inline-block; width: 20px; height: 2px;
-          background: var(--accent); border-radius: 2px;
-        }
-        .section-title {
-          font-family: 'Playfair Display', serif;
-          font-size: clamp(1.75rem, 3.5vw, 2.5rem); color: var(--ink);
-          letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 0.75rem;
-        }
-        .section-subtitle {
-          font-size: 0.95rem; color: var(--muted); font-weight: 300;
-          line-height: 1.65; max-width: 500px; margin-bottom: 3rem;
-        }
+        .section-tag::before { content: ''; display: inline-block; width: 20px; height: 2px; background: var(--accent); border-radius: 2px; }
+        .section-title { font-family: 'Playfair Display', serif; font-size: clamp(1.75rem, 3.5vw, 2.5rem); color: var(--ink); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 0.75rem; }
+        .section-subtitle { font-size: 0.95rem; color: var(--muted); font-weight: 300; line-height: 1.65; max-width: 500px; margin-bottom: 3rem; }
 
         /* ── REVEAL ── */
         .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s, transform 0.6s; }
@@ -627,15 +587,19 @@ export default function HomePage() {
         .service-card {
           background: var(--paper); border: 1.5px solid var(--border); border-radius: 14px;
           padding: 2rem 1.5rem; text-align: center;
-          transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s; cursor: default;
+          transition: box-shadow 0.2s; cursor: default;
         }
-        .service-card:hover { border-color: var(--accent); box-shadow: 0 8px 28px rgba(37,99,235,0.1); transform: translateY(-3px); }
+        .service-card:hover {
+          border-color: var(--border);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+          transform: none;
+        }
         .service-icon-wrap {
           width: 56px; height: 56px; background: var(--accent); border-radius: 14px;
           display: flex; align-items: center; justify-content: center;
-          margin: 0 auto 1rem; transition: background 0.2s; color: #fff;
+          margin: 0 auto 1rem; color: #fff;
         }
-        .service-card:hover .service-icon-wrap { background: var(--accent-dark); }
+        .service-card:hover .service-icon-wrap { background: var(--accent); }
         .service-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--ink); margin-bottom: 0.5rem; letter-spacing: -0.01em; }
         .service-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; font-weight: 300; }
 
@@ -645,23 +609,20 @@ export default function HomePage() {
         .about-text p { font-size: 0.95rem; color: #555; line-height: 1.8; font-weight: 300; margin-bottom: 1.25rem; }
         .about-checklist { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; margin-top: 1rem; }
         .about-check { display: flex; align-items: center; gap: 0.65rem; font-size: 0.9rem; color: var(--ink); font-weight: 400; }
-        .check-dot {
-          width: 20px; height: 20px; background: var(--success); border-radius: 50%;
-          display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff;
-        }
+        .check-dot { width: 20px; height: 20px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
         .check-dot svg { width: 11px; height: 11px; }
 
         .feature-cards { display: flex; flex-direction: column; gap: 1rem; }
         .feature-card {
           background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
           padding: 1.25rem 1.5rem; display: flex; gap: 1rem; align-items: flex-start;
-          transition: border-color 0.2s, box-shadow 0.2s;
+          transition: box-shadow 0.2s;
         }
-        .feature-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(37,99,235,0.08); }
-        .feature-icon {
-          width: 42px; height: 42px; background: var(--accent); border-radius: 10px;
-          display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff;
+        .feature-card:hover {
+          border-color: var(--border);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.07);
         }
+        .feature-icon { width: 42px; height: 42px; background: var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
         .feature-title { font-family: 'Playfair Display', serif; font-size: 0.95rem; color: var(--ink); margin-bottom: 0.25rem; }
         .feature-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.55; font-weight: 300; }
 
@@ -671,44 +632,28 @@ export default function HomePage() {
         .contact-card {
           background: var(--paper); border: 1.5px solid var(--border); border-radius: 12px;
           padding: 1.5rem; display: flex; align-items: center; gap: 1rem;
-          transition: border-color 0.2s, box-shadow 0.2s;
+          transition: box-shadow 0.2s;
         }
-        .contact-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(37,99,235,0.08); }
-        .contact-icon {
-          width: 44px; height: 44px; background: var(--accent); border-radius: 10px;
-          display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff;
+        .contact-card:hover {
+          border-color: var(--border);
+          box-shadow: 0 4px 16px rgba(0,0,0,0.07);
         }
+        .contact-icon { width: 44px; height: 44px; background: var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
         .contact-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
         .contact-value { font-size: 0.9rem; color: var(--ink); font-weight: 500; }
 
         /* ── FOOTER ── */
         .footer { background: var(--ink); padding: 3.5rem 2rem 2rem; }
         .footer-inner { max-width: 1100px; margin: 0 auto; }
-        .footer-top {
-          display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 3rem;
-          padding-bottom: 2.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.5rem;
-        }
-        .footer-brand-name {
-          font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #fff;
-          margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.6rem;
-        }
-        .footer-logo-box {
-          width: 32px; height: 32px; background: var(--accent); border-radius: 7px;
-          display: flex; align-items: center; justify-content: center; color: #fff;
-        }
+        .footer-top { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 3rem; padding-bottom: 2.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.5rem; }
+        .footer-brand-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #fff; margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.6rem; }
+        .footer-logo-box { width: 32px; height: 32px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; }
         .footer-brand-desc { font-size: 0.85rem; color: rgba(255,255,255,0.4); line-height: 1.7; font-weight: 300; }
         .footer-col-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; }
         .footer-links { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
-        .footer-link-btn {
-          background: none; border: none; cursor: pointer;
-          color: rgba(255,255,255,0.45); font-family: 'DM Sans', sans-serif;
-          font-size: 0.875rem; font-weight: 400; text-align: left; padding: 0; transition: color 0.2s;
-        }
+        .footer-link-btn { background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.45); font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 400; text-align: left; padding: 0; transition: color 0.2s; }
         .footer-link-btn:hover { color: rgba(255,255,255,0.85); }
-        .footer-bottom {
-          display: flex; justify-content: space-between; align-items: center;
-          font-size: 0.78rem; color: rgba(255,255,255,0.25); flex-wrap: wrap; gap: 0.5rem;
-        }
+        .footer-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: rgba(255,255,255,0.25); flex-wrap: wrap; gap: 0.5rem; }
 
         /* ── KEYFRAMES ── */
         @keyframes fadeUp {
@@ -826,19 +771,16 @@ export default function HomePage() {
                 <IcoPrinterNav />
                 Professional Printing Services
               </div>
-
               <h1 className="hero-title">
                 Print with <em>precision.</em>
                 <br />
                 Deliver with pride.
               </h1>
-
               <p className="hero-subtitle">
                 Your trusted partner for all printing needs — from documents to
                 photos, we&apos;ve got you covered with fast, high-quality
                 results.
               </p>
-
               <div className="hero-cta">
                 <Link href="/register" className="cta-primary">
                   Get Started Free →
@@ -847,7 +789,6 @@ export default function HomePage() {
                   Sign In
                 </Link>
               </div>
-
               <div className="hero-stats">
                 {[
                   { value: "500+", label: "Happy Clients" },
@@ -1014,7 +955,6 @@ export default function HomePage() {
                 Your trusted partner for professional printing services.
               </p>
             </div>
-
             <div>
               <div className="footer-col-title">Quick Links</div>
               <ul className="footer-links">
@@ -1032,7 +972,6 @@ export default function HomePage() {
                 )}
               </ul>
             </div>
-
             <div>
               <div className="footer-col-title">Services</div>
               <ul className="footer-links">
@@ -1055,7 +994,6 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-
           <div className="footer-bottom">
             <span>© 2026 Jonayskie Prints. All rights reserved.</span>
             <span>Brgy. San Joseph, Santa Rosa, Nueva Ecija</span>
