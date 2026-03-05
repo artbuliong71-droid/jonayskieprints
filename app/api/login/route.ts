@@ -63,7 +63,9 @@ export async function POST(req: NextRequest) {
       await user.save();
     }
 
-    const isMatch = await user.comparePassword(password);
+    // ✅ Use bcrypt.compare directly — bypasses Mongoose instance method
+    // entirely, so it works regardless of how the model was cached
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return NextResponse.json(
         { success: false, message: "Invalid email or password." },

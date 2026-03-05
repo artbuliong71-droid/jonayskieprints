@@ -17,9 +17,17 @@ if (!cached) {
 
 export async function connectDB() {
   if (cached.conn) return cached.conn;
+
   if (!cached.promise) {
+    // ✅ Clear all cached models on fresh connection
+    // so they get re-registered with their methods intact
+    Object.keys(mongoose.models).forEach((modelName) => {
+      delete (mongoose.models as any)[modelName];
+    });
+
     cached.promise = mongoose.connect(MONGODB_URI, { bufferCommands: false });
   }
+
   cached.conn = await cached.promise;
   return cached.conn;
 }

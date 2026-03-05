@@ -29,9 +29,6 @@ const UserSchema = new Schema<IUser>({
 });
 
 // ── Hash password before saving ───────────────────────────────────────────────
-// Only hash if:
-// 1. password field was explicitly modified
-// 2. the new value is NOT already a bcrypt hash (prevents double-hashing Google accounts)
 UserSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
   if (!this.password) return;
@@ -49,7 +46,8 @@ UserSchema.methods.comparePassword = async function (
   return bcrypt.compare(candidate, this.password);
 };
 
-// ── Reuse cached model to preserve methods across hot reloads ─────────────────
-export const User =
-  (mongoose.models.User as mongoose.Model<IUser>) ||
-  mongoose.model<IUser>("User", UserSchema);
+// ✅ Always delete cached model first so methods are never stripped
+if (mongoose.models.User) {
+  delete (mongoose.models as any).User;
+}
+export const User = mongoose.model<IUser>("User", UserSchema);
