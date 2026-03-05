@@ -67,7 +67,6 @@ interface Pricing {
   photo_development: number;
   laminating: number;
 }
-// For editing pricing as strings to avoid leading-zero issues
 interface PricingStr {
   print_bw: string;
   print_color: string;
@@ -555,6 +554,21 @@ const IC = {
       <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   ),
+  XCircle: () => (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="15" y1="9" x2="9" y2="15" />
+      <line x1="9" y1="9" x2="15" y2="15" />
+    </svg>
+  ),
 };
 
 // ─── Donut Chart ──────────────────────────────────────────────────────────────
@@ -977,7 +991,6 @@ function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
   );
 }
 
-// ─── Details Modal ────────────────────────────────────────────────────────────
 function DetailsModal({
   order,
   onClose,
@@ -1004,7 +1017,6 @@ function DetailsModal({
     { label: "Status", value: order.status },
     { label: "Date", value: new Date(order.created_at).toLocaleString() },
   ];
-
   return (
     <div
       style={{
@@ -1144,12 +1156,10 @@ function DetailsModal({
   );
 }
 
-// ─── Files Modal ──────────────────────────────────────────────────────────────
 function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
   const files: FileData[] = (order.files || []).map((f: any) =>
     typeof f === "string" ? { url: f, resource_type: "image" } : f,
   );
-
   async function handleDownload(url: string, filename: string) {
     const finalName = filename.toLowerCase().endsWith(".pdf")
       ? filename
@@ -1169,7 +1179,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
       window.open(url, "_blank");
     }
   }
-
   return (
     <div
       style={{
@@ -1574,7 +1583,9 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
   );
 }
 
-// ─── Completed Status Badge (locked) ─────────────────────────────────────────
+// ─── Status Badge Components ──────────────────────────────────────────────────
+
+/** Completed: locked, admin cannot change */
 function CompletedBadge() {
   return (
     <span
@@ -1593,6 +1604,32 @@ function CompletedBadge() {
       }}
     >
       <IC.Check /> Completed <IC.Lock />
+    </span>
+  );
+}
+
+/**
+ * ── KEY FIX ──
+ * Cancelled: locked badge — only customers can cancel, admin cannot change this status.
+ */
+function CancelledBadge() {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        background: "#fee2e2",
+        color: "#991b1b",
+        border: "1.5px solid #fecaca",
+        padding: "4px 10px",
+        borderRadius: 99,
+        fontSize: ".72rem",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <IC.XCircle /> Cancelled <IC.Lock />
     </span>
   );
 }
@@ -1618,8 +1655,6 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [deletedOrders, setDeletedOrders] = useState<DeletedOrder[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-
-  // ── FIX 1: pricing stored as strings to prevent leading-zero issue ──
   const [pricingStr, setPricingStr] = useState<PricingStr>({
     print_bw: "1",
     print_color: "2",
@@ -1628,7 +1663,6 @@ export default function AdminDashboardPage() {
     photo_development: "15",
     laminating: "20",
   });
-
   const [orderFilter, setOrderFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [deletedLoading, setDeletedLoading] = useState(false);
@@ -1667,7 +1701,6 @@ export default function AdminDashboardPage() {
       if (d.success) setStats(d.data);
     } catch {}
   }, []);
-
   const fetchOrders = useCallback(async (status = "") => {
     setOrdersLoading(true);
     try {
@@ -1680,7 +1713,6 @@ export default function AdminDashboardPage() {
     } catch {}
     setOrdersLoading(false);
   }, []);
-
   const fetchDeletedOrders = useCallback(async () => {
     setDeletedLoading(true);
     try {
@@ -1690,7 +1722,6 @@ export default function AdminDashboardPage() {
     } catch {}
     setDeletedLoading(false);
   }, []);
-
   const fetchCustomers = useCallback(async () => {
     try {
       const r = await fetch("/api/admin/customers");
@@ -1698,12 +1729,10 @@ export default function AdminDashboardPage() {
       if (d.success) setCustomers(d.data);
     } catch {}
   }, []);
-
   const fetchPricing = useCallback(async () => {
     try {
       const r = await fetch("/api/pricing");
       const d = await r.json();
-      // Store as strings to avoid leading-zero input issues
       setPricingStr({
         print_bw: String(d.print_bw ?? 1),
         print_color: String(d.print_color ?? 2),
@@ -1719,7 +1748,6 @@ export default function AdminDashboardPage() {
     fetchStats();
     fetchPricing();
   }, [fetchStats, fetchPricing]);
-
   useEffect(() => {
     if (section === "orders") fetchOrders(orderFilter);
     if (section === "customers") fetchCustomers();
@@ -1782,7 +1810,6 @@ export default function AdminDashboardPage() {
     }
   }
 
-  // ── FIX 1: savePricing parses string values to numbers before sending ──
   async function savePricing(e: React.FormEvent) {
     e.preventDefault();
     setPricingSaving(true);
@@ -1846,9 +1873,15 @@ export default function AdminDashboardPage() {
     { key: "laminating", label: "Laminating / item" },
   ];
 
-  // ── FIX 2: helper to render status cell — locked if completed ──
+  /**
+   * ── KEY FIX: StatusCell ──
+   * - completed → locked CompletedBadge (admin cannot change)
+   * - cancelled → locked CancelledBadge (only customers can cancel; admin cannot override)
+   * - pending / in-progress → dropdown WITHOUT "cancelled" option (admin cannot cancel)
+   */
   function StatusCell({ o }: { o: Order }) {
     if (o.status === "completed") return <CompletedBadge />;
+    if (o.status === "cancelled") return <CancelledBadge />;
     return (
       <div className="status-sel-wrap">
         <select
@@ -1861,10 +1894,10 @@ export default function AdminDashboardPage() {
             background: sBg[o.status] || "#fff",
           }}
         >
+          {/* ── "Cancelled" option intentionally removed — only customers can cancel ── */}
           <option value="pending">Pending</option>
           <option value="in-progress">In Progress</option>
           <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
         </select>
       </div>
     );
@@ -2356,7 +2389,6 @@ export default function AdminDashboardPage() {
                   <div className="empty-state">No orders found</div>
                 ) : (
                   <>
-                    {/* Desktop Table */}
                     <div className="desktop-tbl">
                       <div className="tbl-wrap">
                         <table>
@@ -2440,7 +2472,6 @@ export default function AdminDashboardPage() {
                                       : "View"}
                                   </button>
                                 </td>
-                                {/* ── FIX 2: Status locked for completed orders ── */}
                                 <td>
                                   <StatusCell o={o} />
                                 </td>
@@ -2456,12 +2487,17 @@ export default function AdminDashboardPage() {
                                   <button
                                     className="btn btn-danger btn-sm"
                                     onClick={() => deleteOrder(getOrderId(o))}
-                                    disabled={o.status === "completed"}
+                                    disabled={
+                                      o.status === "completed" ||
+                                      o.status === "cancelled"
+                                    }
                                     aria-label="Delete order"
                                     title={
                                       o.status === "completed"
                                         ? "Cannot delete completed orders"
-                                        : "Delete order"
+                                        : o.status === "cancelled"
+                                          ? "Cannot delete cancelled orders"
+                                          : "Delete order"
                                     }
                                   >
                                     <IC.Trash />
@@ -2473,8 +2509,6 @@ export default function AdminDashboardPage() {
                         </table>
                       </div>
                     </div>
-
-                    {/* Mobile Cards */}
                     <div className="mobile-cards">
                       {orders.map((o, i) => (
                         <div key={o._id || o.order_id || i} className="m-card">
@@ -2519,7 +2553,6 @@ export default function AdminDashboardPage() {
                                   : ""}
                               </button>
                             </div>
-                            {/* ── FIX 2: Status locked for completed orders (mobile) ── */}
                             <div style={{ marginTop: ".4rem" }}>
                               <StatusCell o={o} />
                             </div>
@@ -2540,12 +2573,17 @@ export default function AdminDashboardPage() {
                             <button
                               className="btn btn-danger btn-sm"
                               onClick={() => deleteOrder(getOrderId(o))}
-                              disabled={o.status === "completed"}
+                              disabled={
+                                o.status === "completed" ||
+                                o.status === "cancelled"
+                              }
                               aria-label="Delete"
                               title={
                                 o.status === "completed"
                                   ? "Cannot delete completed orders"
-                                  : "Delete order"
+                                  : o.status === "cancelled"
+                                    ? "Cannot delete cancelled orders"
+                                    : "Delete order"
                               }
                             >
                               <IC.Trash />
@@ -2730,7 +2768,6 @@ export default function AdminDashboardPage() {
                 >
                   <IC.PriceTag /> Manage Service Pricing
                 </div>
-                {/* ── FIX 1: form uses string state, parses on save ── */}
                 <form onSubmit={savePricing}>
                   <div className="form-grid">
                     {pricingFields.map(({ key, label }) => (
@@ -2748,7 +2785,6 @@ export default function AdminDashboardPage() {
                             setPricingStr((p) => ({ ...p, [key]: raw }));
                           }}
                           onBlur={(e) => {
-                            // On blur, normalize the value to remove leading zeros
                             const val = parseFloat(e.target.value);
                             setPricingStr((p) => ({
                               ...p,

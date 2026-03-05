@@ -574,6 +574,21 @@ const IC = {
       <polyline points="12 6 12 12 16 14" />
     </svg>
   ),
+  XCircle: () => (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <line x1="15" y1="9" x2="9" y2="15" />
+      <line x1="9" y1="9" x2="15" y2="15" />
+    </svg>
+  ),
 };
 
 function ToastNotification({ toast }: { toast: Toast }) {
@@ -665,6 +680,140 @@ function StatCard({
   );
 }
 
+// ── Cancel Confirmation Modal ────────────────────────────────────────────────
+function CancelConfirmModal({
+  orderId,
+  onConfirm,
+  onClose,
+}: {
+  orderId: number;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,.5)",
+        zIndex: 600,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 14,
+          width: "100%",
+          maxWidth: 380,
+          padding: "1.5rem 1.4rem",
+          boxShadow: "0 24px 60px rgba(0,0,0,.25)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: ".6rem",
+            marginBottom: ".75rem",
+          }}
+        >
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: "50%",
+              background: "#fee2e2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+          </div>
+          <div>
+            <div
+              style={{ fontWeight: 700, fontSize: ".95rem", color: "#111827" }}
+            >
+              Cancel Order
+            </div>
+            <div style={{ fontSize: ".73rem", color: "#6b7280", marginTop: 2 }}>
+              Order #{orderId}
+            </div>
+          </div>
+        </div>
+        <p
+          style={{
+            fontSize: ".83rem",
+            color: "#374151",
+            lineHeight: 1.6,
+            marginBottom: "1.2rem",
+          }}
+        >
+          Are you sure you want to cancel this order? This action{" "}
+          <strong>cannot be undone</strong>.
+        </p>
+        <div
+          style={{ display: "flex", gap: ".6rem", justifyContent: "flex-end" }}
+        >
+          <button
+            onClick={onClose}
+            style={{
+              padding: ".55rem 1.1rem",
+              borderRadius: 8,
+              border: "1.5px solid #e5e7eb",
+              background: "transparent",
+              color: "#374151",
+              fontFamily: "'Inter',sans-serif",
+              fontSize: ".83rem",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Keep Order
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: ".55rem 1.1rem",
+              borderRadius: 8,
+              border: "none",
+              background: "#ef4444",
+              color: "#fff",
+              fontFamily: "'Inter',sans-serif",
+              fontSize: ".83rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              boxShadow: "0 4px 12px rgba(239,68,68,.3)",
+            }}
+          >
+            Yes, Cancel Order
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -685,6 +834,12 @@ export default function DashboardPage() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [orderFilter, setOrderFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
+
+  // ── Cancel modal state ──
+  const [cancelModalOrderId, setCancelModalOrderId] = useState<number | null>(
+    null,
+  );
+  const [cancellingId, setCancellingId] = useState<number | null>(null);
 
   // ── New Order state ──
   const [step, setStep] = useState(0);
@@ -842,6 +997,33 @@ export default function DashboardPage() {
     fetchRecentOrders,
     fetchPrices,
   ]);
+
+  // ── CANCEL ORDER HANDLER ──────────────────────────────────────────────────
+  async function handleCancelOrder(orderId: number) {
+    setCancellingId(orderId);
+    try {
+      const fd = new FormData();
+      fd.append("order_id", String(orderId));
+      fd.append("status", "cancelled");
+      const res = await fetch("/api/dashboard?action=cancelOrder", {
+        method: "POST",
+        body: fd,
+      });
+      const r = await res.json();
+      if (r.success) {
+        showToast("Order cancelled successfully.");
+        fetchOrders(orderFilter);
+        fetchStats();
+        fetchRecentOrders();
+      } else {
+        showToast(r.message || "Could not cancel order.", "error");
+      }
+    } catch {
+      showToast("Network error. Please try again.", "error");
+    }
+    setCancellingId(null);
+    setCancelModalOrderId(null);
+  }
 
   const showsPaper = ["Print", "Photocopy", "Scanning"].includes(noService);
   const showsPhoto = noService === "Photo Development";
@@ -1050,6 +1232,13 @@ export default function DashboardPage() {
         return;
       }
       const o: Order = r.data;
+
+      // ── BLOCK editing cancelled orders ──
+      if (o.status === "cancelled") {
+        showToast("Cancelled orders cannot be edited.", "error");
+        return;
+      }
+
       setEditOrder(o);
       setEoService(o.service);
       setEoQuantity(o.quantity);
@@ -1279,9 +1468,11 @@ export default function DashboardPage() {
   function badgeClass(s: string) {
     return s === "pending"
       ? "badge-pending"
-      : s === "in-progress"
-        ? "badge-progress"
-        : "badge-completed";
+      : s === "cancelled"
+        ? "badge-cancelled"
+        : s === "in-progress"
+          ? "badge-progress"
+          : "badge-completed";
   }
 
   return (
@@ -1358,7 +1549,10 @@ export default function DashboardPage() {
         .ro-row:hover td{background:#f9fafb}
         .ro-id{font-weight:700}.ro-svc{color:var(--muted)}.ro-date{color:var(--muted);white-space:nowrap}.ro-amount{font-weight:700;text-align:right}
         .badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:99px;font-size:.58rem;font-weight:600;white-space:nowrap}
-        .badge-pending{background:#fef3c7;color:#92400e}.badge-completed{background:#d1fae5;color:#065f46}.badge-progress{background:#dbeafe;color:#1e40af}
+        .badge-pending{background:#fef3c7;color:#92400e}
+        .badge-completed{background:#d1fae5;color:#065f46}
+        .badge-progress{background:#dbeafe;color:#1e40af}
+        .badge-cancelled{background:#fee2e2;color:#991b1b}
         .form-group{margin-bottom:.8rem}
         .form-label{display:block;font-size:.64rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text);margin-bottom:.32rem}
         .form-input,.form-select,.form-textarea{width:100%;padding:.58rem .78rem;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:max(16px,.875rem);color:var(--text);background:#fff;transition:border-color .2s,box-shadow .2s;outline:none;-webkit-appearance:none}
@@ -1399,8 +1593,13 @@ export default function DashboardPage() {
         .ord-id{font-weight:600;font-size:.8rem;color:var(--text)}
         .ord-meta{font-size:.7rem;color:var(--muted);margin-top:2px;line-height:1.4}
         .ord-right{text-align:right;flex-shrink:0}
-        .edit-btn{font-size:.68rem;color:#7c3aed;font-weight:600;cursor:pointer;background:none;border:none;padding:0;margin-top:4px;display:flex;align-items:center;gap:3px;justify-content:flex-end;min-height:26px}
+        .ord-actions{display:flex;flex-direction:column;gap:4px;align-items:flex-end;margin-top:4px}
+        .edit-btn{font-size:.68rem;color:#7c3aed;font-weight:600;cursor:pointer;background:none;border:none;padding:0;display:flex;align-items:center;gap:3px;justify-content:flex-end;min-height:26px}
         .edit-btn:hover{opacity:.75}
+        .cancel-btn{font-size:.68rem;color:#ef4444;font-weight:600;cursor:pointer;background:none;border:none;padding:0;display:flex;align-items:center;gap:3px;justify-content:flex-end;min-height:26px}
+        .cancel-btn:hover:not(:disabled){opacity:.75}
+        .cancel-btn:disabled{opacity:.4;cursor:not-allowed}
+        .cancelled-note{font-size:.63rem;color:#9ca3af;margin-top:4px;display:flex;align-items:center;gap:3px;justify-content:flex-end}
         .filter-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem}
         .filter-title{font-size:.98rem;font-weight:700;color:var(--text)}
         .filter-chips{display:flex;gap:.3rem}
@@ -1494,6 +1693,15 @@ export default function DashboardPage() {
 
       <ToastNotification toast={toast} />
 
+      {/* ── CANCEL CONFIRMATION MODAL ── */}
+      {cancelModalOrderId !== null && (
+        <CancelConfirmModal
+          orderId={cancelModalOrderId}
+          onConfirm={() => handleCancelOrder(cancelModalOrderId)}
+          onClose={() => setCancelModalOrderId(null)}
+        />
+      )}
+
       <div className="shell">
         <div
           className={`sb-overlay ${sidebarOpen ? "on" : ""}`}
@@ -1565,7 +1773,6 @@ export default function DashboardPage() {
                 className="avatar"
                 onClick={() => setActiveSection("profile")}
                 title="Go to Profile"
-                style={{ cursor: "pointer" }}
               >
                 {profAvatar ? (
                   <img src={profAvatar} alt="avatar" />
@@ -1726,7 +1933,6 @@ export default function DashboardPage() {
                   ))}
                 </div>
                 <form onSubmit={handleSubmitOrder}>
-                  {/* ── Step 0: Service ── */}
                   <div className={`step-box ${step === 0 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">Select Service</label>
@@ -1836,8 +2042,6 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
-
-                    {/* ── PICKUP TIME FIELD ── */}
                     {noDelivery === "pickup" && (
                       <div className="form-group">
                         <label
@@ -1870,8 +2074,6 @@ export default function DashboardPage() {
                         )}
                       </div>
                     )}
-
-                    {/* ── DELIVERY ADDRESS ── */}
                     {noDelivery === "delivery" && (
                       <div className="form-group">
                         <label className="form-label">Delivery Address</label>
@@ -1896,7 +2098,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* ── Step 1: Details ── */}
                   <div className={`step-box ${step === 1 ? "active" : ""}`}>
                     {showsPaper && (
                       <div className="form-group">
@@ -2002,7 +2203,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* ── Step 2: Review ── */}
                   <div className={`step-box ${step === 2 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">
@@ -2114,7 +2314,6 @@ export default function DashboardPage() {
                             noDelivery.slice(1)}
                         </span>
                       </div>
-                      {/* ── PICKUP TIME IN SUMMARY ── */}
                       {noDelivery === "pickup" && noPickupTime && (
                         <div className="sum-row">
                           <span>Pickup Time</span>
@@ -2213,6 +2412,7 @@ export default function DashboardPage() {
                       o.specifications.length > 75
                         ? o.specifications.slice(0, 75) + "…"
                         : o.specifications;
+                    const isCancelling = cancellingId === o.order_id;
                     return (
                       <div
                         key={`order-${o.order_id ?? idx}`}
@@ -2257,13 +2457,36 @@ export default function DashboardPage() {
                           >
                             {new Date(o.created_at).toLocaleDateString()}
                           </div>
+
+                          {/* ── PENDING: show Edit + Cancel ── */}
                           {o.status === "pending" && (
-                            <button
-                              className="edit-btn"
-                              onClick={() => openEditModal(o.order_id)}
-                            >
-                              <IC.Pencil /> Edit
-                            </button>
+                            <div className="ord-actions">
+                              <button
+                                className="edit-btn"
+                                onClick={() => openEditModal(o.order_id)}
+                              >
+                                <IC.Pencil /> Edit
+                              </button>
+                              <button
+                                className="cancel-btn"
+                                disabled={isCancelling}
+                                onClick={() =>
+                                  setCancelModalOrderId(o.order_id)
+                                }
+                              >
+                                <IC.XCircle />{" "}
+                                {isCancelling
+                                  ? "Cancelling..."
+                                  : "Cancel Order"}
+                              </button>
+                            </div>
+                          )}
+
+                          {/* ── CANCELLED: locked, no edit/cancel ── */}
+                          {o.status === "cancelled" && (
+                            <div className="cancelled-note">
+                              <IC.Lock /> Order cancelled
+                            </div>
                           )}
                         </div>
                       </div>
@@ -2912,8 +3135,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-
-              {/* ── PICKUP TIME IN EDIT MODAL ── */}
               {eoDelivery === "pickup" && (
                 <div className="form-group">
                   <label
@@ -2946,7 +3167,6 @@ export default function DashboardPage() {
                   )}
                 </div>
               )}
-
               {eoDelivery === "delivery" && (
                 <div className="form-group">
                   <label className="form-label">Delivery Address</label>
