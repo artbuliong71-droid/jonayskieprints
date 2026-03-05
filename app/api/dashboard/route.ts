@@ -100,6 +100,20 @@ async function saveUploadedFiles(
   return { files: fileData, pdfPageCount };
 }
 
+// ── Format pickup time for specs string ──────────────────────────────────────
+
+function formatPickupTime(time24: string): string {
+  try {
+    const [h, m] = time24.split(":");
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${m} ${ampm}`;
+  } catch {
+    return time24;
+  }
+}
+
 // ── GET ───────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
@@ -224,7 +238,6 @@ export async function POST(req: NextRequest) {
 
       const service = (formData.get("service") as string)?.trim();
       let quantity = parseInt(formData.get("quantity") as string) || 1;
-      // ── NEW: read copies sent from frontend ──
       const copies = parseInt(formData.get("copies") as string) || 1;
       const specifications = (formData.get("specifications") as string)?.trim();
       const delivery_option = (
@@ -236,6 +249,11 @@ export async function POST(req: NextRequest) {
       const photo_size = (formData.get("photo_size") as string) || "A4";
       const color_option = (formData.get("color_option") as string) || "bw";
       const add_lamination = formData.get("add_lamination") === "on";
+      // ── NEW: pickup_time (only relevant when delivery_option is "pickup") ──
+      const pickup_time =
+        delivery_option === "pickup"
+          ? (formData.get("pickup_time") as string)?.trim() || null
+          : null;
 
       if (!service || !specifications || !delivery_option) {
         return NextResponse.json(
@@ -274,7 +292,6 @@ export async function POST(req: NextRequest) {
           `[createOrder] PDF pages: ${pdfPageCount} × copies: ${copies} = ${quantity}`,
         );
       } else if (isCopyService && quantity < 1) {
-        // No PDF uploaded — use copies count directly
         quantity = copies;
       }
 
@@ -294,6 +311,9 @@ export async function POST(req: NextRequest) {
         );
       else if (copies > 1 && isCopyService)
         specsLines.push(`Copies: ${copies}`);
+      // ── Append pickup time to specs so it's visible everywhere ──
+      if (pickup_time)
+        specsLines.push(`Pickup Time: ${formatPickupTime(pickup_time)}`);
       if (specifications) specsLines.push(specifications);
       const fullSpecs = specsLines.join("\n");
 
@@ -319,6 +339,7 @@ export async function POST(req: NextRequest) {
         specifications: fullSpecs,
         delivery_option,
         delivery_address,
+        pickup_time,
         status: "pending",
         total_amount,
         payment_method: "cash",
@@ -343,7 +364,6 @@ export async function POST(req: NextRequest) {
       const order_id = (formData.get("order_id") as string)?.trim();
       const service = (formData.get("service") as string)?.trim();
       let quantity = parseInt(formData.get("quantity") as string) || 1;
-      // ── NEW: read copies ──
       const copies = parseInt(formData.get("copies") as string) || 1;
       const specifications = (formData.get("specifications") as string)?.trim();
       const delivery_option = (
@@ -355,6 +375,11 @@ export async function POST(req: NextRequest) {
       const photo_size = (formData.get("photo_size") as string) || "A4";
       const color_option = (formData.get("color_option") as string) || "bw";
       const add_lamination = formData.get("add_lamination") === "on";
+      // ── NEW: pickup_time ──
+      const pickup_time =
+        delivery_option === "pickup"
+          ? (formData.get("pickup_time") as string)?.trim() || null
+          : null;
 
       const order = await Order.findOne({ order_id, user_id: session.userId });
       if (!order)
@@ -402,6 +427,9 @@ export async function POST(req: NextRequest) {
         );
       else if (copies > 1 && isCopyService)
         specsLines.push(`Copies: ${copies}`);
+      // ── Append pickup time to specs ──
+      if (pickup_time)
+        specsLines.push(`Pickup Time: ${formatPickupTime(pickup_time)}`);
       if (specifications) specsLines.push(specifications);
 
       const prices = await getPricing();
@@ -419,6 +447,7 @@ export async function POST(req: NextRequest) {
       order.specifications = specsLines.join("\n");
       order.delivery_option = delivery_option as "pickup" | "delivery";
       order.delivery_address = delivery_address;
+      order.pickup_time = pickup_time;
       order.total_amount = total_amount;
       order.files = updatedFiles;
       await order.save();

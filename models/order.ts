@@ -15,6 +15,7 @@ export interface IOrder extends Document {
   specifications: string;
   delivery_option: "pickup" | "delivery";
   delivery_address: string | null;
+  pickup_time: string | null;
   status: "pending" | "in-progress" | "completed" | "cancelled";
   payment_method: string;
   total_amount: number;
@@ -45,6 +46,7 @@ const OrderSchema = new Schema<IOrder>({
     default: "pickup",
   },
   delivery_address: { type: String, default: null },
+  pickup_time: { type: String, default: null },
   status: {
     type: String,
     enum: ["pending", "in-progress", "completed", "cancelled"],

@@ -30,6 +30,7 @@ interface Order {
   total_amount: number;
   delivery_option: string;
   delivery_address?: string;
+  pickup_time?: string | null;
   specifications: string;
   created_at: string;
   files?: FileData[];
@@ -44,6 +45,7 @@ interface DeletedOrder {
   status: string;
   total_amount: number;
   delivery_option: string;
+  pickup_time?: string | null;
   created_at: string;
   deleted_at: string;
 }
@@ -86,6 +88,17 @@ function getFileName(url: string) {
     return decodeURIComponent(url.split("/").pop()?.split("?")[0] || url);
   } catch {
     return url;
+  }
+}
+function formatPickupTime(time24: string): string {
+  try {
+    const [h, m] = time24.split(":");
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${m} ${ampm}`;
+  } catch {
+    return time24;
   }
 }
 
@@ -260,6 +273,20 @@ const IC = {
     <svg
       width="20"
       height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
+  ClockSmall: () => (
+    <svg
+      width="13"
+      height="13"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -473,7 +500,7 @@ const IC = {
   ),
 };
 
-// ─── Simple SVG Donut ─────────────────────────────────────────────────────────
+// ─── Donut Chart ──────────────────────────────────────────────────────────────
 function DashboardDonut({ stats }: { stats: AdminStats }) {
   const total =
     stats.pendingOrders +
@@ -893,6 +920,7 @@ function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
   );
 }
 
+// ─── Details Modal ────────────────────────────────────────────────────────────
 function DetailsModal({
   order,
   onClose,
@@ -900,6 +928,27 @@ function DetailsModal({
   order: Order;
   onClose: () => void;
 }) {
+  const detailRows = [
+    { label: "Customer", value: `${order.user_name} (${order.user_email})` },
+    { label: "Service", value: order.service },
+    { label: "Quantity", value: order.quantity },
+    { label: "Delivery", value: order.delivery_option },
+    // ── Show pickup time only when delivery is pickup and time is set ──
+    ...(order.delivery_option === "pickup" && order.pickup_time
+      ? [
+          {
+            label: "Pickup Time",
+            value: formatPickupTime(order.pickup_time),
+            highlight: true,
+          },
+        ]
+      : []),
+    { label: "Address", value: order.delivery_address || "N/A" },
+    { label: "Amount", value: `₱${Number(order.total_amount).toFixed(2)}` },
+    { label: "Status", value: order.status },
+    { label: "Date", value: new Date(order.created_at).toLocaleString() },
+  ];
+
   return (
     <div
       style={{
@@ -965,25 +1014,7 @@ function DetailsModal({
           </button>
         </div>
         <div style={{ padding: "1.1rem 1.2rem" }}>
-          {[
-            {
-              label: "Customer",
-              value: `${order.user_name} (${order.user_email})`,
-            },
-            { label: "Service", value: order.service },
-            { label: "Quantity", value: order.quantity },
-            { label: "Delivery", value: order.delivery_option },
-            { label: "Address", value: order.delivery_address || "N/A" },
-            {
-              label: "Amount",
-              value: `₱${Number(order.total_amount).toFixed(2)}`,
-            },
-            { label: "Status", value: order.status },
-            {
-              label: "Date",
-              value: new Date(order.created_at).toLocaleString(),
-            },
-          ].map((row) => (
+          {detailRows.map((row: any) => (
             <div
               key={row.label}
               style={{
@@ -1008,7 +1039,17 @@ function DetailsModal({
               >
                 {row.label}
               </div>
-              <div style={{ color: "#111827", flex: 1 }}>
+              <div
+                style={{
+                  color: row.highlight ? "#7c3aed" : "#111827",
+                  flex: 1,
+                  fontWeight: row.highlight ? 700 : 400,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                }}
+              >
+                {row.highlight && <IC.ClockSmall />}
                 {String(row.value)}
               </div>
             </div>
@@ -1047,6 +1088,7 @@ function DetailsModal({
   );
 }
 
+// ─── Files Modal ──────────────────────────────────────────────────────────────
 function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
   const files: FileData[] = (order.files || []).map((f: any) =>
     typeof f === "string" ? { url: f, resource_type: "image" } : f,
@@ -1543,7 +1585,6 @@ export default function AdminDashboardPage() {
       if (d.success) setStats(d.data);
     } catch {}
   }, []);
-
   const fetchOrders = useCallback(async (status = "") => {
     setOrdersLoading(true);
     try {
@@ -1556,7 +1597,6 @@ export default function AdminDashboardPage() {
     } catch {}
     setOrdersLoading(false);
   }, []);
-
   const fetchDeletedOrders = useCallback(async () => {
     setDeletedLoading(true);
     try {
@@ -1566,7 +1606,6 @@ export default function AdminDashboardPage() {
     } catch {}
     setDeletedLoading(false);
   }, []);
-
   const fetchCustomers = useCallback(async () => {
     try {
       const r = await fetch("/api/admin/customers");
@@ -1574,7 +1613,6 @@ export default function AdminDashboardPage() {
       if (d.success) setCustomers(d.data);
     } catch {}
   }, []);
-
   const fetchPricing = useCallback(async () => {
     try {
       const r = await fetch("/api/pricing");
@@ -1594,7 +1632,6 @@ export default function AdminDashboardPage() {
     fetchStats();
     fetchPricing();
   }, [fetchStats, fetchPricing]);
-
   useEffect(() => {
     if (section === "orders") fetchOrders(orderFilter);
     if (section === "customers") fetchCustomers();
@@ -1715,71 +1752,22 @@ export default function AdminDashboardPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-          --active: #7c3aed;
-          --grad: linear-gradient(135deg, #5b6dee 0%, #7c3aed 50%, #a855f7 100%);
-          --surface: #fff; --bg: #f3f4f6; --border: #e5e7eb;
-          --text: #111827; --muted: #6b7280; --sw: 235px; --hh: 56px; --r: 12px;
-        }
+        :root { --active: #7c3aed; --grad: linear-gradient(135deg, #5b6dee 0%, #7c3aed 50%, #a855f7 100%); --surface: #fff; --bg: #f3f4f6; --border: #e5e7eb; --text: #111827; --muted: #6b7280; --sw: 235px; --hh: 56px; --r: 12px; }
         html, body { height: 100%; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); min-height: 100dvh; }
         .shell { display: flex; height: 100dvh; overflow: hidden; }
-
-        /* ── WHITE SIDEBAR ── */
-        .sidebar {
-          width: var(--sw);
-          background: #ffffff;
-          border-right: 1px solid #e5e7eb;
-          box-shadow: 2px 0 12px rgba(0,0,0,.06);
-          display: flex; flex-direction: column;
-          height: 100%; flex-shrink: 0; z-index: 200;
-          transition: transform .28s cubic-bezier(.4,0,.2,1);
-        }
-
-        /* ── BLUE BRAND TOP ── */
-        .sb-brand {
-          display: flex; align-items: center; gap: .6rem;
-          padding: .9rem .95rem .8rem;
-          background: #2563eb;
-          border-bottom: none;
-        }
-        .sb-icon {
-          width: 34px; height: 34px;
-          background: rgba(255,255,255,.2);
-          border-radius: 8px;
-          display: flex; align-items: center; justify-content: center;
-          color: #fff; flex-shrink: 0;
-        }
+        .sidebar { width: var(--sw); background: #ffffff; border-right: 1px solid #e5e7eb; box-shadow: 2px 0 12px rgba(0,0,0,.06); display: flex; flex-direction: column; height: 100%; flex-shrink: 0; z-index: 200; transition: transform .28s cubic-bezier(.4,0,.2,1); }
+        .sb-brand { display: flex; align-items: center; gap: .6rem; padding: .9rem .95rem .8rem; background: #2563eb; }
+        .sb-icon { width: 34px; height: 34px; background: rgba(255,255,255,.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
         .sb-name { font-size: .88rem; font-weight: 700; color: #fff; line-height: 1.25; }
         .sb-sub { font-size: .58rem; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: .08em; }
-
-        /* ── NAV ── */
         .sb-nav { flex: 1; padding: .65rem .6rem; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; }
-        .nav-btn {
-          display: flex; align-items: center; gap: .55rem;
-          padding: .58rem .75rem; border-radius: 8px;
-          color: #6b7280; font-size: .83rem; font-weight: 500;
-          cursor: pointer; border: none; background: none;
-          width: 100%; text-align: left;
-          transition: background .15s, color .15s;
-          -webkit-tap-highlight-color: transparent;
-        }
+        .nav-btn { display: flex; align-items: center; gap: .55rem; padding: .58rem .75rem; border-radius: 8px; color: #6b7280; font-size: .83rem; font-weight: 500; cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; -webkit-tap-highlight-color: transparent; }
         .nav-btn:hover { background: #f3f4f6; color: #7c3aed; }
         .nav-btn.active { background: #ede9fe; color: #7c3aed; font-weight: 600; }
-
-        /* ── FOOTER ── */
         .sb-foot { padding: .55rem; border-top: 1px solid #e5e7eb; }
-        .logout-btn {
-          display: flex; align-items: center; gap: .55rem;
-          padding: .58rem .75rem; border-radius: 8px;
-          color: #9ca3af; font-size: .82rem; font-weight: 500;
-          cursor: pointer; border: none; background: none;
-          width: 100%; text-align: left;
-          transition: background .15s, color .15s;
-          -webkit-tap-highlight-color: transparent;
-        }
+        .logout-btn { display: flex; align-items: center; gap: .55rem; padding: .58rem .75rem; border-radius: 8px; color: #9ca3af; font-size: .82rem; font-weight: 500; cursor: pointer; border: none; background: none; width: 100%; text-align: left; transition: background .15s, color .15s; -webkit-tap-highlight-color: transparent; }
         .logout-btn:hover { background: #fee2e2; color: #ef4444; }
-
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
         .header { height: var(--hh); background: var(--grad); display: flex; align-items: center; justify-content: space-between; padding: 0 1rem; flex-shrink: 0; box-shadow: 0 2px 12px rgba(91,109,238,.25); }
         .hdr-l { display: flex; align-items: center; gap: .55rem; min-width: 0; }
@@ -1845,6 +1833,7 @@ export default function AdminDashboardPage() {
         .m-card-right { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: .3rem; }
         .m-amount { font-size: .78rem; font-weight: 700; color: var(--text); }
         .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: .63rem; font-weight: 600; white-space: nowrap; }
+        .pickup-badge { display: inline-flex; align-items: center; gap: 3px; background: #f5f3ff; color: #7c3aed; font-size: .65rem; font-weight: 600; padding: 2px 7px; border-radius: 99px; white-space: nowrap; border: 1px solid #ddd6fe; }
         .status-sel-wrap { position: relative; display: inline-block; max-width: 130px; width: 100%; }
         .status-sel-wrap::after { content: '▾'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: .7rem; color: var(--muted); pointer-events: none; }
         .status-sel { padding: 3px 24px 3px 7px; border-radius: 6px; border: 1.5px solid var(--border); font-size: .76rem; font-family: 'Inter', sans-serif; color: var(--text); background: #fff; cursor: pointer; outline: none; width: 100%; -webkit-appearance: none; appearance: none; }
@@ -1872,8 +1861,6 @@ export default function AdminDashboardPage() {
         .report-ico { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .report-val { font-size: 1.4rem; font-weight: 700; color: #111827; letter-spacing: -.02em; }
         .report-lbl { font-size: .72rem; color: #6b7280; margin-top: 2px; }
-        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-        @media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
         .sb-overlay { display: none; position: fixed; inset: 0; background: rgba(30,27,75,.5); z-index: 190; }
         .sb-overlay.on { display: block; }
         .empty-state { padding: 2.5rem; text-align: center; color: var(--muted); font-size: .84rem; }
@@ -1905,7 +1892,6 @@ export default function AdminDashboardPage() {
           className={`sb-overlay ${sidebarOpen ? "on" : ""}`}
           onClick={() => setSidebarOpen(false)}
         />
-
         <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
           <div className="sb-brand">
             <div className="sb-icon">
@@ -2009,6 +1995,16 @@ export default function AdminDashboardPage() {
                                 </div>
                                 <div className="notif-item-meta">
                                   {o.user_name} · {o.service}
+                                  {o.pickup_time && (
+                                    <span
+                                      style={{
+                                        marginLeft: 4,
+                                        color: "#7c3aed",
+                                      }}
+                                    >
+                                      · 🕐 {formatPickupTime(o.pickup_time)}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               <div className="notif-item-amount">
@@ -2100,6 +2096,7 @@ export default function AdminDashboardPage() {
                           <th>Order ID</th>
                           <th>Customer</th>
                           <th>Service</th>
+                          <th>Pickup Time</th>
                           <th>Status</th>
                           <th>Amount</th>
                           <th>Date</th>
@@ -2108,7 +2105,7 @@ export default function AdminDashboardPage() {
                       <tbody>
                         {orders.slice(0, 5).length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="empty-state">
+                            <td colSpan={7} className="empty-state">
                               No orders yet
                             </td>
                           </tr>
@@ -2132,6 +2129,24 @@ export default function AdminDashboardPage() {
                                 </div>
                               </td>
                               <td>{o.service}</td>
+                              <td>
+                                {o.delivery_option === "pickup" &&
+                                o.pickup_time ? (
+                                  <span className="pickup-badge">
+                                    <IC.ClockSmall />
+                                    {formatPickupTime(o.pickup_time)}
+                                  </span>
+                                ) : (
+                                  <span
+                                    style={{
+                                      color: "#9ca3af",
+                                      fontSize: ".75rem",
+                                    }}
+                                  >
+                                    —
+                                  </span>
+                                )}
+                              </td>
                               <td>
                                 <span
                                   className="badge"
@@ -2157,36 +2172,37 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
                 <div className="mobile-cards">
-                  {orders.slice(0, 5).length === 0 ? (
-                    <div className="empty-state">No orders yet</div>
-                  ) : (
-                    orders.slice(0, 5).map((o) => (
-                      <div key={o._id || o.order_id} className="m-card">
-                        <div className="m-card-main">
-                          <div className="m-id">#{getOrderDisplay(o)}</div>
-                          <div className="m-name">{o.user_name}</div>
-                          <div className="m-meta">
-                            {o.service} ·{" "}
-                            {new Date(o.created_at).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <div className="m-card-right">
-                          <div className="m-amount">
-                            ₱{Number(o.total_amount).toFixed(2)}
-                          </div>
-                          <span
-                            className="badge"
-                            style={{
-                              background: sBg[o.status] || "#f3f4f6",
-                              color: sColor[o.status] || "#374151",
-                            }}
-                          >
-                            {o.status}
-                          </span>
+                  {orders.slice(0, 5).map((o) => (
+                    <div key={o._id || o.order_id} className="m-card">
+                      <div className="m-card-main">
+                        <div className="m-id">#{getOrderDisplay(o)}</div>
+                        <div className="m-name">{o.user_name}</div>
+                        <div className="m-meta">
+                          {o.service} ·{" "}
+                          {new Date(o.created_at).toLocaleDateString()}
+                          {o.delivery_option === "pickup" && o.pickup_time && (
+                            <span style={{ marginLeft: 4, color: "#7c3aed" }}>
+                              · 🕐 {formatPickupTime(o.pickup_time)}
+                            </span>
+                          )}
                         </div>
                       </div>
-                    ))
-                  )}
+                      <div className="m-card-right">
+                        <div className="m-amount">
+                          ₱{Number(o.total_amount).toFixed(2)}
+                        </div>
+                        <span
+                          className="badge"
+                          style={{
+                            background: sBg[o.status] || "#f3f4f6",
+                            color: sColor[o.status] || "#374151",
+                          }}
+                        >
+                          {o.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </section>
@@ -2226,6 +2242,7 @@ export default function AdminDashboardPage() {
                               <th>Service</th>
                               <th>Qty</th>
                               <th>Delivery</th>
+                              <th>Pickup Time</th>
                               <th>Amount</th>
                               <th>Details</th>
                               <th>Files</th>
@@ -2257,6 +2274,24 @@ export default function AdminDashboardPage() {
                                 <td>{o.quantity}</td>
                                 <td style={{ textTransform: "capitalize" }}>
                                   {o.delivery_option}
+                                </td>
+                                <td>
+                                  {o.delivery_option === "pickup" &&
+                                  o.pickup_time ? (
+                                    <span className="pickup-badge">
+                                      <IC.ClockSmall />
+                                      {formatPickupTime(o.pickup_time)}
+                                    </span>
+                                  ) : (
+                                    <span
+                                      style={{
+                                        color: "#9ca3af",
+                                        fontSize: ".75rem",
+                                      }}
+                                    >
+                                      —
+                                    </span>
+                                  )}
                                 </td>
                                 <td style={{ fontWeight: 600 }}>
                                   ₱{Number(o.total_amount).toFixed(2)}
@@ -2344,6 +2379,18 @@ export default function AdminDashboardPage() {
                             <div className="m-meta">
                               Qty: {o.quantity} · {o.delivery_option} ·{" "}
                               {new Date(o.created_at).toLocaleDateString()}
+                              {o.delivery_option === "pickup" &&
+                                o.pickup_time && (
+                                  <span
+                                    style={{
+                                      marginLeft: 4,
+                                      color: "#7c3aed",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    · 🕐 {formatPickupTime(o.pickup_time)}
+                                  </span>
+                                )}
                             </div>
                             <div
                               className="action-btns"
@@ -2660,6 +2707,7 @@ export default function AdminDashboardPage() {
                               <th>Customer</th>
                               <th>Service</th>
                               <th>Qty</th>
+                              <th>Pickup Time</th>
                               <th>Amount</th>
                               <th>Last Status</th>
                               <th>Order Date</th>
@@ -2687,6 +2735,24 @@ export default function AdminDashboardPage() {
                                 </td>
                                 <td>{o.service}</td>
                                 <td>{o.quantity}</td>
+                                <td>
+                                  {o.delivery_option === "pickup" &&
+                                  o.pickup_time ? (
+                                    <span className="pickup-badge">
+                                      <IC.ClockSmall />
+                                      {formatPickupTime(o.pickup_time)}
+                                    </span>
+                                  ) : (
+                                    <span
+                                      style={{
+                                        color: "#9ca3af",
+                                        fontSize: ".75rem",
+                                      }}
+                                    >
+                                      —
+                                    </span>
+                                  )}
+                                </td>
                                 <td style={{ fontWeight: 600 }}>
                                   ₱{Number(o.total_amount).toFixed(2)}
                                 </td>
@@ -2738,6 +2804,18 @@ export default function AdminDashboardPage() {
                             <div className="m-meta">
                               Qty: {o.quantity} ·{" "}
                               {new Date(o.created_at).toLocaleDateString()}
+                              {o.delivery_option === "pickup" &&
+                                o.pickup_time && (
+                                  <span
+                                    style={{
+                                      marginLeft: 4,
+                                      color: "#7c3aed",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    · 🕐 {formatPickupTime(o.pickup_time)}
+                                  </span>
+                                )}
                             </div>
                             <div
                               className="m-meta"

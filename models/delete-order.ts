@@ -10,24 +10,28 @@ export interface IDeletedOrder extends Document {
   status: string;
   total_amount: number;
   delivery_option: string;
+  pickup_time: string | null;
   specifications: string;
   created_at: Date;
   deleted_at: Date;
 }
 
 const DeletedOrderSchema = new Schema<IDeletedOrder>({
-  original_id:    { type: String, required: true },
-  order_id:       { type: String, default: "" },
-  user_name:      { type: String, default: "" },
-  user_email:     { type: String, default: "" },
-  service:        { type: String, default: "" },
-  quantity:       { type: Number, default: 1 },
-  status:         { type: String, default: "cancelled" },
-  total_amount:   { type: Number, default: 0 },
-  delivery_option:{ type: String, default: "" },
+  original_id: { type: String, required: true },
+  order_id: { type: String, default: "" },
+  user_name: { type: String, default: "" },
+  user_email: { type: String, default: "" },
+  service: { type: String, default: "" },
+  quantity: { type: Number, default: 1 },
+  status: { type: String, default: "cancelled" },
+  total_amount: { type: Number, default: 0 },
+  delivery_option: { type: String, default: "" },
+  pickup_time: { type: String, default: null },
   specifications: { type: String, default: "" },
-  created_at:     { type: Date },
-  deleted_at:     { type: Date, default: Date.now },
+  created_at: { type: Date },
+  deleted_at: { type: Date, default: Date.now },
 });
 
-export const DeletedOrder = models.DeletedOrder || model<IDeletedOrder>("DeletedOrder", DeletedOrderSchema);
+export const DeletedOrder =
+  models.DeletedOrder ||
+  model<IDeletedOrder>("DeletedOrder", DeletedOrderSchema);

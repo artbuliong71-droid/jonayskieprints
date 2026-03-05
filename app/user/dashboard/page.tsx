@@ -25,6 +25,7 @@ interface Order {
   specifications: string;
   delivery_option: string;
   delivery_address: string | null;
+  pickup_time: string | null;
   status: string;
   payment_method: string;
   created_at: string;
@@ -81,6 +82,18 @@ async function getPdfPageCount(file: File): Promise<number> {
   }
 }
 
+function formatPickupTime(time24: string): string {
+  try {
+    const [h, m] = time24.split(":");
+    const hour = parseInt(h);
+    const ampm = hour >= 12 ? "PM" : "AM";
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${m} ${ampm}`;
+  } catch {
+    return time24;
+  }
+}
+
 function extractUserSpecs(specifications: string): string {
   return specifications
     .split("\n")
@@ -95,7 +108,8 @@ function extractUserSpecs(specifications: string): string {
           !t.startsWith("Photo Size:") &&
           !t.startsWith("Add Lamination: Yes") &&
           !t.startsWith("PDF Pages:") &&
-          !t.startsWith("Copies:"))
+          !t.startsWith("Copies:") &&
+          !t.startsWith("Pickup Time:"))
       );
     })
     .join("\n")
@@ -108,11 +122,13 @@ function parseSpecsOptions(specifications: string) {
     photoSize: string | null;
     colorOption: ColorOption | null;
     addLamination: boolean;
+    pickupTime: string | null;
   } = {
     paperSize: null,
     photoSize: null,
     colorOption: null,
     addLamination: false,
+    pickupTime: null,
   };
   for (const line of specifications.split("\n")) {
     const t = line.trim();
@@ -544,6 +560,20 @@ const IC = {
       <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   ),
+  ClockSmall: () => (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
 };
 
 function ToastNotification({ toast }: { toast: Toast }) {
@@ -656,12 +686,14 @@ export default function DashboardPage() {
   const [orderFilter, setOrderFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
 
+  // ── New Order state ──
   const [step, setStep] = useState(0);
   const [noService, setNoService] = useState("");
   const [noQuantity, setNoQuantity] = useState<number | "">("");
   const [noCopies, setNoCopies] = useState<number | "">(1);
   const [noDelivery, setNoDelivery] = useState<DeliveryOption>("pickup");
   const [noAddress, setNoAddress] = useState("");
+  const [noPickupTime, setNoPickupTime] = useState("");
   const [noPaperSize, setNoPaperSize] = useState<PaperSize>("A4");
   const [noPhotoSize, setNoPhotoSize] = useState("A4");
   const [noColorOption, setNoColorOption] = useState<ColorOption>("bw");
@@ -671,6 +703,7 @@ export default function DashboardPage() {
   const [noSubmitting, setNoSubmitting] = useState(false);
   const [noPdfPages, setNoPdfPages] = useState(0);
 
+  // ── Edit Order state ──
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editOrder, setEditOrder] = useState<Partial<Order> | null>(null);
   const [eoService, setEoService] = useState("");
@@ -678,6 +711,7 @@ export default function DashboardPage() {
   const [eoCopies, setEoCopies] = useState<number | "">(1);
   const [eoDelivery, setEoDelivery] = useState<DeliveryOption>("pickup");
   const [eoAddress, setEoAddress] = useState("");
+  const [eoPickupTime, setEoPickupTime] = useState("");
   const [eoPaperSize, setEoPaperSize] = useState<PaperSize>("A4");
   const [eoPhotoSize, setEoPhotoSize] = useState("A4");
   const [eoColorOption, setEoColorOption] = useState<ColorOption>("bw");
@@ -686,6 +720,7 @@ export default function DashboardPage() {
   const [eoSubmitting, setEoSubmitting] = useState(false);
   const [eoPdfPages, setEoPdfPages] = useState(0);
 
+  // ── Profile state ──
   const [user, setUser] = useState<User>({
     first_name: "",
     last_name: "",
@@ -707,7 +742,6 @@ export default function DashboardPage() {
   const [profTab, setProfTab] = useState<"info" | "password">("info");
   const [profAvatar, setProfAvatar] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -920,6 +954,10 @@ export default function DashboardPage() {
           return false;
         }
       }
+      if (noDelivery === "pickup" && !noPickupTime) {
+        showToast("Please select a preferred pickup time.", "error");
+        return false;
+      }
       if (noDelivery === "delivery" && !noAddress.trim()) {
         showToast("Delivery address is required.", "error");
         return false;
@@ -954,6 +992,8 @@ export default function DashboardPage() {
       fd.append("specifications", noSpecs);
       fd.append("delivery_option", noDelivery);
       if (noDelivery === "delivery") fd.append("delivery_address", noAddress);
+      if (noDelivery === "pickup" && noPickupTime)
+        fd.append("pickup_time", noPickupTime);
       fd.append("paper_size", noPaperSize);
       fd.append("photo_size", noPhotoSize);
       fd.append("color_option", noColorOption);
@@ -988,6 +1028,7 @@ export default function DashboardPage() {
     setNoCopies(1);
     setNoDelivery("pickup");
     setNoAddress("");
+    setNoPickupTime("");
     setNoPaperSize("A4");
     setNoPhotoSize("A4");
     setNoColorOption("bw");
@@ -1015,6 +1056,7 @@ export default function DashboardPage() {
       setEoCopies(1);
       setEoDelivery(o.delivery_option as DeliveryOption);
       setEoAddress(o.delivery_address || "");
+      setEoPickupTime(o.pickup_time || "");
       setEoSpecs(extractUserSpecs(o.specifications));
       const p = parseSpecsOptions(o.specifications);
       setEoPaperSize(p.paperSize || "A4");
@@ -1045,6 +1087,10 @@ export default function DashboardPage() {
       showToast("Number of copies must be at least 1.", "error");
       return;
     }
+    if (eoDelivery === "pickup" && !eoPickupTime) {
+      showToast("Please select a preferred pickup time.", "error");
+      return;
+    }
     if (eoDelivery === "delivery" && !eoAddress.trim()) {
       showToast("Delivery address is required", "error");
       return;
@@ -1061,6 +1107,8 @@ export default function DashboardPage() {
       fd.append("specifications", eoSpecs);
       fd.append("delivery_option", eoDelivery);
       if (eoDelivery === "delivery") fd.append("delivery_address", eoAddress);
+      if (eoDelivery === "pickup" && eoPickupTime)
+        fd.append("pickup_time", eoPickupTime);
       fd.append("paper_size", eoPaperSize);
       fd.append("photo_size", eoPhotoSize);
       fd.append("color_option", eoColorOption);
@@ -1243,76 +1291,26 @@ export default function DashboardPage() {
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
         :root{
           --grad:linear-gradient(135deg,#5b6dee 0%,#7c3aed 50%,#a855f7 100%);
-          --sidebar:#ffffff;
-          --sidebar-border:#e5e7eb;
-          --active:#7c3aed;
-          --bg:#f3f4f6;
-          --surface:#fff;
-          --border:#e5e7eb;
-          --text:#111827;
-          --muted:#6b7280;
-          --success:#22c55e;
+          --sidebar:#ffffff;--sidebar-border:#e5e7eb;--active:#7c3aed;
+          --bg:#f3f4f6;--surface:#fff;--border:#e5e7eb;
+          --text:#111827;--muted:#6b7280;--success:#22c55e;
           --sw:220px;--hh:56px;--r:12px
         }
         html,body{height:100%}
         body{font-family:'Inter',sans-serif;background:var(--bg);min-height:100dvh}
         .shell{display:flex;height:100dvh;overflow:hidden}
-
-        /* ── WHITE SIDEBAR ── */
-        .sidebar{
-          width:var(--sw);
-          background:var(--sidebar);
-          border-right:1px solid var(--sidebar-border);
-          display:flex;flex-direction:column;flex-shrink:0;
-          height:100%;z-index:200;
-          transition:transform .28s cubic-bezier(.4,0,.2,1);
-          box-shadow:2px 0 12px rgba(0,0,0,.06);
-        }
-        .sb-brand{
-          display:flex;align-items:center;gap:.6rem;
-          padding:.9rem .9rem .8rem;
-          background:#2563eb;
-          border-bottom:none;
-        }
-        .sb-icon{
-          width:34px;height:34px;
-          background:rgba(255,255,255,.2);
-          border-radius:9px;
-          display:flex;align-items:center;justify-content:center;
-          color:#fff;flex-shrink:0;
-        }
+        .sidebar{width:var(--sw);background:var(--sidebar);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;flex-shrink:0;height:100%;z-index:200;transition:transform .28s cubic-bezier(.4,0,.2,1);box-shadow:2px 0 12px rgba(0,0,0,.06)}
+        .sb-brand{display:flex;align-items:center;gap:.6rem;padding:.9rem .9rem .8rem;background:#2563eb}
+        .sb-icon{width:34px;height:34px;background:rgba(255,255,255,.2);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
         .sb-name{font-size:.82rem;font-weight:700;color:#fff;line-height:1.25}
-        .sb-name span{
-          display:block;font-size:.56rem;font-weight:400;
-          color:rgba(255,255,255,.7);text-transform:uppercase;
-          letter-spacing:.07em;
-        }
+        .sb-name span{display:block;font-size:.56rem;font-weight:400;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.07em}
         .sb-nav{flex:1;padding:.65rem .55rem;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
-        .nav-btn{
-          display:flex;align-items:center;gap:.55rem;
-          padding:.55rem .75rem;border-radius:8px;
-          color:#6b7280;font-size:.83rem;font-weight:500;
-          cursor:pointer;border:none;background:none;
-          width:100%;text-align:left;
-          transition:all .15s;-webkit-tap-highlight-color:transparent;
-        }
+        .nav-btn{display:flex;align-items:center;gap:.55rem;padding:.55rem .75rem;border-radius:8px;color:#6b7280;font-size:.83rem;font-weight:500;cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all .15s;-webkit-tap-highlight-color:transparent}
         .nav-btn:hover{background:#f3f4f6;color:#7c3aed}
-        .nav-btn.active{
-          background:#ede9fe;color:#7c3aed;
-          font-weight:600;
-        }
-        .nav-btn.active svg{color:#7c3aed}
+        .nav-btn.active{background:#ede9fe;color:#7c3aed;font-weight:600}
         .sb-foot{padding:.55rem;border-top:1px solid var(--sidebar-border)}
-        .logout-btn{
-          display:flex;align-items:center;gap:.55rem;
-          padding:.55rem .75rem;border-radius:8px;
-          color:#9ca3af;font-size:.8rem;font-weight:500;
-          cursor:pointer;transition:all .15s;
-          text-decoration:none;width:100%;border:none;background:none;
-          -webkit-tap-highlight-color:transparent;
-        }
+        .logout-btn{display:flex;align-items:center;gap:.55rem;padding:.55rem .75rem;border-radius:8px;color:#9ca3af;font-size:.8rem;font-weight:500;cursor:pointer;transition:all .15s;text-decoration:none;width:100%;border:none;background:none;-webkit-tap-highlight-color:transparent}
         .logout-btn:hover{background:#fee2e2;color:#ef4444}
-
         .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
         .header{height:var(--hh);background:var(--grad);display:flex;align-items:center;justify-content:space-between;padding:0 1rem;flex-shrink:0;box-shadow:0 2px 12px rgba(91,109,238,.25)}
         .header-l{display:flex;align-items:center;gap:.55rem;min-width:0}
@@ -1367,7 +1365,6 @@ export default function DashboardPage() {
         .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.1)}
         .form-textarea{resize:vertical;min-height:70px}
         .form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}
-        .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem}
         .radio-group{display:flex;gap:.9rem;flex-wrap:wrap}
         .radio-label{display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.83rem;color:#555;padding:4px 0}
         .radio-label input{accent-color:var(--active);width:16px;height:16px}
@@ -1416,7 +1413,7 @@ export default function DashboardPage() {
         .modal-title{font-size:.93rem;font-weight:700;color:var(--text)}
         .modal-close{background:none;border:none;font-size:1.5rem;color:var(--muted);cursor:pointer;line-height:1;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
         .modal-close:hover{color:var(--text)}
-        .divider{border:none;border-top:1px solid var(--border);margin:1.15rem 0}
+        .pickup-time-box{background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:8px;padding:.5rem .75rem;margin-top:.5rem;display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:#7c3aed;font-weight:600}
         .pw-wrap{position:relative}
         .pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
         .pw-toggle:hover{color:var(--text)}
@@ -1426,8 +1423,6 @@ export default function DashboardPage() {
         .sb-overlay{display:none;position:fixed;inset:0;background:rgba(30,27,75,.5);z-index:190}
         .sb-overlay.on{display:block}
         .empty-state{padding:2.2rem;text-align:center;color:var(--muted);font-size:.82rem}
-
-        /* ── PROFILE ── */
         .np-card{background:#fff;border-radius:16px;border:1px solid #e5e7eb;box-shadow:0 2px 16px rgba(0,0,0,.07);overflow:hidden;max-width:700px;font-family:'Inter',sans-serif}
         .np-bar{height:5px;background:linear-gradient(90deg,#5b6dee 0%,#7c3aed 55%,#a855f7 100%)}
         .np-hero{position:relative;padding:1.5rem 1.5rem 1.2rem;background:linear-gradient(135deg,#f5f3ff 0%,#ede9fe 60%,#e9d5ff 100%);border-bottom:1px solid #ddd6fe;display:flex;align-items:flex-end;gap:1.1rem}
@@ -1487,11 +1482,10 @@ export default function DashboardPage() {
         .np-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:np-spin .65s linear infinite}
         @keyframes np-fadeup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
         .np-fadein{animation:np-fadeup .24s ease both}
-
         @media(min-width:1025px){.hamburger{display:none}.p-grid{grid-template-columns:repeat(6,1fr)}.stats-grid{grid-template-columns:repeat(4,1fr)}}
         @media(max-width:1024px){.sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%)}.sidebar.open{transform:translateX(0);box-shadow:4px 0 30px rgba(0,0,0,.25)}.hamburger{display:flex}}
         @media(max-width:640px){.ro-thead th:nth-child(3),.ro-row td:nth-child(3){display:none}.np-g2{grid-template-columns:1fr}}
-        @media(max-width:480px){.hamburger{display:flex}.welcome{display:none}.content{padding:.6rem}.p-board{padding:.65rem .65rem .7rem;margin-bottom:.6rem}.stats-wrap{margin-bottom:.6rem}.form-row-2{grid-template-columns:1fr}.form-row-3{grid-template-columns:1fr}.modal{padding:.95rem .85rem;max-height:94dvh}.modal-head{top:-.95rem}.ro-thead th,.ro-row td{padding:.5rem .6rem;font-size:.72rem}.np-hero{padding:1.1rem 1rem 1rem}.np-avatar{width:62px;height:62px;font-size:1.3rem}.np-body{padding:1.1rem 1rem 1.4rem}.np-tabs{padding:0 1rem}}
+        @media(max-width:480px){.hamburger{display:flex}.welcome{display:none}.content{padding:.6rem}.p-board{padding:.65rem .65rem .7rem;margin-bottom:.6rem}.stats-wrap{margin-bottom:.6rem}.form-row-2{grid-template-columns:1fr}.modal{padding:.95rem .85rem;max-height:94dvh}.modal-head{top:-.95rem}.ro-thead th,.ro-row td{padding:.5rem .6rem;font-size:.72rem}.np-hero{padding:1.1rem 1rem 1rem}.np-avatar{width:62px;height:62px;font-size:1.3rem}.np-body{padding:1.1rem 1rem 1.4rem}.np-tabs{padding:0 1rem}}
         @media(max-width:359px){.p-grid{grid-template-columns:repeat(2,1fr)}.btn-row{flex-direction:column-reverse}.btn-row.between{flex-direction:row}}
         @media(min-width:641px){.modal-overlay{align-items:center;padding:1rem}.modal{border-radius:14px;max-width:560px;max-height:90vh}.modal-head{top:-1.2rem}}
         @media(min-width:768px){.modal{padding:1.4rem 1.6rem}.modal-head{top:-1.4rem}}
@@ -1732,7 +1726,7 @@ export default function DashboardPage() {
                   ))}
                 </div>
                 <form onSubmit={handleSubmitOrder}>
-                  {/* Step 0 */}
+                  {/* ── Step 0: Service ── */}
                   <div className={`step-box ${step === 0 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">Select Service</label>
@@ -1822,7 +1816,10 @@ export default function DashboardPage() {
                                   name="no_del"
                                   value={d}
                                   checked={noDelivery === d}
-                                  onChange={() => setNoDelivery(d)}
+                                  onChange={() => {
+                                    setNoDelivery(d);
+                                    setNoPickupTime("");
+                                  }}
                                 />
                                 {d === "pickup" ? (
                                   <>
@@ -1839,6 +1836,42 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* ── PICKUP TIME FIELD ── */}
+                    {noDelivery === "pickup" && (
+                      <div className="form-group">
+                        <label
+                          className="form-label"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: ".35rem",
+                          }}
+                        >
+                          <IC.ClockSmall /> Preferred Pickup Time
+                        </label>
+                        <input
+                          className="form-input"
+                          type="time"
+                          value={noPickupTime}
+                          min="08:00"
+                          max="18:00"
+                          onChange={(e) => setNoPickupTime(e.target.value)}
+                          required
+                        />
+                        <div className="hint-text">
+                          Business hours: 8:00 AM – 6:00 PM
+                        </div>
+                        {noPickupTime && (
+                          <div className="pickup-time-box">
+                            <IC.ClockSmall /> Pickup at{" "}
+                            {formatPickupTime(noPickupTime)}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── DELIVERY ADDRESS ── */}
                     {noDelivery === "delivery" && (
                       <div className="form-group">
                         <label className="form-label">Delivery Address</label>
@@ -1863,7 +1896,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Step 1 */}
+                  {/* ── Step 1: Details ── */}
                   <div className={`step-box ${step === 1 ? "active" : ""}`}>
                     {showsPaper && (
                       <div className="form-group">
@@ -1969,7 +2002,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Step 2 */}
+                  {/* ── Step 2: Review ── */}
                   <div className={`step-box ${step === 2 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">
@@ -2081,6 +2114,15 @@ export default function DashboardPage() {
                             noDelivery.slice(1)}
                         </span>
                       </div>
+                      {/* ── PICKUP TIME IN SUMMARY ── */}
+                      {noDelivery === "pickup" && noPickupTime && (
+                        <div className="sum-row">
+                          <span>Pickup Time</span>
+                          <span style={{ color: "#7c3aed", fontWeight: 600 }}>
+                            {formatPickupTime(noPickupTime)}
+                          </span>
+                        </div>
+                      )}
                       {showsPaper && (
                         <div className="sum-row">
                           <span>Paper</span>
@@ -2184,6 +2226,22 @@ export default function DashboardPage() {
                           <div className="ord-meta">
                             Qty: {o.quantity} · ₱
                             {parseFloat(o.total_amount || "0").toFixed(2)}
+                            {o.delivery_option === "pickup" &&
+                              o.pickup_time && (
+                                <span
+                                  style={{
+                                    marginLeft: 6,
+                                    color: "#7c3aed",
+                                    fontWeight: 600,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 3,
+                                  }}
+                                >
+                                  · <IC.ClockSmall />{" "}
+                                  {formatPickupTime(o.pickup_time)}
+                                </span>
+                              )}
                           </div>
                         </div>
                         <div className="ord-right">
@@ -2835,7 +2893,10 @@ export default function DashboardPage() {
                           name="eo_del"
                           value={d}
                           checked={eoDelivery === d}
-                          onChange={() => setEoDelivery(d)}
+                          onChange={() => {
+                            setEoDelivery(d);
+                            setEoPickupTime("");
+                          }}
                         />
                         {d === "pickup" ? (
                           <>
@@ -2851,6 +2912,41 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+
+              {/* ── PICKUP TIME IN EDIT MODAL ── */}
+              {eoDelivery === "pickup" && (
+                <div className="form-group">
+                  <label
+                    className="form-label"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: ".35rem",
+                    }}
+                  >
+                    <IC.ClockSmall /> Preferred Pickup Time
+                  </label>
+                  <input
+                    className="form-input"
+                    type="time"
+                    value={eoPickupTime}
+                    min="08:00"
+                    max="18:00"
+                    onChange={(e) => setEoPickupTime(e.target.value)}
+                    required
+                  />
+                  <div className="hint-text">
+                    Business hours: 8:00 AM – 6:00 PM
+                  </div>
+                  {eoPickupTime && (
+                    <div className="pickup-time-box">
+                      <IC.ClockSmall /> Pickup at{" "}
+                      {formatPickupTime(eoPickupTime)}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {eoDelivery === "delivery" && (
                 <div className="form-group">
                   <label className="form-label">Delivery Address</label>
