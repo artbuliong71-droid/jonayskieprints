@@ -67,6 +67,16 @@ interface Pricing {
   photo_development: number;
   laminating: number;
 }
+// For editing pricing as strings to avoid leading-zero issues
+interface PricingStr {
+  print_bw: string;
+  print_color: string;
+  photocopying: string;
+  scanning: string;
+  photo_development: string;
+  laminating: string;
+}
+
 type Section =
   | "dashboard"
   | "orders"
@@ -100,6 +110,26 @@ function formatPickupTime(time24: string): string {
   } catch {
     return time24;
   }
+}
+function pricingToStr(p: Pricing): PricingStr {
+  return {
+    print_bw: String(p.print_bw),
+    print_color: String(p.print_color),
+    photocopying: String(p.photocopying),
+    scanning: String(p.scanning),
+    photo_development: String(p.photo_development),
+    laminating: String(p.laminating),
+  };
+}
+function pricingStrToNum(p: PricingStr): Pricing {
+  return {
+    print_bw: parseFloat(p.print_bw) || 0,
+    print_color: parseFloat(p.print_color) || 0,
+    photocopying: parseFloat(p.photocopying) || 0,
+    scanning: parseFloat(p.scanning) || 0,
+    photo_development: parseFloat(p.photo_development) || 0,
+    laminating: parseFloat(p.laminating) || 0,
+  };
 }
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -295,6 +325,33 @@ const IC = {
     >
       <circle cx="12" cy="12" r="10" />
       <polyline points="12 6 12 12 16 14" />
+    </svg>
+  ),
+  Lock: () => (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0110 0v4" />
+    </svg>
+  ),
+  Check: () => (
+    <svg
+      width="11"
+      height="11"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+    >
+      <polyline points="20 6 9 17 4 12" />
     </svg>
   ),
   People: () => (
@@ -933,7 +990,6 @@ function DetailsModal({
     { label: "Service", value: order.service },
     { label: "Quantity", value: order.quantity },
     { label: "Delivery", value: order.delivery_option },
-    // ── Show pickup time only when delivery is pickup and time is set ──
     ...(order.delivery_option === "pickup" && order.pickup_time
       ? [
           {
@@ -1518,6 +1574,29 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
   );
 }
 
+// ─── Completed Status Badge (locked) ─────────────────────────────────────────
+function CompletedBadge() {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        background: "#dcfce7",
+        color: "#16a34a",
+        border: "1.5px solid #bbf7d0",
+        padding: "4px 10px",
+        borderRadius: 99,
+        fontSize: ".72rem",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <IC.Check /> Completed <IC.Lock />
+    </span>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -1539,14 +1618,17 @@ export default function AdminDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [deletedOrders, setDeletedOrders] = useState<DeletedOrder[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [pricing, setPricing] = useState<Pricing>({
-    print_bw: 1,
-    print_color: 2,
-    photocopying: 2,
-    scanning: 5,
-    photo_development: 15,
-    laminating: 20,
+
+  // ── FIX 1: pricing stored as strings to prevent leading-zero issue ──
+  const [pricingStr, setPricingStr] = useState<PricingStr>({
+    print_bw: "1",
+    print_color: "2",
+    photocopying: "2",
+    scanning: "5",
+    photo_development: "15",
+    laminating: "20",
   });
+
   const [orderFilter, setOrderFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [deletedLoading, setDeletedLoading] = useState(false);
@@ -1585,6 +1667,7 @@ export default function AdminDashboardPage() {
       if (d.success) setStats(d.data);
     } catch {}
   }, []);
+
   const fetchOrders = useCallback(async (status = "") => {
     setOrdersLoading(true);
     try {
@@ -1597,6 +1680,7 @@ export default function AdminDashboardPage() {
     } catch {}
     setOrdersLoading(false);
   }, []);
+
   const fetchDeletedOrders = useCallback(async () => {
     setDeletedLoading(true);
     try {
@@ -1606,6 +1690,7 @@ export default function AdminDashboardPage() {
     } catch {}
     setDeletedLoading(false);
   }, []);
+
   const fetchCustomers = useCallback(async () => {
     try {
       const r = await fetch("/api/admin/customers");
@@ -1613,17 +1698,19 @@ export default function AdminDashboardPage() {
       if (d.success) setCustomers(d.data);
     } catch {}
   }, []);
+
   const fetchPricing = useCallback(async () => {
     try {
       const r = await fetch("/api/pricing");
       const d = await r.json();
-      setPricing({
-        print_bw: d.print_bw ?? 1,
-        print_color: d.print_color ?? 2,
-        photocopying: d.photocopying ?? 2,
-        scanning: d.scanning ?? 5,
-        photo_development: d.photo_development ?? 15,
-        laminating: d.laminating ?? 20,
+      // Store as strings to avoid leading-zero input issues
+      setPricingStr({
+        print_bw: String(d.print_bw ?? 1),
+        print_color: String(d.print_color ?? 2),
+        photocopying: String(d.photocopying ?? 2),
+        scanning: String(d.scanning ?? 5),
+        photo_development: String(d.photo_development ?? 15),
+        laminating: String(d.laminating ?? 20),
       });
     } catch {}
   }, []);
@@ -1632,6 +1719,7 @@ export default function AdminDashboardPage() {
     fetchStats();
     fetchPricing();
   }, [fetchStats, fetchPricing]);
+
   useEffect(() => {
     if (section === "orders") fetchOrders(orderFilter);
     if (section === "customers") fetchCustomers();
@@ -1694,9 +1782,11 @@ export default function AdminDashboardPage() {
     }
   }
 
+  // ── FIX 1: savePricing parses string values to numbers before sending ──
   async function savePricing(e: React.FormEvent) {
     e.preventDefault();
     setPricingSaving(true);
+    const pricing = pricingStrToNum(pricingStr);
     try {
       const r = await fetch("/api/admin/pricing", {
         method: "POST",
@@ -1746,6 +1836,39 @@ export default function AdminDashboardPage() {
     { val: "completed", label: "Completed" },
     { val: "cancelled", label: "Cancelled" },
   ];
+
+  const pricingFields = [
+    { key: "print_bw", label: "Print B&W / page" },
+    { key: "print_color", label: "Print Color / page" },
+    { key: "photocopying", label: "Photocopy / page" },
+    { key: "scanning", label: "Scanning / page" },
+    { key: "photo_development", label: "Photo Dev / photo" },
+    { key: "laminating", label: "Laminating / item" },
+  ];
+
+  // ── FIX 2: helper to render status cell — locked if completed ──
+  function StatusCell({ o }: { o: Order }) {
+    if (o.status === "completed") return <CompletedBadge />;
+    return (
+      <div className="status-sel-wrap">
+        <select
+          className="status-sel"
+          value={o.status}
+          onChange={(e) => updateOrderStatus(getOrderId(o), e.target.value)}
+          style={{
+            color: sColor[o.status] || "#374151",
+            borderColor: sBg[o.status] || "#e5e7eb",
+            background: sBg[o.status] || "#fff",
+          }}
+        >
+          <option value="pending">Pending</option>
+          <option value="in-progress">In Progress</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -1849,7 +1972,8 @@ export default function AdminDashboardPage() {
         .btn-primary:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
         .btn-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
         .btn-danger { background: #ef4444; color: #fff; }
-        .btn-danger:hover { background: #dc2626; }
+        .btn-danger:hover:not(:disabled) { background: #dc2626; }
+        .btn-danger:disabled { opacity: .3; cursor: not-allowed; }
         .btn-sm { padding: .35rem .7rem; font-size: .75rem; }
         .form-group { margin-bottom: .85rem; }
         .form-label { display: block; font-size: .64rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text); margin-bottom: .32rem; }
@@ -2232,6 +2356,7 @@ export default function AdminDashboardPage() {
                   <div className="empty-state">No orders found</div>
                 ) : (
                   <>
+                    {/* Desktop Table */}
                     <div className="desktop-tbl">
                       <div className="tbl-wrap">
                         <table>
@@ -2315,35 +2440,9 @@ export default function AdminDashboardPage() {
                                       : "View"}
                                   </button>
                                 </td>
+                                {/* ── FIX 2: Status locked for completed orders ── */}
                                 <td>
-                                  <div className="status-sel-wrap">
-                                    <select
-                                      className="status-sel"
-                                      value={o.status}
-                                      onChange={(e) =>
-                                        updateOrderStatus(
-                                          getOrderId(o),
-                                          e.target.value,
-                                        )
-                                      }
-                                      style={{
-                                        color: sColor[o.status] || "#374151",
-                                        borderColor: sBg[o.status] || "#e5e7eb",
-                                        background: sBg[o.status] || "#fff",
-                                      }}
-                                    >
-                                      <option value="pending">Pending</option>
-                                      <option value="in-progress">
-                                        In Progress
-                                      </option>
-                                      <option value="completed">
-                                        Completed
-                                      </option>
-                                      <option value="cancelled">
-                                        Cancelled
-                                      </option>
-                                    </select>
-                                  </div>
+                                  <StatusCell o={o} />
                                 </td>
                                 <td
                                   style={{
@@ -2357,7 +2456,13 @@ export default function AdminDashboardPage() {
                                   <button
                                     className="btn btn-danger btn-sm"
                                     onClick={() => deleteOrder(getOrderId(o))}
+                                    disabled={o.status === "completed"}
                                     aria-label="Delete order"
+                                    title={
+                                      o.status === "completed"
+                                        ? "Cannot delete completed orders"
+                                        : "Delete order"
+                                    }
                                   >
                                     <IC.Trash />
                                   </button>
@@ -2368,6 +2473,8 @@ export default function AdminDashboardPage() {
                         </table>
                       </div>
                     </div>
+
+                    {/* Mobile Cards */}
                     <div className="mobile-cards">
                       {orders.map((o, i) => (
                         <div key={o._id || o.order_id || i} className="m-card">
@@ -2412,31 +2519,9 @@ export default function AdminDashboardPage() {
                                   : ""}
                               </button>
                             </div>
+                            {/* ── FIX 2: Status locked for completed orders (mobile) ── */}
                             <div style={{ marginTop: ".4rem" }}>
-                              <div className="status-sel-wrap">
-                                <select
-                                  className="status-sel"
-                                  value={o.status}
-                                  onChange={(e) =>
-                                    updateOrderStatus(
-                                      getOrderId(o),
-                                      e.target.value,
-                                    )
-                                  }
-                                  style={{
-                                    color: sColor[o.status] || "#374151",
-                                    borderColor: sBg[o.status] || "#e5e7eb",
-                                    background: sBg[o.status] || "#fff",
-                                  }}
-                                >
-                                  <option value="pending">Pending</option>
-                                  <option value="in-progress">
-                                    In Progress
-                                  </option>
-                                  <option value="completed">Completed</option>
-                                  <option value="cancelled">Cancelled</option>
-                                </select>
-                              </div>
+                              <StatusCell o={o} />
                             </div>
                           </div>
                           <div className="m-card-right">
@@ -2455,7 +2540,13 @@ export default function AdminDashboardPage() {
                             <button
                               className="btn btn-danger btn-sm"
                               onClick={() => deleteOrder(getOrderId(o))}
+                              disabled={o.status === "completed"}
                               aria-label="Delete"
+                              title={
+                                o.status === "completed"
+                                  ? "Cannot delete completed orders"
+                                  : "Delete order"
+                              }
                             >
                               <IC.Trash />
                             </button>
@@ -2639,30 +2730,31 @@ export default function AdminDashboardPage() {
                 >
                   <IC.PriceTag /> Manage Service Pricing
                 </div>
+                {/* ── FIX 1: form uses string state, parses on save ── */}
                 <form onSubmit={savePricing}>
                   <div className="form-grid">
-                    {[
-                      { key: "print_bw", label: "Print B&W / page" },
-                      { key: "print_color", label: "Print Color / page" },
-                      { key: "photocopying", label: "Photocopy / page" },
-                      { key: "scanning", label: "Scanning / page" },
-                      { key: "photo_development", label: "Photo Dev / photo" },
-                      { key: "laminating", label: "Laminating / item" },
-                    ].map(({ key, label }) => (
+                    {pricingFields.map(({ key, label }) => (
                       <div className="form-group" key={key}>
                         <label className="form-label">{label}</label>
                         <input
                           className="form-input"
                           type="number"
+                          inputMode="decimal"
                           min={0}
                           step={0.01}
-                          value={(pricing as any)[key]}
-                          onChange={(e) =>
-                            setPricing((p) => ({
+                          value={(pricingStr as any)[key]}
+                          onChange={(e) => {
+                            const raw = e.target.value;
+                            setPricingStr((p) => ({ ...p, [key]: raw }));
+                          }}
+                          onBlur={(e) => {
+                            // On blur, normalize the value to remove leading zeros
+                            const val = parseFloat(e.target.value);
+                            setPricingStr((p) => ({
                               ...p,
-                              [key]: parseFloat(e.target.value) || 0,
-                            }))
-                          }
+                              [key]: isNaN(val) ? "0" : String(val),
+                            }));
+                          }}
                         />
                       </div>
                     ))}
