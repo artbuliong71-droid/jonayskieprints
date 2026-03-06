@@ -110,16 +110,6 @@ function formatPickupTime(time24: string): string {
     return time24;
   }
 }
-function pricingToStr(p: Pricing): PricingStr {
-  return {
-    print_bw: String(p.print_bw),
-    print_color: String(p.print_color),
-    photocopying: String(p.photocopying),
-    scanning: String(p.scanning),
-    photo_development: String(p.photo_development),
-    laminating: String(p.laminating),
-  };
-}
 function pricingStrToNum(p: PricingStr): Pricing {
   return {
     print_bw: parseFloat(p.print_bw) || 0,
@@ -569,6 +559,22 @@ const IC = {
       <line x1="9" y1="9" x2="15" y2="15" />
     </svg>
   ),
+  Calendar: () => (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+  ),
 };
 
 // ─── Donut Chart ──────────────────────────────────────────────────────────────
@@ -707,6 +713,8 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  LineChart,
+  Line,
 } from "recharts";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -1459,10 +1467,12 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                             }}
                           >
                             <button
-                              onClick={() => {
-                                const pdfUrl = `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(url)}`;
-                                window.open(pdfUrl, "_blank");
-                              }}
+                              onClick={() =>
+                                window.open(
+                                  `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(url)}`,
+                                  "_blank",
+                                )
+                              }
                               style={{
                                 fontSize: ".72rem",
                                 color: "#7c3aed",
@@ -1583,9 +1593,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
   );
 }
 
-// ─── Status Badge Components ──────────────────────────────────────────────────
-
-/** Completed: locked, admin cannot change */
 function CompletedBadge() {
   return (
     <span
@@ -1608,10 +1615,6 @@ function CompletedBadge() {
   );
 }
 
-/**
- * ── KEY FIX ──
- * Cancelled: locked badge — only customers can cancel, admin cannot change this status.
- */
 function CancelledBadge() {
   return (
     <span
@@ -1675,6 +1678,25 @@ export default function AdminDashboardPage() {
   const notifCount = stats.pendingOrders;
   const showBadge = notifCount > 0 && !notifSeen;
 
+  // ── Reports state ──
+  const [reportPeriod, setReportPeriod] = useState<
+    "daily" | "weekly" | "monthly"
+  >("daily");
+  const [reportDate, setReportDate] = useState(
+    () => new Date().toISOString().split("T")[0],
+  );
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportGenerated, setReportGenerated] = useState(false);
+  const [reportSummary, setReportSummary] = useState({
+    totalOrders: 0,
+    totalRevenue: "0.00",
+    newCustomers: 0,
+    completionRate: 0,
+  });
+  const [reportChartData, setReportChartData] = useState<
+    { label: string; Revenue: number; Orders: number }[]
+  >([]);
+
   useEffect(() => {
     if (!notifOpen) return;
     function handleClickOutside(e: MouseEvent) {
@@ -1701,6 +1723,7 @@ export default function AdminDashboardPage() {
       if (d.success) setStats(d.data);
     } catch {}
   }, []);
+
   const fetchOrders = useCallback(async (status = "") => {
     setOrdersLoading(true);
     try {
@@ -1713,6 +1736,7 @@ export default function AdminDashboardPage() {
     } catch {}
     setOrdersLoading(false);
   }, []);
+
   const fetchDeletedOrders = useCallback(async () => {
     setDeletedLoading(true);
     try {
@@ -1722,6 +1746,7 @@ export default function AdminDashboardPage() {
     } catch {}
     setDeletedLoading(false);
   }, []);
+
   const fetchCustomers = useCallback(async () => {
     try {
       const r = await fetch("/api/admin/customers");
@@ -1729,6 +1754,7 @@ export default function AdminDashboardPage() {
       if (d.success) setCustomers(d.data);
     } catch {}
   }, []);
+
   const fetchPricing = useCallback(async () => {
     try {
       const r = await fetch("/api/pricing");
@@ -1748,6 +1774,7 @@ export default function AdminDashboardPage() {
     fetchStats();
     fetchPricing();
   }, [fetchStats, fetchPricing]);
+
   useEffect(() => {
     if (section === "orders") fetchOrders(orderFilter);
     if (section === "customers") fetchCustomers();
@@ -1764,6 +1791,50 @@ export default function AdminDashboardPage() {
     fetchCustomers,
     fetchDeletedOrders,
   ]);
+
+  // ── Generate Report ──
+  async function generateReport() {
+    setReportLoading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/stats?period=${reportPeriod}&date=${reportDate}`,
+      );
+      const d = await res.json();
+
+      if (d.success && d.reportData) {
+        setReportSummary(d.reportData);
+        setReportChartData(d.chartData || []);
+      } else {
+        // Build fallback chart from current stats + dummy time slots
+        const completionRate =
+          stats.totalOrders > 0
+            ? Math.round((stats.completedOrders / stats.totalOrders) * 100)
+            : 0;
+        setReportSummary({
+          totalOrders: stats.totalOrders,
+          totalRevenue: stats.totalRevenue,
+          newCustomers: stats.totalCustomers,
+          completionRate,
+        });
+        const slots =
+          reportPeriod === "daily" ? 24 : reportPeriod === "weekly" ? 7 : 30;
+        const labels = Array.from({ length: slots }, (_, i) =>
+          reportPeriod === "daily"
+            ? `${String(i).padStart(2, "0")}:00`
+            : reportPeriod === "weekly"
+              ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][i % 7]
+              : `Day ${i + 1}`,
+        );
+        setReportChartData(
+          labels.map((label) => ({ label, Revenue: 0, Orders: 0 })),
+        );
+      }
+      setReportGenerated(true);
+    } catch {
+      showToast("Failed to generate report", "error");
+    }
+    setReportLoading(false);
+  }
 
   async function updateOrderStatus(orderId: string, status: string) {
     if (!orderId) {
@@ -1876,12 +1947,6 @@ export default function AdminDashboardPage() {
     { key: "laminating", label: "Laminating / item" },
   ];
 
-  /**
-   * ── KEY FIX: StatusCell ──
-   * - completed → locked CompletedBadge (admin cannot change)
-   * - cancelled → locked CancelledBadge (only customers can cancel; admin cannot override)
-   * - pending / in-progress → dropdown WITHOUT "cancelled" option (admin cannot cancel)
-   */
   function StatusCell({ o }: { o: Order }) {
     if (o.status === "completed") return <CompletedBadge />;
     if (o.status === "cancelled") return <CancelledBadge />;
@@ -1897,7 +1962,6 @@ export default function AdminDashboardPage() {
             background: sBg[o.status] || "#fff",
           }}
         >
-          {/* ── "Cancelled" option intentionally removed — only customers can cancel ── */}
           <option value="pending">Pending</option>
           <option value="in-progress">In Progress</option>
           <option value="completed">Completed</option>
@@ -1905,6 +1969,28 @@ export default function AdminDashboardPage() {
       </div>
     );
   }
+
+  // ── Report stat cards data ──
+  const reportCards = [
+    {
+      label: "Total Orders",
+      value: reportGenerated ? reportSummary.totalOrders : stats.totalOrders,
+    },
+    {
+      label: "Total Revenue",
+      value: `₱${reportGenerated ? reportSummary.totalRevenue : stats.totalRevenue}`,
+    },
+    {
+      label: "New Customers",
+      value: reportGenerated
+        ? reportSummary.newCustomers
+        : stats.totalCustomers,
+    },
+    {
+      label: "Completion Rate",
+      value: `${reportGenerated ? reportSummary.completionRate : stats.totalOrders > 0 ? Math.round((stats.completedOrders / stats.totalOrders) * 100) : 0}%`,
+    },
+  ];
 
   return (
     <>
@@ -2021,16 +2107,29 @@ export default function AdminDashboardPage() {
         .report-ico { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .report-val { font-size: 1.4rem; font-weight: 700; color: #111827; letter-spacing: -.02em; }
         .report-lbl { font-size: .72rem; color: #6b7280; margin-top: 2px; }
+        .rpt-stat-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: .75rem; margin-bottom: 1rem; }
+        .rpt-stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1rem 1.1rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); transition: box-shadow .15s; }
+        .rpt-stat-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+        .rpt-stat-lbl { font-size: .72rem; color: #6b7280; font-weight: 600; margin-bottom: .35rem; }
+        .rpt-stat-val { font-size: 1.55rem; font-weight: 700; color: #111827; letter-spacing: -.03em; }
+        .rpt-controls { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+        .rpt-select { padding: .45rem .9rem; border-radius: 8px; border: 1.5px solid #e5e7eb; font-family: 'Inter',sans-serif; font-size: .83rem; color: #374151; background: #fff; cursor: pointer; outline: none; transition: border-color .2s; -webkit-appearance: none; appearance: none; padding-right: 2rem; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right .6rem center; }
+        .rpt-select:focus { border-color: #7c3aed; }
+        .rpt-date { padding: .45rem .9rem; border-radius: 8px; border: 1.5px solid #e5e7eb; font-family: 'Inter',sans-serif; font-size: .83rem; color: #374151; background: #fff; outline: none; transition: border-color .2s; }
+        .rpt-date:focus { border-color: #7c3aed; }
+        .rpt-chart-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 1.1rem 1.1rem 1.3rem; margin-bottom: 1rem; }
+        .rpt-chart-title { font-size: .84rem; font-weight: 600; color: #111827; margin-bottom: .9rem; display: flex; align-items: center; gap: .4rem; }
+        .rpt-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 220px; color: #9ca3af; font-size: .84rem; gap: .5rem; }
         .sb-overlay { display: none; position: fixed; inset: 0; background: rgba(30,27,75,.5); z-index: 190; }
         .sb-overlay.on { display: block; }
         .empty-state { padding: 2.5rem; text-align: center; color: var(--muted); font-size: .84rem; }
         @media (min-width: 1025px) { .hamburger { display: none; } .welcome { display: block; } }
         @media (max-width: 1024px) { .sidebar { position: fixed; top: 0; left: 0; height: 100%; transform: translateX(-100%); } .sidebar.open { transform: translateX(0); box-shadow: 4px 0 30px rgba(0,0,0,.25); } .hamburger { display: flex; } }
-        @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2,1fr); } .form-grid { grid-template-columns: repeat(2,1fr); } .report-grid { grid-template-columns: repeat(2,1fr); } }
+        @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2,1fr); } .form-grid { grid-template-columns: repeat(2,1fr); } .report-grid { grid-template-columns: repeat(2,1fr); } .rpt-stat-grid { grid-template-columns: repeat(2,1fr); } }
         @media (max-width: 768px) { .welcome { display: none; } .notif-dropdown { width: 280px; right: -8px; } }
-        @media (max-width: 600px) { .content { padding: .65rem; } .desktop-tbl { display: none; } .mobile-cards { display: block; } .stats-wrap { padding: .6rem .7rem .8rem; } }
+        @media (max-width: 600px) { .content { padding: .65rem; } .desktop-tbl { display: none; } .mobile-cards { display: block; } .stats-wrap { padding: .6rem .7rem .8rem; } .rpt-stat-grid { grid-template-columns: repeat(2,1fr); } .rpt-controls { gap: .4rem; } }
         @media (min-width: 601px) { .mobile-cards { display: none; } .desktop-tbl { display: block; } }
-        @media (max-width: 400px) { .stats-grid { grid-template-columns: repeat(2,1fr); gap: .4rem; } .form-grid { grid-template-columns: 1fr; } .report-grid { grid-template-columns: 1fr; } .stat-val { font-size: 1.1rem; } }
+        @media (max-width: 400px) { .stats-grid { grid-template-columns: repeat(2,1fr); gap: .4rem; } .form-grid { grid-template-columns: 1fr; } .report-grid { grid-template-columns: 1fr; } .stat-val { font-size: 1.1rem; } .rpt-stat-grid { grid-template-columns: 1fr 1fr; } }
         @supports (padding: max(0px)) { .header { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); } .content { padding-left: max(.85rem, env(safe-area-inset-left)); padding-right: max(.85rem, env(safe-area-inset-right)); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes badgePop { from { transform: scale(0); } to { transform: scale(1); } }
@@ -2193,7 +2292,7 @@ export default function AdminDashboardPage() {
           </header>
 
           <main className="content">
-            {/* ── DASHBOARD ── */}
+            {/* ══ DASHBOARD ══ */}
             <section
               className={`panel ${section === "dashboard" ? "active" : ""}`}
             >
@@ -2367,7 +2466,7 @@ export default function AdminDashboardPage() {
               </div>
             </section>
 
-            {/* ── MANAGE ORDERS ── */}
+            {/* ══ MANAGE ORDERS ══ */}
             <section
               className={`panel ${section === "orders" ? "active" : ""}`}
             >
@@ -2494,7 +2593,6 @@ export default function AdminDashboardPage() {
                                       o.status === "completed" ||
                                       o.status === "cancelled"
                                     }
-                                    aria-label="Delete order"
                                     title={
                                       o.status === "completed"
                                         ? "Cannot delete completed orders"
@@ -2580,14 +2678,6 @@ export default function AdminDashboardPage() {
                                 o.status === "completed" ||
                                 o.status === "cancelled"
                               }
-                              aria-label="Delete"
-                              title={
-                                o.status === "completed"
-                                  ? "Cannot delete completed orders"
-                                  : o.status === "cancelled"
-                                    ? "Cannot delete cancelled orders"
-                                    : "Delete order"
-                              }
                             >
                               <IC.Trash />
                             </button>
@@ -2600,7 +2690,7 @@ export default function AdminDashboardPage() {
               </div>
             </section>
 
-            {/* ── CUSTOMERS ── */}
+            {/* ══ CUSTOMERS ══ */}
             <section
               className={`panel ${section === "customers" ? "active" : ""}`}
             >
@@ -2687,14 +2777,184 @@ export default function AdminDashboardPage() {
               </div>
             </section>
 
-            {/* ── REPORTS ── */}
+            {/* ══ REPORTS ══ */}
             <section
               className={`panel ${section === "reports" ? "active" : ""}`}
             >
-              <div className="filter-title" style={{ marginBottom: ".9rem" }}>
-                Reports
+              {/* Header row with controls */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "1rem",
+                  flexWrap: "wrap",
+                  gap: ".6rem",
+                }}
+              >
+                <div className="filter-title">Reports &amp; Analytics</div>
+                <div className="rpt-controls">
+                  <select
+                    className="rpt-select"
+                    value={reportPeriod}
+                    onChange={(e) =>
+                      setReportPeriod(
+                        e.target.value as "daily" | "weekly" | "monthly",
+                      )
+                    }
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                  <input
+                    type="date"
+                    className="rpt-date"
+                    value={reportDate}
+                    onChange={(e) => setReportDate(e.target.value)}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    onClick={generateReport}
+                    disabled={reportLoading}
+                  >
+                    <IC.BarChart />
+                    {reportLoading ? "Loading…" : "Generate Report"}
+                  </button>
+                </div>
               </div>
-              <div className="report-grid" style={{ marginBottom: "1rem" }}>
+
+              {/* 4 stat cards */}
+              <div className="rpt-stat-grid">
+                {reportCards.map((s) => (
+                  <div key={s.label} className="rpt-stat-card">
+                    <div className="rpt-stat-lbl">{s.label}</div>
+                    <div className="rpt-stat-val">{s.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Line chart */}
+              <div className="rpt-chart-card">
+                <div className="rpt-chart-title">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#7c3aed"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  >
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                    <polyline points="17 6 23 6 23 12" />
+                  </svg>
+                  Revenue &amp; Orders Over Time
+                </div>
+                {!reportGenerated ? (
+                  <div className="rpt-empty">
+                    <svg
+                      width="36"
+                      height="36"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#d1d5db"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    >
+                      <line x1="18" y1="20" x2="18" y2="10" />
+                      <line x1="12" y1="20" x2="12" y2="4" />
+                      <line x1="6" y1="20" x2="6" y2="14" />
+                    </svg>
+                    <span>
+                      Select a period and date, then click{" "}
+                      <strong>Generate Report</strong>
+                    </span>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart
+                      data={reportChartData}
+                      margin={{ top: 4, right: 16, left: 0, bottom: 0 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
+                        axisLine={false}
+                        tickLine={false}
+                        interval="preserveStartEnd"
+                      />
+                      <YAxis
+                        yAxisId="rev"
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={40}
+                        tickFormatter={(v) => `₱${v}`}
+                      />
+                      <YAxis
+                        yAxisId="ord"
+                        orientation="right"
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={30}
+                        allowDecimals={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: 8,
+                          border: "1px solid #e5e7eb",
+                          fontSize: ".78rem",
+                          boxShadow: "0 4px 12px rgba(0,0,0,.1)",
+                        }}
+                        formatter={(
+                          value: number | string | undefined,
+                          name: string | undefined,
+                        ): [string, string] => [
+                          name === "Revenue"
+                            ? `₱${Number(value ?? 0).toFixed(2)}`
+                            : String(value ?? ""),
+                          String(name ?? ""),
+                        ]}
+                      />
+                      <Legend
+                        iconType="rect"
+                        iconSize={10}
+                        formatter={(v) => (
+                          <span
+                            style={{ fontSize: ".73rem", color: "#374151" }}
+                          >
+                            {v}
+                          </span>
+                        )}
+                      />
+                      <Line
+                        yAxisId="rev"
+                        type="monotone"
+                        dataKey="Revenue"
+                        stroke="#3b82f6"
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: "#3b82f6" }}
+                        activeDot={{ r: 5 }}
+                      />
+                      <Line
+                        yAxisId="ord"
+                        type="monotone"
+                        dataKey="Orders"
+                        stroke="#f43f5e"
+                        strokeWidth={2.5}
+                        dot={{ r: 3, fill: "#f43f5e" }}
+                        activeDot={{ r: 5 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+              {/* Existing status breakdown cards */}
+              <div className="report-grid">
                 {[
                   {
                     lbl: "Total Revenue",
@@ -2747,10 +3007,12 @@ export default function AdminDashboardPage() {
                   </div>
                 ))}
               </div>
+
+              {/* Pie + Bar charts */}
               <ReportCharts stats={stats} />
             </section>
 
-            {/* ── SETTINGS ── */}
+            {/* ══ SETTINGS ══ */}
             <section
               className={`panel ${section === "settings" ? "active" : ""}`}
             >
@@ -2809,7 +3071,7 @@ export default function AdminDashboardPage() {
               </div>
             </section>
 
-            {/* ── DELETED TRANSACTIONS ── */}
+            {/* ══ DELETED TRANSACTIONS ══ */}
             <section
               className={`panel ${section === "deleted" ? "active" : ""}`}
             >
