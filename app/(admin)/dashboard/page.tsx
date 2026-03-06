@@ -1816,7 +1816,7 @@ export default function AdminDashboardPage() {
     setPricingSaving(true);
     const pricing = pricingStrToNum(pricingStr);
     try {
-      const r = await fetch("/api/pricing", {
+      const r = await fetch("/api/admin/pricing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(pricing),
