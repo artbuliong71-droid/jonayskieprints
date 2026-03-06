@@ -1772,9 +1772,10 @@ export default function AdminDashboardPage() {
     }
     try {
       const fd = new FormData();
+      fd.append("action", "updateStatus");
       fd.append("order_id", orderId);
       fd.append("status", status);
-      const r = await fetch("/api/admin/orders", { method: "PATCH", body: fd });
+      const r = await fetch("/api/dashboard", { method: "POST", body: fd });
       const d = await r.json();
       if (d.success) {
         showToast("Status updated!");
@@ -1815,14 +1816,16 @@ export default function AdminDashboardPage() {
     setPricingSaving(true);
     const pricing = pricingStrToNum(pricingStr);
     try {
-      const r = await fetch("/api/admin/pricing", {
+      const r = await fetch("/api/pricing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(pricing),
       });
       const d = await r.json();
-      if (d.success) showToast("Pricing updated!");
-      else showToast(d.message || "Failed", "error");
+      if (d.success) {
+        showToast("Pricing updated!");
+        fetchPricing();
+      } else showToast(d.message || "Failed", "error");
     } catch {
       showToast("Network error", "error");
     }
