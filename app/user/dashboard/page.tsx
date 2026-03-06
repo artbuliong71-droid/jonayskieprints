@@ -978,8 +978,6 @@ export default function DashboardPage() {
     fetchStats();
     fetchRecentOrders();
     fetchUser();
-    const iv = setInterval(fetchPrices, 10000);
-    return () => clearInterval(iv);
   }, [fetchPrices, fetchStats, fetchRecentOrders, fetchUser]);
 
   useEffect(() => {
@@ -1792,18 +1790,6 @@ export default function DashboardPage() {
                 <div className="p-top">
                   <div className="p-label">
                     <IC.Tag /> Current Pricing
-                  </div>
-                  <div className="p-chips">
-                    <span className="chip">{priceUpdateTime || "..."}</span>
-                    <button
-                      className="chip-btn"
-                      onClick={async () => {
-                        await fetchPrices();
-                        showToast("Prices refreshed");
-                      }}
-                    >
-                      <IC.Refresh /> Refresh
-                    </button>
                   </div>
                 </div>
                 <div className="p-grid">
