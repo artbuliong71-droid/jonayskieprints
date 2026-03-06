@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     // ── Get single order ────────────────────────────────────────────────────
     if (action === "getOrder" && order_id) {
       const order = await Order.findOne({
-        _id: order_id,
+        order_id: order_id,
         ...(session.role !== "admin" ? { user_id: session.userId } : {}),
       });
       if (!order) {
@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Customers can only cancel their own pending orders
-      const filterQuery: any = { _id: order_id, status: "pending" };
+      const filterQuery: any = { order_id: order_id, status: "pending" };
       if (session.role !== "admin") {
         filterQuery.user_id = session.userId;
       }
@@ -242,8 +242,8 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const order = await Order.findByIdAndUpdate(
-        order_id,
+      const order = await Order.findOneAndUpdate(
+        { order_id: order_id },
         { status: newStatus, updated_at: new Date() },
         { new: true },
       );
@@ -266,7 +266,7 @@ export async function POST(req: NextRequest) {
     if (action === "updateOrder") {
       const order_id = formData.get("order_id") as string;
       const order = await Order.findOne({
-        _id: order_id,
+        order_id: order_id,
         user_id: session.userId,
         status: "pending",
       });
@@ -474,7 +474,7 @@ function buildSpecifications(formData: FormData): string {
 
 function formatOrder(order: any) {
   return {
-    order_id: order._id.toString(),
+    order_id: order.order_id || order._id.toString(),
     service: order.service,
     quantity: order.quantity,
     specifications: order.specifications,
