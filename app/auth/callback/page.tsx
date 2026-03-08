@@ -6,9 +6,8 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    // This page is not needed with cookie-based auth
-    // Google callback sets the cookie directly and redirects to dashboard
-    router.replace("/user/dashboard");
+    // Pass ?welcome=true so the dashboard knows to show the welcome toast
+    router.replace("/user/dashboard?welcome=true");
   }, [router]);
 
   return (

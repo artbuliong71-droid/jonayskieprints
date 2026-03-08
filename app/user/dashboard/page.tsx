@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Fragment } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface User {
   first_name: string;
@@ -769,6 +769,9 @@ function CancelConfirmModal({
 
 export default function DashboardPage() {
   const router = useRouter();
+  // ✅ FIX: read query params to detect Google OAuth login
+  const searchParams = useSearchParams();
+
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState<Toast>({
@@ -939,6 +942,24 @@ export default function DashboardPage() {
     fetchRecentOrders,
     fetchPrices,
   ]);
+
+  // ✅ FIX: Show welcome toast after Google OAuth login.
+  // The AuthCallback page redirects here with ?welcome=true.
+  // We wait for user.first_name to load before showing the toast,
+  // then immediately clean the URL so a refresh won't re-trigger it.
+  useEffect(() => {
+    if (searchParams.get("welcome") !== "true") return;
+    if (!user.first_name) return; // wait for fetchUser to complete
+
+    // Clean ?welcome=true from the URL immediately so it only fires once
+    window.history.replaceState({}, "", "/user/dashboard");
+
+    const timer = setTimeout(() => {
+      showToast(`Welcome back, ${user.first_name}! 👋`, "success");
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchParams, user.first_name, showToast]);
 
   async function handleCancelOrder(orderId: number) {
     setCancellingId(orderId);
@@ -1335,7 +1356,6 @@ export default function DashboardPage() {
     reader.readAsDataURL(file);
   }
 
-  // ✅ FIXED LOGOUT - uses router.replace() to remove dashboard from browser history
   async function handleLogout() {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -1671,7 +1691,6 @@ export default function DashboardPage() {
             ))}
           </nav>
           <div className="sb-foot">
-            {/* ✅ FIXED: button with router.replace instead of <Link href="/logout"> */}
             <button className="logout-btn" onClick={handleLogout}>
               <IC.Logout /> Logout
             </button>
