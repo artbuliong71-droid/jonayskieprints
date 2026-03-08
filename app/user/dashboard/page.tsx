@@ -1511,7 +1511,7 @@ function DashboardPageInner() {
         .stat-label{font-size:.62rem;color:var(--muted);margin-top:4px;white-space:nowrap}
 
         /* ── CARDS & TABLES ── */
-        .card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:.75rem;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+        .card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:visible;margin-bottom:.75rem;box-shadow:0 1px 3px rgba(0,0,0,.06)}
         .card-head{padding:.6rem .85rem;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:600;color:var(--text)}
         .ro-empty{padding:2rem;text-align:center;color:var(--muted);font-size:.78rem}
         .ro-table{width:100%;border-collapse:collapse}
@@ -1914,7 +1914,7 @@ function DashboardPageInner() {
                   />
                 </div>
               </div>
-              <div className="card">
+              <div className="card" style={{ overflow: "hidden" }}>
                 <div className="card-head">Recent Orders</div>
                 {recentOrders.length === 0 ? (
                   <div className="ro-empty">No orders yet</div>
@@ -1967,7 +1967,14 @@ function DashboardPageInner() {
             <section
               className={`panel ${activeSection === "new-order" ? "active" : ""}`}
             >
-              <div className="card" style={{ padding: "1rem" }}>
+              <div
+                className="card"
+                style={{
+                  padding: "1rem",
+                  paddingBottom: "2rem",
+                  overflow: "visible",
+                }}
+              >
                 <div
                   style={{
                     fontSize: ".93rem",
@@ -2107,6 +2114,17 @@ function DashboardPageInner() {
                         </div>
                       </div>
                     </div>
+                    {noDelivery === "delivery" && (
+                      <div className="form-group">
+                        <label className="form-label">Delivery Address</label>
+                        <textarea
+                          className="form-textarea"
+                          placeholder="Enter complete address"
+                          value={noAddress}
+                          onChange={(e) => setNoAddress(e.target.value)}
+                        />
+                      </div>
+                    )}
                     {noDelivery === "pickup" && (
                       <div className="form-group">
                         <label
@@ -2157,17 +2175,6 @@ function DashboardPageInner() {
                             {formatPickupTime(noPickupTime)}
                           </div>
                         )}
-                      </div>
-                    )}
-                    {noDelivery === "delivery" && (
-                      <div className="form-group">
-                        <label className="form-label">Delivery Address</label>
-                        <textarea
-                          className="form-textarea"
-                          placeholder="Enter complete address"
-                          value={noAddress}
-                          onChange={(e) => setNoAddress(e.target.value)}
-                        />
                       </div>
                     )}
                     <div className="btn-row">
@@ -2486,7 +2493,7 @@ function DashboardPageInner() {
                   ))}
                 </div>
               </div>
-              <div className="card">
+              <div className="card" style={{ overflow: "hidden" }}>
                 {ordersLoading ? (
                   <div className="empty-state">Loading...</div>
                 ) : allOrders.length === 0 ? (
@@ -3204,6 +3211,16 @@ function DashboardPageInner() {
                   </div>
                 </div>
               </div>
+              {eoDelivery === "delivery" && (
+                <div className="form-group">
+                  <label className="form-label">Delivery Address</label>
+                  <textarea
+                    className="form-textarea"
+                    value={eoAddress}
+                    onChange={(e) => setEoAddress(e.target.value)}
+                  />
+                </div>
+              )}
               {eoDelivery === "pickup" && (
                 <div className="form-group">
                   <label
@@ -3254,16 +3271,6 @@ function DashboardPageInner() {
                       {formatPickupTime(eoPickupTime)}
                     </div>
                   )}
-                </div>
-              )}
-              {eoDelivery === "delivery" && (
-                <div className="form-group">
-                  <label className="form-label">Delivery Address</label>
-                  <textarea
-                    className="form-textarea"
-                    value={eoAddress}
-                    onChange={(e) => setEoAddress(e.target.value)}
-                  />
                 </div>
               )}
               {eoShowsPaper && (
