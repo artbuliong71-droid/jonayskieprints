@@ -419,9 +419,11 @@ const IC = {
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
+      strokeLinejoin="round"
     >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 8v2m0 4v2m-2-4h5a2 2 0 010 4H10" />
+      <rect x="2" y="6" width="20" height="13" rx="2" />
+      <path d="M22 10H2" />
+      <path d="M7 15h.01M11 15h2" />
     </svg>
   ),
   Save: () => (
