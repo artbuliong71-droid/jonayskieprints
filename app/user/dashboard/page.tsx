@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Fragment } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  Fragment,
+  Suspense,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 interface User {
@@ -767,7 +774,7 @@ function CancelConfirmModal({
   );
 }
 
-export default function DashboardPage() {
+function DashboardPageInner() {
   const router = useRouter();
   // ✅ FIX: read query params to detect Google OAuth login
   const searchParams = useSearchParams();
@@ -3223,5 +3230,12 @@ export default function DashboardPage() {
         </div>
       )}
     </>
+  );
+}
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={null}>
+      <DashboardPageInner />
+    </Suspense>
   );
 }
