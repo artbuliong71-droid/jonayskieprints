@@ -774,6 +774,145 @@ function CancelConfirmModal({
   );
 }
 
+const PICKUP_TIMES = [
+  { value: "08:00", label: "8:00 AM" },
+  { value: "08:30", label: "8:30 AM" },
+  { value: "09:00", label: "9:00 AM" },
+  { value: "09:30", label: "9:30 AM" },
+  { value: "10:00", label: "10:00 AM" },
+  { value: "10:30", label: "10:30 AM" },
+  { value: "11:00", label: "11:00 AM" },
+  { value: "11:30", label: "11:30 AM" },
+  { value: "12:00", label: "12:00 PM" },
+  { value: "12:30", label: "12:30 PM" },
+  { value: "13:00", label: "1:00 PM" },
+  { value: "13:30", label: "1:30 PM" },
+  { value: "14:00", label: "2:00 PM" },
+  { value: "14:30", label: "2:30 PM" },
+  { value: "15:00", label: "3:00 PM" },
+  { value: "15:30", label: "3:30 PM" },
+  { value: "16:00", label: "4:00 PM" },
+  { value: "16:30", label: "4:30 PM" },
+  { value: "17:00", label: "5:00 PM" },
+  { value: "17:30", label: "5:30 PM" },
+  { value: "18:00", label: "6:00 PM" },
+];
+
+function PickupTimeDropdown({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node))
+        setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const selected = PICKUP_TIMES.find((t) => t.value === value);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          width: "100%",
+          padding: ".58rem .78rem",
+          border: `1.5px solid ${open ? "#7c3aed" : "#e5e7eb"}`,
+          borderRadius: 8,
+          background: "#fff",
+          fontFamily: "'Inter',sans-serif",
+          fontSize: ".875rem",
+          color: selected ? "#111827" : "#9ca3af",
+          textAlign: "left",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxShadow: open ? "0 0 0 3px rgba(124,58,237,.1)" : "none",
+          transition: "border-color .2s, box-shadow .2s",
+        }}
+      >
+        <span>{selected ? selected.label : "-- Select Pickup Time --"}</span>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#9ca3af"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          style={{
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform .2s",
+            flexShrink: 0,
+          }}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 4px)",
+            left: 0,
+            right: 0,
+            background: "#fff",
+            border: "1.5px solid #e5e7eb",
+            borderRadius: 8,
+            boxShadow: "0 8px 24px rgba(0,0,0,.12)",
+            zIndex: 9000,
+            maxHeight: 220,
+            overflowY: "auto",
+          }}
+        >
+          {PICKUP_TIMES.map((t) => (
+            <div
+              key={t.value}
+              onClick={() => {
+                onChange(t.value);
+                setOpen(false);
+              }}
+              style={{
+                padding: ".55rem .78rem",
+                fontSize: ".875rem",
+                cursor: "pointer",
+                fontFamily: "'Inter',sans-serif",
+                background: value === t.value ? "#ede9fe" : "transparent",
+                color: value === t.value ? "#7c3aed" : "#111827",
+                fontWeight: value === t.value ? 600 : 400,
+                transition: "background .1s",
+              }}
+              onMouseEnter={(e) => {
+                if (value !== t.value)
+                  (e.currentTarget as HTMLDivElement).style.background =
+                    "#f3f4f6";
+              }}
+              onMouseLeave={(e) => {
+                if (value !== t.value)
+                  (e.currentTarget as HTMLDivElement).style.background =
+                    "transparent";
+              }}
+            >
+              {t.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DashboardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -2137,35 +2276,10 @@ function DashboardPageInner() {
                         >
                           <IC.ClockSmall /> Preferred Pickup Time
                         </label>
-                        <select
-                          className="form-select"
+                        <PickupTimeDropdown
                           value={noPickupTime}
-                          onChange={(e) => setNoPickupTime(e.target.value)}
-                          required
-                        >
-                          <option value="">-- Select Pickup Time --</option>
-                          <option value="08:00">8:00 AM</option>
-                          <option value="08:30">8:30 AM</option>
-                          <option value="09:00">9:00 AM</option>
-                          <option value="09:30">9:30 AM</option>
-                          <option value="10:00">10:00 AM</option>
-                          <option value="10:30">10:30 AM</option>
-                          <option value="11:00">11:00 AM</option>
-                          <option value="11:30">11:30 AM</option>
-                          <option value="12:00">12:00 PM</option>
-                          <option value="12:30">12:30 PM</option>
-                          <option value="13:00">1:00 PM</option>
-                          <option value="13:30">1:30 PM</option>
-                          <option value="14:00">2:00 PM</option>
-                          <option value="14:30">2:30 PM</option>
-                          <option value="15:00">3:00 PM</option>
-                          <option value="15:30">3:30 PM</option>
-                          <option value="16:00">4:00 PM</option>
-                          <option value="16:30">4:30 PM</option>
-                          <option value="17:00">5:00 PM</option>
-                          <option value="17:30">5:30 PM</option>
-                          <option value="18:00">6:00 PM</option>
-                        </select>
+                          onChange={setNoPickupTime}
+                        />
                         <div className="hint-text">
                           Business hours: 8:00 AM – 6:00 PM
                         </div>
@@ -3233,35 +3347,10 @@ function DashboardPageInner() {
                   >
                     <IC.ClockSmall /> Preferred Pickup Time
                   </label>
-                  <select
-                    className="form-select"
+                  <PickupTimeDropdown
                     value={eoPickupTime}
-                    onChange={(e) => setEoPickupTime(e.target.value)}
-                    required
-                  >
-                    <option value="">-- Select Pickup Time --</option>
-                    <option value="08:00">8:00 AM</option>
-                    <option value="08:30">8:30 AM</option>
-                    <option value="09:00">9:00 AM</option>
-                    <option value="09:30">9:30 AM</option>
-                    <option value="10:00">10:00 AM</option>
-                    <option value="10:30">10:30 AM</option>
-                    <option value="11:00">11:00 AM</option>
-                    <option value="11:30">11:30 AM</option>
-                    <option value="12:00">12:00 PM</option>
-                    <option value="12:30">12:30 PM</option>
-                    <option value="13:00">1:00 PM</option>
-                    <option value="13:30">1:30 PM</option>
-                    <option value="14:00">2:00 PM</option>
-                    <option value="14:30">2:30 PM</option>
-                    <option value="15:00">3:00 PM</option>
-                    <option value="15:30">3:30 PM</option>
-                    <option value="16:00">4:00 PM</option>
-                    <option value="16:30">4:30 PM</option>
-                    <option value="17:00">5:00 PM</option>
-                    <option value="17:30">5:30 PM</option>
-                    <option value="18:00">6:00 PM</option>
-                  </select>
+                    onChange={setEoPickupTime}
+                  />
                   <div className="hint-text">
                     Business hours: 8:00 AM – 6:00 PM
                   </div>
