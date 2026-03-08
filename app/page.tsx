@@ -863,7 +863,6 @@ export default function HomePage() {
                   "Upload files directly online",
                   "Track your order status in real-time",
                   "Manage your printing history",
-                  "Get instant quotes for your projects",
                 ].map((item, i) => (
                   <li
                     key={item}

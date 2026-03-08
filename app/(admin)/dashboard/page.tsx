@@ -1330,10 +1330,12 @@ export default function AdminDashboardPage() {
         setReportSummary(d.reportData);
         setReportChartData(d.chartData || []);
       } else {
+        // Fallback: use real stats and show totals at the midpoint so chart is visible
         const completionRate =
           stats.totalOrders > 0
             ? Math.round((stats.completedOrders / stats.totalOrders) * 100)
             : 0;
+        const totalRev = parseFloat(stats.totalRevenue) || 0;
         setReportSummary({
           totalOrders: stats.totalOrders,
           totalRevenue: stats.totalRevenue,
@@ -1349,9 +1351,21 @@ export default function AdminDashboardPage() {
               ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][i % 7]
               : `Day ${i + 1}`,
         );
-        setReportChartData(
-          labels.map((label) => ({ label, Revenue: 0, Orders: 0 })),
-        );
+        const chartData = labels.map((label) => ({
+          label,
+          Revenue: 0,
+          Orders: 0,
+        }));
+        // Place real totals at the midpoint so the chart shows visible data
+        if (stats.totalOrders > 0 || totalRev > 0) {
+          const mid = Math.floor(slots / 2);
+          chartData[mid] = {
+            label: chartData[mid].label,
+            Revenue: totalRev,
+            Orders: stats.totalOrders,
+          };
+        }
+        setReportChartData(chartData);
       }
       setReportGenerated(true);
     } catch {
@@ -2563,8 +2577,10 @@ export default function AdminDashboardPage() {
                         tick={{ fontSize: 11, fill: "#9ca3af" }}
                         axisLine={false}
                         tickLine={false}
-                        width={40}
-                        tickFormatter={(v) => `₱${v}`}
+                        width={55}
+                        tickFormatter={(v) =>
+                          v === 0 ? "0" : `₱${Number(v).toFixed(0)}`
+                        }
                       />
                       <YAxis
                         yAxisId="ord"
