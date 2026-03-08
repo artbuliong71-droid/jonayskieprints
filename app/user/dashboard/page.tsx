@@ -2227,7 +2227,11 @@ function DashboardPageInner() {
                         >
                           {(["pickup", "delivery"] as DeliveryOption[]).map(
                             (d) => (
-                              <label key={d} className="radio-label">
+                              <label
+                                key={d}
+                                className="radio-label"
+                                style={{ alignItems: "flex-start" }}
+                              >
                                 <input
                                   type="radio"
                                   name="no_del"
@@ -2237,16 +2241,41 @@ function DashboardPageInner() {
                                     setNoDelivery(d);
                                     setNoPickupTime("");
                                   }}
+                                  style={{ marginTop: 3 }}
                                 />
-                                {d === "pickup" ? (
-                                  <>
-                                    <IC.Home /> Pickup
-                                  </>
-                                ) : (
-                                  <>
-                                    <IC.Truck /> Delivery
-                                  </>
-                                )}
+                                <div>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: ".3rem",
+                                      fontWeight: 600,
+                                      fontSize: ".83rem",
+                                      color: "#111827",
+                                    }}
+                                  >
+                                    {d === "pickup" ? (
+                                      <>
+                                        <IC.Home /> Pickup
+                                      </>
+                                    ) : (
+                                      <>
+                                        <IC.Truck /> Delivery
+                                      </>
+                                    )}
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: ".68rem",
+                                      color: "#6b7280",
+                                      marginTop: 2,
+                                    }}
+                                  >
+                                    {d === "pickup"
+                                      ? "Pick up at our store"
+                                      : "Santa Rosa area only"}
+                                  </div>
+                                </div>
                               </label>
                             ),
                           )}
@@ -3300,7 +3329,11 @@ function DashboardPageInner() {
                   <label className="form-label">Delivery</label>
                   <div className="radio-group" style={{ marginTop: ".5rem" }}>
                     {(["pickup", "delivery"] as DeliveryOption[]).map((d) => (
-                      <label key={d} className="radio-label">
+                      <label
+                        key={d}
+                        className="radio-label"
+                        style={{ alignItems: "flex-start" }}
+                      >
                         <input
                           type="radio"
                           name="eo_del"
@@ -3310,16 +3343,41 @@ function DashboardPageInner() {
                             setEoDelivery(d);
                             setEoPickupTime("");
                           }}
+                          style={{ marginTop: 3 }}
                         />
-                        {d === "pickup" ? (
-                          <>
-                            <IC.Home /> Pickup
-                          </>
-                        ) : (
-                          <>
-                            <IC.Truck /> Delivery
-                          </>
-                        )}
+                        <div>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: ".3rem",
+                              fontWeight: 600,
+                              fontSize: ".83rem",
+                              color: "#111827",
+                            }}
+                          >
+                            {d === "pickup" ? (
+                              <>
+                                <IC.Home /> Pickup
+                              </>
+                            ) : (
+                              <>
+                                <IC.Truck /> Delivery
+                              </>
+                            )}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: ".68rem",
+                              color: "#6b7280",
+                              marginTop: 2,
+                            }}
+                          >
+                            {d === "pickup"
+                              ? "Pick up at our store"
+                              : "Santa Rosa area only"}
+                          </div>
+                        </div>
                       </label>
                     ))}
                   </div>
