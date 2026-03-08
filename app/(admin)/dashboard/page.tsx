@@ -572,372 +572,15 @@ const IC = {
 };
 
 import {
-  PieChart,
-  Pie,
-  Cell,
   Tooltip,
   Legend,
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
   CartesianGrid,
   LineChart,
   Line,
+  XAxis,
+  YAxis,
 } from "recharts";
-
-const STATUS_COLORS: Record<string, string> = {
-  Pending: "#eab308",
-  "In Progress": "#3b82f6",
-  Completed: "#22c55e",
-  Cancelled: "#ef4444",
-};
-
-function DashboardDonut({ stats }: { stats: AdminStats }) {
-  const total =
-    stats.pendingOrders +
-    stats.inProgressOrders +
-    stats.completedOrders +
-    stats.cancelledOrders;
-  if (total === 0)
-    return (
-      <div
-        style={{
-          textAlign: "center",
-          color: "#9ca3af",
-          padding: "2rem 1rem",
-          fontSize: ".84rem",
-        }}
-      >
-        No order data yet
-      </div>
-    );
-  const segs = [
-    { label: "Pending", value: stats.pendingOrders, color: "#eab308" },
-    { label: "In Progress", value: stats.inProgressOrders, color: "#3b82f6" },
-    { label: "Completed", value: stats.completedOrders, color: "#22c55e" },
-    { label: "Cancelled", value: stats.cancelledOrders, color: "#ef4444" },
-  ];
-  const r = 80,
-    cx = 110,
-    cy = 110,
-    sw = 38,
-    circ = 2 * Math.PI * r;
-  let off = 0;
-  const arcs = segs.map((s) => {
-    const dash = (s.value / total) * circ,
-      gap = circ - dash,
-      so = circ - off;
-    off += dash;
-    return { ...s, dash, gap, so };
-  });
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: ".9rem",
-      }}
-    >
-      <svg
-        width={220}
-        height={220}
-        viewBox="0 0 220 220"
-        style={{ maxWidth: "100%", height: "auto" }}
-      >
-        {arcs.map((a, i) => (
-          <circle
-            key={i}
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill="none"
-            stroke={a.color}
-            strokeWidth={sw}
-            strokeDasharray={`${a.dash} ${a.gap}`}
-            strokeDashoffset={a.so}
-            style={{ transition: "stroke-dasharray .6s ease" }}
-          />
-        ))}
-        <text
-          x={cx}
-          y={cy - 6}
-          textAnchor="middle"
-          fontSize="22"
-          fontWeight="700"
-          fill="#111827"
-        >
-          {total}
-        </text>
-        <text
-          x={cx}
-          y={cy + 14}
-          textAnchor="middle"
-          fontSize="11"
-          fill="#6b7280"
-        >
-          Total Orders
-        </text>
-      </svg>
-      <div
-        style={{
-          display: "flex",
-          gap: ".75rem",
-          flexWrap: "wrap",
-          justifyContent: "center",
-        }}
-      >
-        {segs.map((s) => (
-          <div
-            key={s.label}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
-              fontSize: ".76rem",
-              color: "#374151",
-            }}
-          >
-            <div
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: "50%",
-                background: s.color,
-                flexShrink: 0,
-              }}
-            />
-            {s.label} <span style={{ color: "#9ca3af" }}>({s.value})</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ReportCharts({ stats }: { stats: AdminStats }) {
-  const pieData = [
-    { name: "Pending", value: stats.pendingOrders },
-    { name: "In Progress", value: stats.inProgressOrders },
-    { name: "Completed", value: stats.completedOrders },
-    { name: "Cancelled", value: stats.cancelledOrders },
-  ].filter((d) => d.value > 0);
-  const barData = [
-    { name: "Pending", orders: stats.pendingOrders, fill: "#eab308" },
-    { name: "In Progress", orders: stats.inProgressOrders, fill: "#3b82f6" },
-    { name: "Completed", orders: stats.completedOrders, fill: "#22c55e" },
-    { name: "Cancelled", orders: stats.cancelledOrders, fill: "#ef4444" },
-  ];
-  const total = pieData.reduce((s, d) => s + d.value, 0);
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (!active || !payload?.length) return null;
-    const d = payload[0];
-    return (
-      <div
-        style={{
-          background: "#fff",
-          border: "1px solid #e5e7eb",
-          borderRadius: 8,
-          padding: ".5rem .75rem",
-          fontSize: ".78rem",
-          boxShadow: "0 4px 12px rgba(0,0,0,.1)",
-        }}
-      >
-        <div style={{ fontWeight: 600, color: "#111827", marginBottom: 2 }}>
-          {d.name}
-        </div>
-        <div
-          style={{
-            color: d.payload?.fill || STATUS_COLORS[d.name] || "#374151",
-          }}
-        >
-          {d.value} order{d.value !== 1 ? "s" : ""} (
-          {total > 0 ? ((d.value / total) * 100).toFixed(1) : 0}%)
-        </div>
-      </div>
-    );
-  };
-  if (total === 0)
-    return (
-      <div
-        style={{
-          textAlign: "center",
-          color: "#9ca3af",
-          padding: "3rem 1rem",
-          fontSize: ".84rem",
-        }}
-      >
-        No order data yet
-      </div>
-    );
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: "1.25rem",
-      }}
-    >
-      <div
-        style={{
-          background: "#fff",
-          border: "1px solid #e5e7eb",
-          borderRadius: 12,
-          padding: "1rem 1rem 1.25rem",
-        }}
-      >
-        <div
-          style={{
-            fontSize: ".82rem",
-            fontWeight: 600,
-            color: "#111827",
-            marginBottom: ".75rem",
-            display: "flex",
-            alignItems: "center",
-            gap: ".4rem",
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#7c3aed"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-          Orders by Status
-        </div>
-        <ResponsiveContainer width="100%" height={240}>
-          <PieChart>
-            <Pie
-              data={pieData}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={90}
-              paddingAngle={3}
-              dataKey="value"
-            >
-              {pieData.map((entry, i) => (
-                <Cell key={i} fill={STATUS_COLORS[entry.name] || "#9ca3af"} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend
-              iconType="circle"
-              iconSize={9}
-              formatter={(value) => (
-                <span style={{ fontSize: ".72rem", color: "#374151" }}>
-                  {value}
-                </span>
-              )}
-            />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
-      <div
-        style={{
-          background: "#fff",
-          border: "1px solid #e5e7eb",
-          borderRadius: 12,
-          padding: "1rem 1rem 1.25rem",
-        }}
-      >
-        <div
-          style={{
-            fontSize: ".82rem",
-            fontWeight: 600,
-            color: "#111827",
-            marginBottom: ".75rem",
-            display: "flex",
-            alignItems: "center",
-            gap: ".4rem",
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#7c3aed"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          >
-            <line x1="18" y1="20" x2="18" y2="10" />
-            <line x1="12" y1="20" x2="12" y2="4" />
-            <line x1="6" y1="20" x2="6" y2="14" />
-          </svg>
-          Orders Breakdown
-        </div>
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={barData} barSize={36}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#f3f4f6"
-              vertical={false}
-            />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 11, fill: "#6b7280" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              allowDecimals={false}
-              tick={{ fontSize: 11, fill: "#6b7280" }}
-              axisLine={false}
-              tickLine={false}
-              width={28}
-            />
-            <Tooltip
-              cursor={{ fill: "rgba(124,58,237,.05)" }}
-              content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const d = payload[0];
-                return (
-                  <div
-                    style={{
-                      background: "#fff",
-                      border: "1px solid #e5e7eb",
-                      borderRadius: 8,
-                      padding: ".5rem .75rem",
-                      fontSize: ".78rem",
-                      boxShadow: "0 4px 12px rgba(0,0,0,.1)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        color: "#111827",
-                        marginBottom: 2,
-                      }}
-                    >
-                      {d.payload.name}
-                    </div>
-                    <div style={{ color: d.payload.fill }}>
-                      {d.value} order{(d.value as number) !== 1 ? "s" : ""}
-                    </div>
-                  </div>
-                );
-              }}
-            />
-            <Bar dataKey="orders" radius={[6, 6, 0, 0]}>
-              {barData.map((entry, i) => (
-                <Cell key={i} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-}
 
 function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
   return (
@@ -1304,7 +947,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                 {files.map((file, i) => {
                   const { url, resource_type } = file;
                   const isImage = resource_type === "image";
-                  const isPdf = resource_type === "raw";
                   return (
                     <div
                       key={i}
@@ -1785,7 +1427,6 @@ export default function AdminDashboardPage() {
     setPricingSaving(false);
   }
 
-  // ✅ FIXED LOGOUT - uses replace() to remove dashboard from browser history
   async function handleLogout() {
     try {
       await fetch("/api/logout", { method: "POST" });
@@ -1859,24 +1500,33 @@ export default function AdminDashboardPage() {
     );
   }
 
-  const reportCards = [
+  // Report stat cards with icons
+  const reportStatCards = [
     {
       label: "Total Orders",
       value: reportGenerated ? reportSummary.totalOrders : stats.totalOrders,
+      ico: <IC.Package />,
+      c: "#2563eb",
     },
     {
       label: "Total Revenue",
       value: `₱${reportGenerated ? reportSummary.totalRevenue : stats.totalRevenue}`,
+      ico: <IC.Coin />,
+      c: "#7c3aed",
     },
     {
       label: "New Customers",
       value: reportGenerated
         ? reportSummary.newCustomers
         : stats.totalCustomers,
+      ico: <IC.People />,
+      c: "#16a34a",
     },
     {
       label: "Completion Rate",
       value: `${reportGenerated ? reportSummary.completionRate : stats.totalOrders > 0 ? Math.round((stats.completedOrders / stats.totalOrders) * 100) : 0}%`,
+      ico: <IC.CheckCircle />,
+      c: "#eab308",
     },
   ];
 
@@ -1990,14 +1640,10 @@ export default function AdminDashboardPage() {
         .form-input{width:100%;padding:.58rem .78rem;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:max(16px,.875rem);color:var(--text);background:#fff;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
         .form-input:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.1)}
         .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem}
-        .report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem;margin-bottom:.9rem}
-        .report-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:1rem;display:flex;align-items:center;gap:.85rem}
-        .report-ico{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-        .report-val{font-size:1.4rem;font-weight:700;color:#111827;letter-spacing:-.02em}
-        .report-lbl{font-size:.72rem;color:#6b7280;margin-top:2px}
         .rpt-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.75rem;margin-bottom:1rem}
-        .rpt-stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:1rem 1.1rem;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .15s}
+        .rpt-stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:1rem 1.1rem;box-shadow:0 1px 3px rgba(0,0,0,.06);transition:box-shadow .15s;display:flex;align-items:center;gap:.85rem}
         .rpt-stat-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.1)}
+        .rpt-stat-ico{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
         .rpt-stat-lbl{font-size:.72rem;color:#6b7280;font-weight:600;margin-bottom:.35rem}
         .rpt-stat-val{font-size:1.55rem;font-weight:700;color:#111827;letter-spacing:-.03em}
         .rpt-controls{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
@@ -2013,11 +1659,11 @@ export default function AdminDashboardPage() {
         .empty-state{padding:2.5rem;text-align:center;color:var(--muted);font-size:.84rem}
         @media(min-width:1025px){.hamburger{display:none}.welcome{display:block}}
         @media(max-width:1024px){.sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%)}.sidebar.open{transform:translateX(0);box-shadow:4px 0 30px rgba(0,0,0,.25)}.hamburger{display:flex}}
-        @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}.report-grid{grid-template-columns:repeat(2,1fr)}.rpt-stat-grid{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}.rpt-stat-grid{grid-template-columns:repeat(2,1fr)}}
         @media(max-width:768px){.welcome{display:none}.notif-dropdown{width:280px;right:-8px}}
         @media(max-width:600px){.content{padding:.65rem}.desktop-tbl{display:none}.mobile-cards{display:block}.stats-wrap{padding:.6rem .7rem .8rem}.rpt-stat-grid{grid-template-columns:repeat(2,1fr)}.rpt-controls{gap:.4rem}}
         @media(min-width:601px){.mobile-cards{display:none}.desktop-tbl{display:block}}
-        @media(max-width:400px){.stats-grid{grid-template-columns:repeat(2,1fr);gap:.4rem}.form-grid{grid-template-columns:1fr}.report-grid{grid-template-columns:1fr}.stat-val{font-size:1.1rem}.rpt-stat-grid{grid-template-columns:1fr 1fr}}
+        @media(max-width:400px){.stats-grid{grid-template-columns:repeat(2,1fr);gap:.4rem}.form-grid{grid-template-columns:1fr}.stat-val{font-size:1.1rem}.rpt-stat-grid{grid-template-columns:1fr 1fr}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
         @keyframes badgePop{from{transform:scale(0)}to{transform:scale(1)}}
       `}</style>
@@ -2073,7 +1719,6 @@ export default function AdminDashboardPage() {
             ))}
           </nav>
           <div className="sb-foot">
-            {/* ✅ FIXED: button with router.replace instead of Link */}
             <button className="logout-btn" onClick={handleLogout}>
               <IC.Logout /> Logout
             </button>
@@ -2223,7 +1868,147 @@ export default function AdminDashboardPage() {
               </div>
               <div className="chart-card">
                 <div className="chart-title">Orders Overview</div>
-                <DashboardDonut stats={stats} />
+                {(() => {
+                  const total =
+                    stats.pendingOrders +
+                    stats.inProgressOrders +
+                    stats.completedOrders +
+                    stats.cancelledOrders;
+                  if (total === 0)
+                    return (
+                      <div
+                        style={{
+                          textAlign: "center",
+                          color: "#9ca3af",
+                          padding: "2rem 1rem",
+                          fontSize: ".84rem",
+                        }}
+                      >
+                        No order data yet
+                      </div>
+                    );
+                  const segs = [
+                    {
+                      label: "Pending",
+                      value: stats.pendingOrders,
+                      color: "#eab308",
+                    },
+                    {
+                      label: "In Progress",
+                      value: stats.inProgressOrders,
+                      color: "#3b82f6",
+                    },
+                    {
+                      label: "Completed",
+                      value: stats.completedOrders,
+                      color: "#22c55e",
+                    },
+                    {
+                      label: "Cancelled",
+                      value: stats.cancelledOrders,
+                      color: "#ef4444",
+                    },
+                  ];
+                  const r = 80,
+                    cx = 110,
+                    cy = 110,
+                    sw = 38,
+                    circ = 2 * Math.PI * r;
+                  let off = 0;
+                  const arcs = segs.map((s) => {
+                    const dash = (s.value / total) * circ,
+                      gap = circ - dash,
+                      so = circ - off;
+                    off += dash;
+                    return { ...s, dash, gap, so };
+                  });
+                  return (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: ".9rem",
+                      }}
+                    >
+                      <svg
+                        width={220}
+                        height={220}
+                        viewBox="0 0 220 220"
+                        style={{ maxWidth: "100%", height: "auto" }}
+                      >
+                        {arcs.map((a, i) => (
+                          <circle
+                            key={i}
+                            cx={cx}
+                            cy={cy}
+                            r={r}
+                            fill="none"
+                            stroke={a.color}
+                            strokeWidth={sw}
+                            strokeDasharray={`${a.dash} ${a.gap}`}
+                            strokeDashoffset={a.so}
+                            style={{ transition: "stroke-dasharray .6s ease" }}
+                          />
+                        ))}
+                        <text
+                          x={cx}
+                          y={cy - 6}
+                          textAnchor="middle"
+                          fontSize="22"
+                          fontWeight="700"
+                          fill="#111827"
+                        >
+                          {total}
+                        </text>
+                        <text
+                          x={cx}
+                          y={cy + 14}
+                          textAnchor="middle"
+                          fontSize="11"
+                          fill="#6b7280"
+                        >
+                          Total Orders
+                        </text>
+                      </svg>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: ".75rem",
+                          flexWrap: "wrap",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {segs.map((s) => (
+                          <div
+                            key={s.label}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 5,
+                              fontSize: ".76rem",
+                              color: "#374151",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: "50%",
+                                background: s.color,
+                                flexShrink: 0,
+                              }}
+                            />
+                            {s.label}{" "}
+                            <span style={{ color: "#9ca3af" }}>
+                              ({s.value})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
               <div className="card">
                 <div className="card-head">
@@ -2703,14 +2488,26 @@ export default function AdminDashboardPage() {
                   </button>
                 </div>
               </div>
+
+              {/* 4 stat cards with icons */}
               <div className="rpt-stat-grid">
-                {reportCards.map((s) => (
+                {reportStatCards.map((s) => (
                   <div key={s.label} className="rpt-stat-card">
-                    <div className="rpt-stat-lbl">{s.label}</div>
-                    <div className="rpt-stat-val">{s.value}</div>
+                    <div
+                      className="rpt-stat-ico"
+                      style={{ background: s.c + "18", color: s.c }}
+                    >
+                      {s.ico}
+                    </div>
+                    <div>
+                      <div className="rpt-stat-lbl">{s.label}</div>
+                      <div className="rpt-stat-val">{s.value}</div>
+                    </div>
                   </div>
                 ))}
               </div>
+
+              {/* Line chart */}
               <div className="rpt-chart-card">
                 <div className="rpt-chart-title">
                   <svg
@@ -2828,60 +2625,6 @@ export default function AdminDashboardPage() {
                   </ResponsiveContainer>
                 )}
               </div>
-              <div className="report-grid">
-                {[
-                  {
-                    lbl: "Total Revenue",
-                    val: `₱${stats.totalRevenue}`,
-                    ico: <IC.Coin />,
-                    c: "#7c3aed",
-                  },
-                  {
-                    lbl: "Total Orders",
-                    val: stats.totalOrders,
-                    ico: <IC.Package />,
-                    c: "#2563eb",
-                  },
-                  {
-                    lbl: "Completed",
-                    val: stats.completedOrders,
-                    ico: <IC.CheckCircle />,
-                    c: "#16a34a",
-                  },
-                  {
-                    lbl: "Pending",
-                    val: stats.pendingOrders,
-                    ico: <IC.Clock />,
-                    c: "#eab308",
-                  },
-                  {
-                    lbl: "In Progress",
-                    val: stats.inProgressOrders,
-                    ico: <IC.Cart />,
-                    c: "#3b82f6",
-                  },
-                  {
-                    lbl: "Cancelled",
-                    val: stats.cancelledOrders,
-                    ico: <IC.Trash />,
-                    c: "#ef4444",
-                  },
-                ].map((s) => (
-                  <div key={s.lbl} className="report-card">
-                    <div
-                      className="report-ico"
-                      style={{ background: s.c + "18", color: s.c }}
-                    >
-                      {s.ico}
-                    </div>
-                    <div>
-                      <div className="report-val">{s.val}</div>
-                      <div className="report-lbl">{s.lbl}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <ReportCharts stats={stats} />
             </section>
 
             {/* ══ SETTINGS ══ */}
