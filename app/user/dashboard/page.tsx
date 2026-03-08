@@ -1,7 +1,10 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import { useState, useEffect, useCallback, useRef, Fragment } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface User {
   first_name: string;
@@ -180,7 +183,6 @@ function calcTotal(
   return total;
 }
 
-// ── Icons ─────────────────────────────────────────────────────────────────
 const IC = {
   Menu: () => (
     <svg
@@ -415,20 +417,6 @@ const IC = {
       <line x1="7" y1="7" x2="7.01" y2="7" />
     </svg>
   ),
-  Refresh: () => (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-    >
-      <polyline points="23 4 23 10 17 10" />
-      <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
-    </svg>
-  ),
   Eye: () => (
     <svg
       width="15"
@@ -527,37 +515,6 @@ const IC = {
     >
       <rect x="3" y="11" width="18" height="11" rx="2" />
       <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  ),
-  Info: () => (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" y1="8" x2="12" y2="12" />
-      <line x1="12" y1="16" x2="12.01" y2="16" />
-    </svg>
-  ),
-  Calendar: () => (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-    >
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <line x1="16" y1="2" x2="16" y2="6" />
-      <line x1="8" y1="2" x2="8" y2="6" />
-      <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   ),
   ClockSmall: () => (
@@ -680,7 +637,6 @@ function StatCard({
   );
 }
 
-// ── Cancel Confirmation Modal ────────────────────────────────────────────────
 function CancelConfirmModal({
   orderId,
   onConfirm,
@@ -815,6 +771,7 @@ function CancelConfirmModal({
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState<Toast>({
@@ -823,7 +780,6 @@ export default function DashboardPage() {
     visible: false,
   });
   const [prices, setPrices] = useState<Prices>(DEFAULT_PRICES);
-  const [priceUpdateTime, setPriceUpdateTime] = useState("");
   const [stats, setStats] = useState<DashboardStats>({
     totalOrders: 0,
     pendingOrders: 0,
@@ -834,14 +790,10 @@ export default function DashboardPage() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [orderFilter, setOrderFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
-
-  // ── Cancel modal state ──
   const [cancelModalOrderId, setCancelModalOrderId] = useState<number | null>(
     null,
   );
   const [cancellingId, setCancellingId] = useState<number | null>(null);
-
-  // ── New Order state ──
   const [step, setStep] = useState(0);
   const [noService, setNoService] = useState("");
   const [noQuantity, setNoQuantity] = useState<number | "">("");
@@ -857,8 +809,6 @@ export default function DashboardPage() {
   const [noFiles, setNoFiles] = useState<FileList | null>(null);
   const [noSubmitting, setNoSubmitting] = useState(false);
   const [noPdfPages, setNoPdfPages] = useState(0);
-
-  // ── Edit Order state ──
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editOrder, setEditOrder] = useState<Partial<Order> | null>(null);
   const [eoService, setEoService] = useState("");
@@ -874,8 +824,6 @@ export default function DashboardPage() {
   const [eoSpecs, setEoSpecs] = useState("");
   const [eoSubmitting, setEoSubmitting] = useState(false);
   const [eoPdfPages, setEoPdfPages] = useState(0);
-
-  // ── Profile state ──
   const [user, setUser] = useState<User>({
     first_name: "",
     last_name: "",
@@ -923,7 +871,6 @@ export default function DashboardPage() {
         ),
         laminating: sp(data.laminating, DEFAULT_PRICES.laminating),
       });
-      setPriceUpdateTime(new Date().toLocaleTimeString());
     } catch {
       setPrices(DEFAULT_PRICES);
     }
@@ -996,7 +943,6 @@ export default function DashboardPage() {
     fetchPrices,
   ]);
 
-  // ── CANCEL ORDER HANDLER ──────────────────────────────────────────────────
   async function handleCancelOrder(orderId: number) {
     setCancellingId(orderId);
     try {
@@ -1013,9 +959,7 @@ export default function DashboardPage() {
         fetchOrders(orderFilter);
         fetchStats();
         fetchRecentOrders();
-      } else {
-        showToast(r.message || "Could not cancel order.", "error");
-      }
+      } else showToast(r.message || "Could not cancel order.", "error");
     } catch {
       showToast("Network error. Please try again.", "error");
     }
@@ -1230,13 +1174,10 @@ export default function DashboardPage() {
         return;
       }
       const o: Order = r.data;
-
-      // ── BLOCK editing cancelled orders ──
       if (o.status === "cancelled") {
         showToast("Cancelled orders cannot be edited.", "error");
         return;
       }
-
       setEditOrder(o);
       setEoService(o.service);
       setEoQuantity(o.quantity);
@@ -1397,6 +1338,18 @@ export default function DashboardPage() {
     reader.readAsDataURL(file);
   }
 
+  // ✅ FIXED LOGOUT - uses router.replace() to remove dashboard from browser history
+  async function handleLogout() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch {}
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+      sessionStorage.clear();
+    }
+    router.replace("/login");
+  }
+
   const pwStrength = (() => {
     if (!profNewPw) return 0;
     let s = 0;
@@ -1478,13 +1431,7 @@ export default function DashboardPage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        :root{
-          --grad:linear-gradient(135deg,#5b6dee 0%,#7c3aed 50%,#a855f7 100%);
-          --sidebar:#ffffff;--sidebar-border:#e5e7eb;--active:#7c3aed;
-          --bg:#f3f4f6;--surface:#fff;--border:#e5e7eb;
-          --text:#111827;--muted:#6b7280;--success:#22c55e;
-          --sw:220px;--hh:56px;--r:12px
-        }
+        :root{--grad:linear-gradient(135deg,#5b6dee 0%,#7c3aed 50%,#a855f7 100%);--sidebar:#ffffff;--sidebar-border:#e5e7eb;--active:#7c3aed;--bg:#f3f4f6;--surface:#fff;--border:#e5e7eb;--text:#111827;--muted:#6b7280;--success:#22c55e;--sw:220px;--hh:56px;--r:12px}
         html,body{height:100%}
         body{font-family:'Inter',sans-serif;background:var(--bg);min-height:100dvh}
         .shell{display:flex;height:100dvh;overflow:hidden}
@@ -1498,7 +1445,7 @@ export default function DashboardPage() {
         .nav-btn:hover{background:#f3f4f6;color:#7c3aed}
         .nav-btn.active{background:#ede9fe;color:#7c3aed;font-weight:600}
         .sb-foot{padding:.55rem;border-top:1px solid var(--sidebar-border)}
-        .logout-btn{display:flex;align-items:center;gap:.55rem;padding:.55rem .75rem;border-radius:8px;color:#9ca3af;font-size:.8rem;font-weight:500;cursor:pointer;transition:all .15s;text-decoration:none;width:100%;border:none;background:none;-webkit-tap-highlight-color:transparent}
+        .logout-btn{display:flex;align-items:center;gap:.55rem;padding:.55rem .75rem;border-radius:8px;color:#9ca3af;font-size:.8rem;font-weight:500;cursor:pointer;transition:all .15s;width:100%;border:none;background:none;-webkit-tap-highlight-color:transparent;font-family:'Inter',sans-serif}
         .logout-btn:hover{background:#fee2e2;color:#ef4444}
         .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
         .header{height:var(--hh);background:var(--grad);display:flex;align-items:center;justify-content:space-between;padding:0 1rem;flex-shrink:0;box-shadow:0 2px 12px rgba(91,109,238,.25)}
@@ -1514,13 +1461,8 @@ export default function DashboardPage() {
         .content{flex:1;overflow-y:auto;overflow-x:hidden;padding:.85rem;background:#f3f4f6}
         .panel{display:none}.panel.active{display:block}
         .p-board{border-radius:var(--r);padding:.8rem .8rem .85rem;margin-bottom:.75rem;background:var(--grad);position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(91,109,238,.3)}
-        .p-board::before{content:'';position:absolute;top:-60px;right:-40px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.1) 0%,transparent 70%);pointer-events:none}
         .p-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;gap:.4rem;position:relative;z-index:1}
         .p-label{font-size:.76rem;font-weight:600;color:rgba(255,255,255,.92);display:flex;align-items:center;gap:.35rem}
-        .p-chips{display:flex;align-items:center;gap:.35rem}
-        .chip{background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);font-size:.6rem;padding:3px 8px;border-radius:99px;display:flex;align-items:center;gap:3px}
-        .chip-btn{background:rgba(255,255,255,.15);color:rgba(255,255,255,.85);font-size:.6rem;padding:3px 8px;border-radius:99px;border:none;cursor:pointer;display:flex;align-items:center;gap:3px;transition:background .2s;-webkit-tap-highlight-color:transparent;font-family:'Inter',sans-serif}
-        .chip-btn:hover{background:rgba(255,255,255,.28);color:#fff}
         .p-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem;position:relative;z-index:1}
         .p-card{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:.55rem .2rem .5rem;text-align:center;backdrop-filter:blur(6px);transition:background .2s}
         .p-card:hover{background:rgba(255,255,255,.22)}
@@ -1611,9 +1553,6 @@ export default function DashboardPage() {
         .modal-close{background:none;border:none;font-size:1.5rem;color:var(--muted);cursor:pointer;line-height:1;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
         .modal-close:hover{color:var(--text)}
         .pickup-time-box{background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:8px;padding:.5rem .75rem;margin-top:.5rem;display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:#7c3aed;font-weight:600}
-        .pw-wrap{position:relative}
-        .pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;min-width:36px;min-height:36px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
-        .pw-toggle:hover{color:var(--text)}
         .pdf-info{background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:8px;padding:.5rem .75rem;margin-top:.5rem;display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:#7c3aed;font-weight:600}
         .copies-info{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:.4rem .75rem;margin-top:.4rem;font-size:.7rem;color:#16a34a;font-weight:600}
         .hint-text{font-size:.68rem;color:var(--muted);margin-top:.25rem}
@@ -1623,7 +1562,6 @@ export default function DashboardPage() {
         .np-card{background:#fff;border-radius:16px;border:1px solid #e5e7eb;box-shadow:0 2px 16px rgba(0,0,0,.07);overflow:hidden;max-width:700px;font-family:'Inter',sans-serif}
         .np-bar{height:5px;background:linear-gradient(90deg,#5b6dee 0%,#7c3aed 55%,#a855f7 100%)}
         .np-hero{position:relative;padding:1.5rem 1.5rem 1.2rem;background:linear-gradient(135deg,#f5f3ff 0%,#ede9fe 60%,#e9d5ff 100%);border-bottom:1px solid #ddd6fe;display:flex;align-items:flex-end;gap:1.1rem}
-        .np-hero::before{content:'';position:absolute;top:0;right:0;width:220px;height:100%;background:radial-gradient(ellipse at top right,rgba(167,139,250,.25) 0%,transparent 70%);pointer-events:none}
         .np-avatar-wrap{position:relative;flex-shrink:0;cursor:pointer}
         .np-avatar{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,#5b6dee 0%,#7c3aed 60%,#a855f7 100%);display:flex;align-items:center;justify-content:center;font-size:1.55rem;font-weight:800;color:#fff;border:3px solid #fff;box-shadow:0 4px 18px rgba(124,58,237,.35);overflow:hidden;transition:filter .2s;user-select:none}
         .np-avatar img{width:100%;height:100%;object-fit:cover}
@@ -1650,7 +1588,6 @@ export default function DashboardPage() {
         .np-iw{position:relative}
         .np-input{width:100%;padding:.62rem .85rem;border:1.5px solid #e5e7eb;border-radius:9px;font-family:'Inter',sans-serif;font-size:max(16px,.875rem);color:#111827;background:#fff;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
         .np-input:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.1)}
-        .np-input::placeholder{color:#c4c9d4}
         .np-input.has-icon{padding-right:2.6rem}
         .np-input.inp-err{border-color:#ef4444}
         .np-input.inp-ok{border-color:#22c55e}
@@ -1682,16 +1619,14 @@ export default function DashboardPage() {
         @media(min-width:1025px){.hamburger{display:none}.p-grid{grid-template-columns:repeat(6,1fr)}.stats-grid{grid-template-columns:repeat(4,1fr)}}
         @media(max-width:1024px){.sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%)}.sidebar.open{transform:translateX(0);box-shadow:4px 0 30px rgba(0,0,0,.25)}.hamburger{display:flex}}
         @media(max-width:640px){.ro-thead th:nth-child(3),.ro-row td:nth-child(3){display:none}.np-g2{grid-template-columns:1fr}}
-        @media(max-width:480px){.hamburger{display:flex}.welcome{display:none}.content{padding:.6rem}.p-board{padding:.65rem .65rem .7rem;margin-bottom:.6rem}.stats-wrap{margin-bottom:.6rem}.form-row-2{grid-template-columns:1fr}.modal{padding:.95rem .85rem;max-height:94dvh}.modal-head{top:-.95rem}.ro-thead th,.ro-row td{padding:.5rem .6rem;font-size:.72rem}.np-hero{padding:1.1rem 1rem 1rem}.np-avatar{width:62px;height:62px;font-size:1.3rem}.np-body{padding:1.1rem 1rem 1.4rem}.np-tabs{padding:0 1rem}}
+        @media(max-width:480px){.hamburger{display:flex}.welcome{display:none}.content{padding:.6rem}.p-board{padding:.65rem .65rem .7rem;margin-bottom:.6rem}.stats-wrap{margin-bottom:.6rem}.form-row-2{grid-template-columns:1fr}.modal{padding:.95rem .85rem;max-height:94dvh}.modal-head{top:-.95rem}.np-hero{padding:1.1rem 1rem 1rem}.np-avatar{width:62px;height:62px;font-size:1.3rem}.np-body{padding:1.1rem 1rem 1.4rem}.np-tabs{padding:0 1rem}}
         @media(max-width:359px){.p-grid{grid-template-columns:repeat(2,1fr)}.btn-row{flex-direction:column-reverse}.btn-row.between{flex-direction:row}}
         @media(min-width:641px){.modal-overlay{align-items:center;padding:1rem}.modal{border-radius:14px;max-width:560px;max-height:90vh}.modal-head{top:-1.2rem}}
         @media(min-width:768px){.modal{padding:1.4rem 1.6rem}.modal-head{top:-1.4rem}}
-        @supports(padding:max(0px)){.content{padding-left:max(.85rem,env(safe-area-inset-left));padding-right:max(.85rem,env(safe-area-inset-right))}.header{padding-left:max(1rem,env(safe-area-inset-left));padding-right:max(1rem,env(safe-area-inset-right))}}
       `}</style>
 
       <ToastNotification toast={toast} />
 
-      {/* ── CANCEL CONFIRMATION MODAL ── */}
       {cancelModalOrderId !== null && (
         <CancelConfirmModal
           orderId={cancelModalOrderId}
@@ -1705,7 +1640,6 @@ export default function DashboardPage() {
           className={`sb-overlay ${sidebarOpen ? "on" : ""}`}
           onClick={() => setSidebarOpen(false)}
         />
-
         <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
           <div className="sb-brand">
             <div className="sb-icon">
@@ -1740,9 +1674,10 @@ export default function DashboardPage() {
             ))}
           </nav>
           <div className="sb-foot">
-            <Link href="/logout" className="logout-btn">
+            {/* ✅ FIXED: button with router.replace instead of <Link href="/logout"> */}
+            <button className="logout-btn" onClick={handleLogout}>
               <IC.Logout /> Logout
-            </Link>
+            </button>
           </div>
         </aside>
 
@@ -2443,8 +2378,6 @@ export default function DashboardPage() {
                           >
                             {new Date(o.created_at).toLocaleDateString()}
                           </div>
-
-                          {/* ── PENDING: show Edit + Cancel ── */}
                           {o.status === "pending" && (
                             <div className="ord-actions">
                               <button
@@ -2467,8 +2400,6 @@ export default function DashboardPage() {
                               </button>
                             </div>
                           )}
-
-                          {/* ── CANCELLED: locked, no edit/cancel ── */}
                           {o.status === "cancelled" && (
                             <div className="cancelled-note">
                               <IC.Lock /> Order cancelled
@@ -2702,18 +2633,6 @@ export default function DashboardPage() {
                           </div>
                         </div>
                         <hr className="np-divider" />
-                        <div
-                          style={{
-                            fontSize: ".7rem",
-                            fontWeight: 700,
-                            color: "#9ca3af",
-                            letterSpacing: ".07em",
-                            textTransform: "uppercase",
-                            marginBottom: ".65rem",
-                          }}
-                        >
-                          Account Details
-                        </div>
                         <div className="np-ro-row">
                           <span className="np-ro-icon">
                             <svg

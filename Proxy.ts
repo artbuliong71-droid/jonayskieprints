@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 const SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "change-this-secret-in-production"
+  process.env.JWT_SECRET || "change-this-secret-in-production",
 );
 const COOKIE_NAME = "jp_session";
 
@@ -13,10 +13,25 @@ async function getSessionFromRequest(request: NextRequest) {
 
   try {
     const { payload } = await jwtVerify(token, SECRET);
-    return payload as { userId: string; email: string; role: string; first_name: string };
+    return payload as {
+      userId: string;
+      email: string;
+      role: string;
+      first_name: string;
+    };
   } catch {
     return null;
   }
+}
+
+function withNoCache(res: NextResponse): NextResponse {
+  res.headers.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, private",
+  );
+  res.headers.set("Pragma", "no-cache");
+  res.headers.set("Expires", "0");
+  return res;
 }
 
 export async function middleware(request: NextRequest) {
@@ -26,37 +41,37 @@ export async function middleware(request: NextRequest) {
   const isLoggedIn = !!session?.userId;
   const role = session?.role;
 
-  // Protect admin dashboard
   if (pathname.startsWith("/dashboard")) {
     if (!isLoggedIn) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return withNoCache(NextResponse.redirect(new URL("/login", request.url)));
     }
     if (role !== "admin") {
-      return NextResponse.redirect(new URL("/user/dashboard", request.url));
+      return withNoCache(
+        NextResponse.redirect(new URL("/user/dashboard", request.url)),
+      );
     }
   }
 
-  // Protect user dashboard
   if (pathname.startsWith("/user/dashboard")) {
     if (!isLoggedIn) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return withNoCache(NextResponse.redirect(new URL("/login", request.url)));
     }
     if (role === "admin") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return withNoCache(
+        NextResponse.redirect(new URL("/dashboard", request.url)),
+      );
     }
   }
 
-  // ✅ REMOVED: login redirect block — users can always visit /login
-
-  return NextResponse.next();
+  return withNoCache(NextResponse.next());
 }
 
 export const config = {
   matcher: [
     "/dashboard",
-    "/dashboard/(.*)",
+    "/dashboard/:path*",
     "/user/dashboard",
-    "/user/dashboard/(.*)",
+    "/user/dashboard/:path*",
     "/login",
   ],
 };
