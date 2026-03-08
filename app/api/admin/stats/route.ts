@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { Order } from "@/models/order";
@@ -42,6 +43,9 @@ export async function GET() {
     });
   } catch (err) {
     console.error("[ADMIN STATS ERROR]", err);
-    return NextResponse.json({ success: false, message: "Server error." }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: "Server error." },
+      { status: 500 },
+    );
   }
 }
