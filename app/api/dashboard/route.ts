@@ -191,7 +191,7 @@ export async function POST(req: NextRequest) {
 
       const filterQuery: any = { order_id: order_id, status: "pending" };
       if (session.role !== "admin") {
-        filterQuery.user_id = session.userId;
+        filterQuery.user_id = new mongoose.Types.ObjectId(session.userId);
       }
 
       const order = await Order.findOneAndUpdate(
