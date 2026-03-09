@@ -1,3 +1,5 @@
+// app/api/admin/orders/route.ts
+
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
@@ -5,9 +7,6 @@ import { Order } from "@/models/order";
 import { DeletedOrder } from "@/models/delete-order";
 import mongoose from "mongoose";
 
-// ─── Inline User model (avoids import issues if your User model path differs) ──
-// If you already have a User model at @/models/user or @/models/pricing,
-// replace this with: import { User } from "@/models/user";
 let UserModel: any;
 try {
   UserModel = mongoose.model("User");
@@ -25,16 +24,19 @@ try {
   UserModel = mongoose.models.User || mongoose.model("User", UserSchema);
 }
 
-// ─── Helper: attach user_name + user_email to orders that are missing them ───
+// ✅ FIX: Use .lean() so files array is preserved as a plain object
 async function enrichOrders(orders: any[]) {
-  // Collect all unique user_ids that are missing a name
   const missingIds = orders
     .filter((o) => !o.user_name && o.user_id)
     .map((o) => o.user_id);
 
-  if (missingIds.length === 0) return orders;
+  if (missingIds.length === 0) {
+    // Still convert to plain objects to ensure files array serializes correctly
+    return orders.map((o) =>
+      typeof o.toObject === "function" ? o.toObject() : { ...o },
+    );
+  }
 
-  // Fetch those users in one query
   const users = await UserModel.find(
     { _id: { $in: missingIds } },
     "first_name last_name email",
@@ -45,8 +47,8 @@ async function enrichOrders(orders: any[]) {
     userMap[u._id.toString()] = u;
   }
 
-  // Merge user data into each order object
   return orders.map((o) => {
+    // ✅ toObject() preserves subdocument arrays like files
     const plain = typeof o.toObject === "function" ? o.toObject() : { ...o };
     if (!plain.user_name && plain.user_id) {
       const u = userMap[plain.user_id.toString()];
@@ -55,6 +57,8 @@ async function enrichOrders(orders: any[]) {
         plain.user_email = u.email || plain.user_email || "";
       }
     }
+    // ✅ Ensure files is always an array
+    if (!plain.files) plain.files = [];
     return plain;
   });
 }
@@ -165,7 +169,6 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // If user_name is missing, enrich before archiving
     let user_name = order.user_name || "";
     let user_email = order.user_email || "";
     if (!user_name && order.user_id) {

@@ -189,7 +189,6 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Customers can only cancel their own pending orders
       const filterQuery: any = { order_id: order_id, status: "pending" };
       if (session.role !== "admin") {
         filterQuery.user_id = session.userId;
@@ -231,7 +230,6 @@ export async function POST(req: NextRequest) {
       const order_id = formData.get("order_id") as string;
       const newStatus = formData.get("status") as string;
 
-      // Admin can only set: pending, in-progress, completed — NOT cancelled
       const adminAllowedStatuses = ["pending", "in-progress", "completed"];
       if (!adminAllowedStatuses.includes(newStatus)) {
         return NextResponse.json(
@@ -409,12 +407,16 @@ export async function POST(req: NextRequest) {
       pickup_time,
       total_amount,
       payment_method: "cash",
+      files: [], // ✅ initialize empty files array
     });
 
     return NextResponse.json({
       success: true,
       message: "Order placed successfully!",
-      data: { order_id: order._id, total_amount: order.total_amount },
+      data: {
+        order_id: order.order_id || order._id.toString(),
+        total_amount: order.total_amount,
+      },
     });
   } catch (err) {
     console.error("[DASHBOARD POST ERROR]", err);
@@ -473,6 +475,7 @@ function buildSpecifications(formData: FormData): string {
   return parts.join("\n");
 }
 
+// ✅ FIX: files is now included in every formatOrder response
 function formatOrder(order: any) {
   return {
     order_id: order.order_id || order._id.toString(),
@@ -488,5 +491,6 @@ function formatOrder(order: any) {
     created_at: order.created_at,
     updated_at: order.updated_at,
     user_id: order.user_id?.toString(),
+    files: order.files || [], // ✅ THIS WAS THE ROOT CAUSE — was missing before
   };
 }
