@@ -26,7 +26,7 @@ interface Prices {
   laminating: number;
 }
 interface Order {
-  order_id: number;
+  order_id: string; // ✅ changed from number to string — MongoDB IDs are strings
   service: string;
   quantity: number;
   specifications: string;
@@ -646,7 +646,7 @@ function CancelConfirmModal({
   onConfirm,
   onClose,
 }: {
-  orderId: number;
+  orderId: string;
   onConfirm: () => void;
   onClose: () => void;
 }) {
@@ -717,7 +717,7 @@ function CancelConfirmModal({
               Cancel Order
             </div>
             <div style={{ fontSize: ".73rem", color: "#6b7280", marginTop: 2 }}>
-              Order #{orderId}
+              Order #{String(orderId).slice(-6)}
             </div>
           </div>
         </div>
@@ -913,6 +913,20 @@ function PickupTimeDropdown({
   );
 }
 
+// ✅ Helper: upload files to /api/upload after order is created
+async function uploadFilesForOrder(
+  orderId: string,
+  files: FileList,
+): Promise<void> {
+  if (!files || files.length === 0) return;
+  const fd = new FormData();
+  fd.append("order_id", orderId);
+  Array.from(files).forEach((f) => fd.append("files", f));
+  const res = await fetch("/api/upload", { method: "POST", body: fd });
+  const r = await res.json();
+  if (!r.success) throw new Error(r.message || "File upload failed");
+}
+
 function DashboardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -935,10 +949,10 @@ function DashboardPageInner() {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [orderFilter, setOrderFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
-  const [cancelModalOrderId, setCancelModalOrderId] = useState<number | null>(
+  const [cancelModalOrderId, setCancelModalOrderId] = useState<string | null>(
     null,
-  );
-  const [cancellingId, setCancellingId] = useState<number | null>(null);
+  ); // ✅ string
+  const [cancellingId, setCancellingId] = useState<string | null>(null); // ✅ string
   const [step, setStep] = useState(0);
   const [noService, setNoService] = useState("");
   const [noQuantity, setNoQuantity] = useState<number | "">("");
@@ -1098,16 +1112,14 @@ function DashboardPageInner() {
     return () => clearTimeout(timer);
   }, [searchParams, user.first_name, showToast]);
 
-  async function handleCancelOrder(orderId: number) {
+  // ✅ FIX: order_id is now a string, no status field needed
+  async function handleCancelOrder(orderId: string) {
     setCancellingId(orderId);
     try {
       const fd = new FormData();
-      fd.append("order_id", String(orderId));
-      fd.append("status", "cancelled");
-      const res = await fetch("/api/dashboard?action=cancelOrder", {
-        method: "POST",
-        body: fd,
-      });
+      fd.append("action", "cancelOrder");
+      fd.append("order_id", orderId);
+      const res = await fetch("/api/dashboard", { method: "POST", body: fd });
       const r = await res.json();
       if (r.success) {
         showToast("Order cancelled successfully.");
@@ -1251,6 +1263,7 @@ function DashboardPageInner() {
     return true;
   }
 
+  // ✅ FIX: Create order first, then upload files separately via /api/upload
   async function handleSubmitOrder(e: React.FormEvent) {
     e.preventDefault();
     if (
@@ -1265,6 +1278,7 @@ function DashboardPageInner() {
       finalQuantity = Number(noCopies) || 1;
     setNoSubmitting(true);
     try {
+      // Step 1: Create the order (no files)
       const fd = new FormData();
       fd.append("service", noService);
       fd.append("quantity", String(finalQuantity));
@@ -1278,19 +1292,44 @@ function DashboardPageInner() {
       fd.append("color_option", noColorOption);
       if (noLamination) fd.append("add_lamination", "on");
       if (showsCopies) fd.append("copies", String(noCopies || 1));
-      if (noFiles) Array.from(noFiles).forEach((f) => fd.append("files[]", f));
-      const res = await fetch("/api/dashboard?action=createOrder", {
-        method: "POST",
-        body: fd,
-      });
+
+      const res = await fetch("/api/dashboard", { method: "POST", body: fd });
       const r = await res.json();
-      if (r.success) {
-        showToast(`Order placed! ID: ${r.data.order_id}`);
-        resetForm();
-        setActiveSection("dashboard");
-        fetchStats();
-        fetchRecentOrders();
-      } else showToast(r.message || "Error placing order", "error");
+
+      if (!r.success) {
+        showToast(r.message || "Error placing order", "error");
+        setNoSubmitting(false);
+        return;
+      }
+
+      const newOrderId: string = r.data.order_id;
+
+      // Step 2: Upload files to Cloudinary via /api/upload ✅
+      if (noFiles && noFiles.length > 0) {
+        try {
+          await uploadFilesForOrder(newOrderId, noFiles);
+        } catch (uploadErr) {
+          // Order created but files failed — warn but don't block
+          showToast(
+            `Order placed! But file upload failed. Please contact support.`,
+            "error",
+          );
+          resetForm();
+          setActiveSection("dashboard");
+          fetchStats();
+          fetchRecentOrders();
+          setNoSubmitting(false);
+          return;
+        }
+      }
+
+      showToast(
+        `Order placed successfully! ID: #${String(newOrderId).slice(-6)}`,
+      );
+      resetForm();
+      setActiveSection("dashboard");
+      fetchStats();
+      fetchRecentOrders();
     } catch (err: unknown) {
       showToast(
         "Error: " + (err instanceof Error ? err.message : String(err)),
@@ -1318,7 +1357,8 @@ function DashboardPageInner() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  async function openEditModal(orderId: number) {
+  // ✅ FIX: order_id is string now
+  async function openEditModal(orderId: string) {
     try {
       const res = await fetch(
         `/api/dashboard?action=getOrder&order_id=${orderId}`,
@@ -1355,6 +1395,7 @@ function DashboardPageInner() {
     }
   }
 
+  // ✅ FIX: Update order details, then upload new files separately via /api/upload
   async function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!editOrder) return;
@@ -1378,12 +1419,16 @@ function DashboardPageInner() {
       showToast("Delivery address is required", "error");
       return;
     }
+
     let finalQty = Number(eoQuantity);
     if (eoShowsCopies && (finalQty < 1 || eoQuantity === ""))
       finalQty = Number(eoCopies) || 1;
+
     setEoSubmitting(true);
     try {
+      // Step 1: Update order details
       const fd = new FormData();
+      fd.append("action", "updateOrder");
       fd.append("order_id", String(editOrder.order_id));
       fd.append("service", eoService);
       fd.append("quantity", String(finalQty));
@@ -1397,22 +1442,35 @@ function DashboardPageInner() {
       fd.append("color_option", eoColorOption);
       if (eoLamination) fd.append("add_lamination", "on");
       if (eoShowsCopies) fd.append("copies", String(eoCopies || 1));
-      if (editFileInputRef.current?.files?.length)
-        Array.from(editFileInputRef.current.files).forEach((f) =>
-          fd.append("new_files[]", f),
-        );
-      const res = await fetch("/api/dashboard?action=updateOrder", {
-        method: "POST",
-        body: fd,
-      });
+
+      const res = await fetch("/api/dashboard", { method: "POST", body: fd });
       const r = await res.json();
-      if (r.success) {
-        showToast("Order updated!");
-        setEditModalOpen(false);
-        fetchOrders(orderFilter);
-        fetchStats();
-        fetchRecentOrders();
-      } else showToast(r.message || "Error updating order", "error");
+
+      if (!r.success) {
+        showToast(r.message || "Error updating order", "error");
+        setEoSubmitting(false);
+        return;
+      }
+
+      // Step 2: Upload new files if provided ✅
+      const newFiles = editFileInputRef.current?.files;
+      if (newFiles && newFiles.length > 0) {
+        try {
+          await uploadFilesForOrder(String(editOrder.order_id!), newFiles);
+        } catch {
+          showToast("Order updated, but new files failed to upload.", "error");
+          setEditModalOpen(false);
+          fetchOrders(orderFilter);
+          setEoSubmitting(false);
+          return;
+        }
+      }
+
+      showToast("Order updated successfully!");
+      setEditModalOpen(false);
+      fetchOrders(orderFilter);
+      fetchStats();
+      fetchRecentOrders();
     } catch (err: unknown) {
       showToast(
         "Error: " + (err instanceof Error ? err.message : String(err)),
@@ -1580,6 +1638,11 @@ function DashboardPageInner() {
           : "badge-completed";
   }
 
+  // ✅ Helper to get display ID (last 6 chars)
+  function displayId(id: string | number | undefined): string {
+    return id ? String(id).slice(-6) : "------";
+  }
+
   return (
     <>
       <style>{`
@@ -1595,8 +1658,6 @@ function DashboardPageInner() {
         html,body{height:100%}
         body{font-family:'Inter',sans-serif;background:var(--bg);min-height:100dvh}
         .shell{display:flex;height:100dvh;overflow:hidden}
-
-        /* ── SIDEBAR ── */
         .sidebar{width:var(--sw);background:var(--sidebar);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;flex-shrink:0;height:100%;z-index:200;transition:transform .28s cubic-bezier(.4,0,.2,1);box-shadow:2px 0 12px rgba(0,0,0,.06)}
         .sb-brand{display:flex;align-items:center;gap:.6rem;padding:.9rem .9rem .8rem;background:#2563eb}
         .sb-icon{width:34px;height:34px;background:rgba(255,255,255,.2);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
@@ -1609,8 +1670,6 @@ function DashboardPageInner() {
         .sb-foot{padding:.55rem;border-top:1px solid var(--sidebar-border)}
         .logout-btn{display:flex;align-items:center;gap:.55rem;padding:.55rem .75rem;border-radius:8px;color:#9ca3af;font-size:.8rem;font-weight:500;cursor:pointer;transition:all .15s;width:100%;border:none;background:none;-webkit-tap-highlight-color:transparent;font-family:'Inter',sans-serif}
         .logout-btn:hover{background:#fee2e2;color:#ef4444}
-
-        /* ── MAIN ── */
         .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
         .header{height:var(--hh);background:var(--grad);display:flex;align-items:center;justify-content:space-between;padding:0 1rem;flex-shrink:0;box-shadow:0 2px 12px rgba(91,109,238,.25)}
         .header-l{display:flex;align-items:center;gap:.55rem;min-width:0}
@@ -1624,13 +1683,9 @@ function DashboardPageInner() {
         .avatar img{width:100%;height:100%;object-fit:cover}
         .content{flex:1;overflow-y:auto;overflow-x:hidden;padding:.85rem;background:#f3f4f6}
         .panel{display:none}.panel.active{display:block}
-
-        /* ── PRICING BOARD ── */
         .p-board{border-radius:var(--r);padding:1rem 1rem 1.1rem;margin-bottom:.75rem;background:var(--grad);position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(91,109,238,.3)}
         .p-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;gap:.4rem;position:relative;z-index:1}
         .p-label{font-size:.76rem;font-weight:600;color:rgba(255,255,255,.92);display:flex;align-items:center;gap:.35rem}
-
-        /* PRICING GRID — mobile: 2 cols, tablet: 3 cols, desktop: 6 cols */
         .p-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;position:relative;z-index:1}
         .p-card{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:1rem .5rem .9rem;text-align:center;backdrop-filter:blur(6px);transition:background .2s,transform .15s}
         .p-card:hover{background:rgba(255,255,255,.24);transform:translateY(-2px)}
@@ -1638,8 +1693,6 @@ function DashboardPageInner() {
         .p-name{font-size:.72rem;color:rgba(255,255,255,.88);font-weight:600;margin-bottom:.22rem;letter-spacing:.01em}
         .p-price{font-size:1.25rem;font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1}
         .p-unit{font-size:.62rem;color:rgba(255,255,255,.62);margin-top:3px}
-
-        /* ── STATS ── */
         .stats-wrap{margin-bottom:.75rem}
         .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.55rem}
         .stat-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:.8rem 1rem;display:flex;align-items:center;gap:.75rem;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:box-shadow .15s}
@@ -1648,8 +1701,6 @@ function DashboardPageInner() {
         .stat-right{display:flex;flex-direction:column;min-width:0}
         .stat-value{font-size:1.35rem;font-weight:700;color:var(--text);letter-spacing:-.03em;line-height:1}
         .stat-label{font-size:.62rem;color:var(--muted);margin-top:4px;white-space:nowrap}
-
-        /* ── CARDS & TABLES ── */
         .card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:visible;margin-bottom:.75rem;box-shadow:0 1px 3px rgba(0,0,0,.06)}
         .card-head{padding:.6rem .85rem;border-bottom:1px solid var(--border);font-size:.82rem;font-weight:600;color:var(--text)}
         .ro-empty{padding:2rem;text-align:center;color:var(--muted);font-size:.78rem}
@@ -1665,8 +1716,6 @@ function DashboardPageInner() {
         .badge-completed{background:#d1fae5;color:#065f46}
         .badge-progress{background:#dbeafe;color:#1e40af}
         .badge-cancelled{background:#fee2e2;color:#991b1b}
-
-        /* ── FORMS ── */
         .form-group{margin-bottom:.8rem}
         .form-label{display:block;font-size:.64rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text);margin-bottom:.32rem}
         .form-input,.form-select,.form-textarea{width:100%;padding:.58rem .78rem;border:1.5px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:max(16px,.875rem);color:var(--text);background:#fff;transition:border-color .2s,box-shadow .2s;outline:none;-webkit-appearance:none}
@@ -1678,8 +1727,6 @@ function DashboardPageInner() {
         .radio-label input{accent-color:var(--active);width:16px;height:16px}
         .check-label{display:flex;align-items:center;gap:.45rem;cursor:pointer;font-size:.83rem;color:#555}
         .check-label input{accent-color:var(--active);width:16px;height:16px}
-
-        /* ── STEPS ── */
         .steps{display:flex;align-items:flex-start;gap:0;margin-bottom:1.4rem}
         .step-node{text-align:center}
         .step-dot{width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;border:2px solid var(--border);color:var(--muted);background:#fff;margin:0 auto;transition:all .2s}
@@ -1688,14 +1735,10 @@ function DashboardPageInner() {
         .step-line{flex:1;height:2px;background:var(--border);margin:12px 4px 0}
         .step-line.done{background:var(--success)}
         .step-box{display:none}.step-box.active{display:block}
-
-        /* ── SUMMARY ── */
         .sum-box{background:#f9fafb;border:1.5px solid var(--border);border-radius:10px;padding:.8rem .9rem;margin-top:.9rem}
         .sum-row{display:flex;justify-content:space-between;font-size:.78rem;padding:3px 0;color:var(--muted)}
         .sum-row span:last-child{color:var(--text);font-weight:500}
         .sum-total{display:flex;justify-content:space-between;font-weight:700;font-size:.92rem;color:#7c3aed;border-top:1px solid var(--border);padding-top:.5rem;margin-top:.4rem}
-
-        /* ── BUTTONS ── */
         .btn{padding:.58rem 1.1rem;border-radius:8px;font-family:'Inter',sans-serif;font-size:.83rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:.38rem;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
         .btn-primary{background:linear-gradient(135deg,#5b6dee,#7c3aed);color:#fff;box-shadow:0 4px 12px rgba(91,109,238,.3)}
         .btn-primary:hover:not(:disabled){box-shadow:0 6px 20px rgba(91,109,238,.45);transform:translateY(-1px)}
@@ -1707,8 +1750,6 @@ function DashboardPageInner() {
         .btn-full{width:100%;justify-content:center}
         .btn-row{display:flex;gap:.6rem;justify-content:flex-end;margin-top:.9rem;flex-wrap:wrap}
         .btn-row.between{justify-content:space-between}
-
-        /* ── ORDER LIST ── */
         .ord-item{padding:.7rem .85rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:.55rem;transition:background .15s}
         .ord-item:last-child{border-bottom:none}
         .ord-item:hover{background:#f9fafb}
@@ -1722,24 +1763,18 @@ function DashboardPageInner() {
         .cancel-btn:hover:not(:disabled){opacity:.75}
         .cancel-btn:disabled{opacity:.4;cursor:not-allowed}
         .cancelled-note{font-size:.63rem;color:#9ca3af;margin-top:4px;display:flex;align-items:center;gap:3px;justify-content:flex-end}
-
-        /* ── FILTER ── */
         .filter-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem}
         .filter-title{font-size:.98rem;font-weight:700;color:var(--text)}
         .filter-chips{display:flex;gap:.3rem}
         .fchip{padding:.28rem .75rem;border-radius:99px;border:1.5px solid var(--border);font-size:.7rem;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;background:#fff;color:var(--muted);-webkit-tap-highlight-color:transparent}
         .fchip.active{background:#7c3aed;border-color:#7c3aed;color:#fff}
         .fchip:hover:not(.active){border-color:#7c3aed;color:#7c3aed}
-
-        /* ── MODAL ── */
         .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;display:flex;align-items:flex-end;justify-content:center}
         .modal{background:var(--surface);border-radius:18px 18px 0 0;width:100%;max-width:100%;max-height:92dvh;overflow-y:auto;overflow-x:hidden;padding:1.2rem .95rem;box-shadow:0 -8px 40px rgba(109,40,217,.2)}
         .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:.95rem;padding-bottom:.65rem;border-bottom:1px solid var(--border);position:sticky;top:-1.2rem;background:var(--surface);z-index:1}
         .modal-title{font-size:.93rem;font-weight:700;color:var(--text)}
         .modal-close{background:none;border:none;font-size:1.5rem;color:var(--muted);cursor:pointer;line-height:1;min-width:40px;min-height:40px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
         .modal-close:hover{color:var(--text)}
-
-        /* ── MISC ── */
         .pickup-time-box{background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:8px;padding:.5rem .75rem;margin-top:.5rem;display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:#7c3aed;font-weight:600}
         .pdf-info{background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:8px;padding:.5rem .75rem;margin-top:.5rem;display:flex;align-items:center;gap:.4rem;font-size:.72rem;color:#7c3aed;font-weight:600}
         .copies-info{background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:.4rem .75rem;margin-top:.4rem;font-size:.7rem;color:#16a34a;font-weight:600}
@@ -1747,8 +1782,6 @@ function DashboardPageInner() {
         .sb-overlay{display:none;position:fixed;inset:0;background:rgba(30,27,75,.5);z-index:190}
         .sb-overlay.on{display:block}
         .empty-state{padding:2.2rem;text-align:center;color:var(--muted);font-size:.82rem}
-
-        /* ── PROFILE ── */
         .np-card{background:#fff;border-radius:16px;border:1px solid #e5e7eb;box-shadow:0 2px 16px rgba(0,0,0,.07);overflow:hidden;max-width:700px;font-family:'Inter',sans-serif}
         .np-bar{height:5px;background:linear-gradient(90deg,#5b6dee 0%,#7c3aed 55%,#a855f7 100%)}
         .np-hero{position:relative;padding:1.5rem 1.5rem 1.2rem;background:linear-gradient(135deg,#f5f3ff 0%,#ede9fe 60%,#e9d5ff 100%);border-bottom:1px solid #ddd6fe;display:flex;align-items:flex-end;gap:1.1rem}
@@ -1806,111 +1839,21 @@ function DashboardPageInner() {
         .np-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:np-spin .65s linear infinite}
         @keyframes np-fadeup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
         .np-fadein{animation:np-fadeup .24s ease both}
-
-        /* ══════════════════════════════════
-           RESPONSIVE BREAKPOINTS
-        ══════════════════════════════════ */
-
-        /* XS — very small phones (< 360px) */
-        @media(max-width:359px){
-          .p-grid{grid-template-columns:repeat(2,1fr);gap:.4rem}
-          .p-card{padding:.75rem .25rem .7rem}
-          .p-ico{width:36px;height:36px}
-          .p-price{font-size:1.05rem}
-          .p-name{font-size:.65rem}
-          .stats-grid{grid-template-columns:1fr 1fr}
-          .btn-row{flex-direction:column-reverse}
-          .btn-row.between{flex-direction:row}
-          .form-row-2{grid-template-columns:1fr}
-        }
-
-        /* SM — small phones (360–479px) */
-        @media(min-width:360px) and (max-width:479px){
-          .p-grid{grid-template-columns:repeat(2,1fr);gap:.5rem}
-          .p-card{padding:.85rem .3rem .8rem}
-          .form-row-2{grid-template-columns:1fr}
-        }
-
-        /* MD — large phones (480–639px) */
-        @media(min-width:480px) and (max-width:639px){
-          .p-grid{grid-template-columns:repeat(3,1fr);gap:.5rem}
-          .p-card{padding:.9rem .35rem .85rem}
-          .stats-grid{grid-template-columns:repeat(2,1fr)}
-        }
-
-        /* LG — tablets portrait (640–767px) */
-        @media(min-width:640px) and (max-width:767px){
-          .p-grid{grid-template-columns:repeat(3,1fr);gap:.6rem}
-          .stats-grid{grid-template-columns:repeat(4,1fr)}
-          .modal-overlay{align-items:center;padding:1rem}
-          .modal{border-radius:14px;max-width:560px;max-height:90vh}
-          .modal-head{top:-1.2rem}
-        }
-
-        /* XL — tablets landscape (768–1023px) */
-        @media(min-width:768px) and (max-width:1023px){
-          .p-grid{grid-template-columns:repeat(3,1fr);gap:.65rem}
-          .stats-grid{grid-template-columns:repeat(4,1fr)}
-          .modal-overlay{align-items:center;padding:1rem}
-          .modal{border-radius:14px;max-width:560px;max-height:90vh;padding:1.4rem 1.6rem}
-          .modal-head{top:-1.4rem}
-          .p-card{padding:1.05rem .45rem 1rem}
-          .p-ico{width:46px;height:46px}
-          .p-price{font-size:1.3rem}
-        }
-
-        /* 2XL — desktop (≥1024px): sidebar always visible, 6-col pricing */
-        @media(min-width:1024px){
-          .hamburger{display:none}
-          .p-grid{grid-template-columns:repeat(6,1fr);gap:.65rem}
-          .stats-grid{grid-template-columns:repeat(4,1fr)}
-          .p-card{padding:1.1rem .4rem 1rem}
-          .p-ico{width:48px;height:48px}
-          .p-price{font-size:1.35rem}
-          .p-name{font-size:.75rem}
-          .p-unit{font-size:.64rem}
-          .modal-overlay{align-items:center;padding:1rem}
-          .modal{border-radius:14px;max-width:560px;max-height:90vh;padding:1.4rem 1.6rem}
-          .modal-head{top:-1.4rem}
-        }
-
-        /* Sidebar overlay — mobile only */
-        @media(max-width:1023px){
-          .sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%)}
-          .sidebar.open{transform:translateX(0);box-shadow:4px 0 30px rgba(0,0,0,.25)}
-          .hamburger{display:flex}
-        }
-
-        /* Hide date column on small screens */
-        @media(max-width:639px){
-          .ro-thead th:nth-child(3),.ro-row td:nth-child(3){display:none}
-          .np-g2{grid-template-columns:1fr}
-        }
-
-        /* Content padding tweaks on mobile */
-        @media(max-width:479px){
-          .content{padding:.6rem}
-          .p-board{padding:.75rem .75rem .8rem;margin-bottom:.6rem}
-          .stats-wrap{margin-bottom:.6rem}
-          .form-row-2{grid-template-columns:1fr}
-          .modal{padding:.95rem .85rem;max-height:94dvh}
-          .modal-head{top:-.95rem}
-          .np-hero{padding:1.1rem 1rem 1rem}
-          .np-avatar{width:62px;height:62px;font-size:1.3rem}
-          .np-body{padding:1.1rem 1rem 1.4rem}
-          .np-tabs{padding:0 1rem}
-          .welcome{display:none}
-        }
-
-        /* Ultra-wide: cap content width */
-        @media(min-width:1400px){
-          .content{padding:1rem 1.5rem}
-          .p-board{padding:1.15rem 1.15rem 1.2rem}
-        }
+        @media(max-width:359px){.p-grid{grid-template-columns:repeat(2,1fr);gap:.4rem}.stats-grid{grid-template-columns:1fr 1fr}.btn-row{flex-direction:column-reverse}.btn-row.between{flex-direction:row}.form-row-2{grid-template-columns:1fr}}
+        @media(min-width:360px) and (max-width:479px){.p-grid{grid-template-columns:repeat(2,1fr);gap:.5rem}.form-row-2{grid-template-columns:1fr}}
+        @media(min-width:480px) and (max-width:639px){.p-grid{grid-template-columns:repeat(3,1fr);gap:.5rem}.stats-grid{grid-template-columns:repeat(2,1fr)}}
+        @media(min-width:640px) and (max-width:767px){.p-grid{grid-template-columns:repeat(3,1fr);gap:.6rem}.stats-grid{grid-template-columns:repeat(4,1fr)}.modal-overlay{align-items:center;padding:1rem}.modal{border-radius:14px;max-width:560px;max-height:90vh}}
+        @media(min-width:768px) and (max-width:1023px){.p-grid{grid-template-columns:repeat(3,1fr);gap:.65rem}.stats-grid{grid-template-columns:repeat(4,1fr)}.modal-overlay{align-items:center;padding:1rem}.modal{border-radius:14px;max-width:560px;max-height:90vh;padding:1.4rem 1.6rem}}
+        @media(min-width:1024px){.hamburger{display:none}.p-grid{grid-template-columns:repeat(6,1fr);gap:.65rem}.stats-grid{grid-template-columns:repeat(4,1fr)}.modal-overlay{align-items:center;padding:1rem}.modal{border-radius:14px;max-width:560px;max-height:90vh;padding:1.4rem 1.6rem}}
+        @media(max-width:1023px){.sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%)}.sidebar.open{transform:translateX(0);box-shadow:4px 0 30px rgba(0,0,0,.25)}.hamburger{display:flex}}
+        @media(max-width:639px){.ro-thead th:nth-child(3),.ro-row td:nth-child(3){display:none}.np-g2{grid-template-columns:1fr}}
+        @media(max-width:479px){.content{padding:.6rem}.p-board{padding:.75rem .75rem .8rem;margin-bottom:.6rem}.stats-wrap{margin-bottom:.6rem}.form-row-2{grid-template-columns:1fr}.modal{padding:.95rem .85rem;max-height:94dvh}.np-hero{padding:1.1rem 1rem 1rem}.np-avatar{width:62px;height:62px;font-size:1.3rem}.np-body{padding:1.1rem 1rem 1.4rem}.np-tabs{padding:0 1rem}.welcome{display:none}}
+        @media(min-width:1400px){.content{padding:1rem 1.5rem}.p-board{padding:1.15rem 1.15rem 1.2rem}}
       `}</style>
 
       <ToastNotification toast={toast} />
 
+      {/* ✅ cancelModalOrderId is now string */}
       {cancelModalOrderId !== null && (
         <CancelConfirmModal
           orderId={cancelModalOrderId}
@@ -2074,7 +2017,7 @@ function DashboardPageInner() {
                           key={`recent-${o.order_id ?? idx}`}
                           className="ro-row"
                         >
-                          <td className="ro-id">{o.order_id}</td>
+                          <td className="ro-id">#{displayId(o.order_id)}</td>
                           <td className="ro-svc">{o.service}</td>
                           <td className="ro-date">
                             {new Date(o.created_at).toLocaleDateString(
@@ -2144,6 +2087,7 @@ function DashboardPageInner() {
                   ))}
                 </div>
                 <form onSubmit={handleSubmitOrder}>
+                  {/* Step 0 */}
                   <div className={`step-box ${step === 0 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">Select Service</label>
@@ -2333,6 +2277,7 @@ function DashboardPageInner() {
                     </div>
                   </div>
 
+                  {/* Step 1 */}
                   <div className={`step-box ${step === 1 ? "active" : ""}`}>
                     {showsPaper && (
                       <div className="form-group">
@@ -2438,6 +2383,7 @@ function DashboardPageInner() {
                     </div>
                   </div>
 
+                  {/* Step 2 */}
                   <div className={`step-box ${step === 2 ? "active" : ""}`}>
                     <div className="form-group">
                       <label className="form-label">
@@ -2654,8 +2600,9 @@ function DashboardPageInner() {
                         className="ord-item"
                       >
                         <div style={{ minWidth: 0, flex: 1 }}>
+                          {/* ✅ Show short display ID */}
                           <div className="ord-id">
-                            #{o.order_id} — {o.service}
+                            #{displayId(o.order_id)} — {o.service}
                           </div>
                           <div className="ord-meta">{prev}</div>
                           <div className="ord-meta">
@@ -2694,6 +2641,7 @@ function DashboardPageInner() {
                           </div>
                           {o.status === "pending" && (
                             <div className="ord-actions">
+                              {/* ✅ Pass string order_id */}
                               <button
                                 className="edit-btn"
                                 onClick={() => openEditModal(o.order_id)}
@@ -3046,8 +2994,7 @@ function DashboardPageInner() {
                             <line x1="12" y1="16" x2="12.01" y2="16" />
                           </svg>
                           Leave all fields blank if you don't want to change
-                          your password. Your name and email will still be
-                          saved.
+                          your password.
                         </div>
                         <div
                           className="np-group"
@@ -3245,8 +3192,9 @@ function DashboardPageInner() {
         >
           <div className="modal">
             <div className="modal-head">
+              {/* ✅ Show short display ID */}
               <div className="modal-title">
-                Edit Order #{editOrder.order_id}
+                Edit Order #{displayId(editOrder.order_id)}
               </div>
               <button
                 className="modal-close"
@@ -3502,7 +3450,7 @@ function DashboardPageInner() {
               </div>
               <div className="form-group">
                 <label className="form-label">
-                  Replace Files{" "}
+                  Add More Files{" "}
                   <span
                     style={{
                       fontSize: ".6rem",
