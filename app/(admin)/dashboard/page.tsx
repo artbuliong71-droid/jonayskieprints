@@ -571,6 +571,21 @@ const IC = {
       <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
   ),
+  Refresh: () => (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+    >
+      <polyline points="23 4 23 10 17 10" />
+      <polyline points="1 20 1 14 7 14" />
+      <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+    </svg>
+  ),
 };
 
 import {
@@ -1169,6 +1184,9 @@ function CancelledBadge() {
   );
 }
 
+// ── POLL INTERVAL (ms) ──────────────────────────────────────────────
+const POLL_INTERVAL = 15000; // 15 seconds — change to 10000 for faster updates
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [section, setSection] = useState<Section>("dashboard");
@@ -1226,6 +1244,9 @@ export default function AdminDashboardPage() {
     { label: string; Revenue: number; Orders: number }[]
   >([]);
 
+  // ── last-updated timestamp shown in header ───────────────────────
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
   useEffect(() => {
     if (!notifOpen) return;
     function handleClickOutside(e: MouseEvent) {
@@ -1249,7 +1270,10 @@ export default function AdminDashboardPage() {
     try {
       const r = await fetch("/api/admin/stats");
       const d = await r.json();
-      if (d.success) setStats(d.data);
+      if (d.success) {
+        setStats(d.data);
+        setLastUpdated(new Date());
+      }
     } catch {}
   }, []);
 
@@ -1299,11 +1323,13 @@ export default function AdminDashboardPage() {
     } catch {}
   }, []);
 
+  // ── initial load ─────────────────────────────────────────────────
   useEffect(() => {
     fetchStats();
     fetchPricing();
   }, [fetchStats, fetchPricing]);
 
+  // ── fetch on section / filter change ────────────────────────────
   useEffect(() => {
     if (section === "orders") fetchOrders(orderFilter);
     if (section === "customers") fetchCustomers();
@@ -1321,6 +1347,28 @@ export default function AdminDashboardPage() {
     fetchDeletedOrders,
   ]);
 
+  // ── ✅ POLLING — auto-refresh every POLL_INTERVAL ms ────────────
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // always refresh stats (for notification badge + dashboard cards)
+      fetchStats();
+      // refresh the data relevant to whichever section is visible
+      if (section === "dashboard") fetchOrders("");
+      if (section === "orders") fetchOrders(orderFilter);
+      if (section === "customers") fetchCustomers();
+      if (section === "deleted") fetchDeletedOrders();
+    }, POLL_INTERVAL);
+
+    return () => clearInterval(interval); // cleanup on unmount / section change
+  }, [
+    section,
+    orderFilter,
+    fetchStats,
+    fetchOrders,
+    fetchCustomers,
+    fetchDeletedOrders,
+  ]);
+
   async function generateReport() {
     setReportLoading(true);
     try {
@@ -1332,7 +1380,6 @@ export default function AdminDashboardPage() {
         setReportSummary(d.reportData);
         setReportChartData(d.chartData || []);
       } else {
-        // Fallback: use real stats and show totals at the midpoint so chart is visible
         const completionRate =
           stats.totalOrders > 0
             ? Math.round((stats.completedOrders / stats.totalOrders) * 100)
@@ -1358,7 +1405,6 @@ export default function AdminDashboardPage() {
           Revenue: 0,
           Orders: 0,
         }));
-        // Place real totals at the midpoint so the chart shows visible data
         if (stats.totalOrders > 0 || totalRev > 0) {
           const mid = Math.floor(slots / 2);
           chartData[mid] = {
@@ -1385,7 +1431,7 @@ export default function AdminDashboardPage() {
       const fd = new FormData();
       fd.append("order_id", orderId);
       fd.append("status", status);
-      const r = await fetch("/api/admin/orders", { method: "PATCH", body: fd }); // ✅ PATCH to correct route
+      const r = await fetch("/api/admin/orders", { method: "PATCH", body: fd });
       const d = await r.json();
       if (d.success) {
         showToast("Status updated!");
@@ -1515,7 +1561,6 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // Report stat cards with icons
   const reportStatCards = [
     {
       label: "Total Orders",
@@ -1594,8 +1639,9 @@ export default function AdminDashboardPage() {
         .avatar{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.72rem;font-weight:700;border:2px solid rgba(255,255,255,.4);flex-shrink:0}
         .content{flex:1;overflow-y:auto;overflow-x:hidden;padding:1rem;background:var(--bg)}
         .panel{display:none}.panel.active{display:block}
-        .banner{background:var(--grad);border-radius:var(--r);padding:.85rem 1rem;margin-bottom:.9rem;display:flex;align-items:center;gap:.5rem;box-shadow:0 4px 20px rgba(91,109,238,.3)}
+        .banner{background:var(--grad);border-radius:var(--r);padding:.85rem 1rem;margin-bottom:.9rem;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(91,109,238,.3);flex-wrap:wrap;gap:.5rem}
         .banner-title{font-size:.9rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:.45rem}
+        .banner-updated{font-size:.68rem;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:.35rem}
         .stats-wrap{background:var(--grad);border-radius:var(--r);padding:.75rem .9rem 1rem;margin-bottom:.9rem;box-shadow:0 4px 20px rgba(91,109,238,.3)}
         .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.65rem}
         .stat-card{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:.75rem .5rem;display:flex;flex-direction:column;align-items:center;text-align:center;backdrop-filter:blur(6px);transition:background .2s}
@@ -1672,6 +1718,8 @@ export default function AdminDashboardPage() {
         .sb-overlay{display:none;position:fixed;inset:0;background:rgba(30,27,75,.5);z-index:190}
         .sb-overlay.on{display:block}
         .empty-state{padding:2.5rem;text-align:center;color:var(--muted);font-size:.84rem}
+        .pulse-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block;animation:pulse 2s infinite}
+        @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
         @media(min-width:1025px){.hamburger{display:none}.welcome{display:block}}
         @media(max-width:1024px){.sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%)}.sidebar.open{transform:translateX(0);box-shadow:4px 0 30px rgba(0,0,0,.25)}.hamburger{display:flex}}
         @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}.rpt-stat-grid{grid-template-columns:repeat(2,1fr)}}
@@ -1753,6 +1801,19 @@ export default function AdminDashboardPage() {
               <div className="hdr-title">Admin Dashboard</div>
             </div>
             <div className="hdr-r">
+              {/* ── live indicator ── */}
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  fontSize: ".68rem",
+                  color: "rgba(255,255,255,.75)",
+                }}
+              >
+                <span className="pulse-dot" />
+                Live
+              </span>
               <div className="notif-wrapper" ref={notifRef}>
                 <button
                   className="notif-btn"
@@ -1848,6 +1909,18 @@ export default function AdminDashboardPage() {
                 <div className="banner-title">
                   <IC.TrendUp /> Dashboard Overview
                 </div>
+                {/* last-updated timestamp */}
+                {lastUpdated && (
+                  <div className="banner-updated">
+                    <IC.Refresh />
+                    Updated{" "}
+                    {lastUpdated.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })}
+                  </div>
+                )}
               </div>
               <div className="stats-wrap">
                 <div className="stats-grid">
@@ -2503,8 +2576,6 @@ export default function AdminDashboardPage() {
                   </button>
                 </div>
               </div>
-
-              {/* 4 stat cards with icons */}
               <div className="rpt-stat-grid">
                 {reportStatCards.map((s) => (
                   <div key={s.label} className="rpt-stat-card">
@@ -2521,8 +2592,6 @@ export default function AdminDashboardPage() {
                   </div>
                 ))}
               </div>
-
-              {/* Line chart */}
               <div className="rpt-chart-card">
                 <div className="rpt-chart-title">
                   <svg
