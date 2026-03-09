@@ -1383,10 +1383,9 @@ export default function AdminDashboardPage() {
     }
     try {
       const fd = new FormData();
-      fd.append("action", "updateStatus");
       fd.append("order_id", orderId);
       fd.append("status", status);
-      const r = await fetch("/api/dashboard", { method: "POST", body: fd });
+      const r = await fetch("/api/admin/orders", { method: "PATCH", body: fd }); // ✅ PATCH to correct route
       const d = await r.json();
       if (d.success) {
         showToast("Status updated!");
