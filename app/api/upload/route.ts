@@ -1,8 +1,9 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { connectDB } from "@/lib/db";
 import { Order } from "@/models/order";
-import { uploadToCloudinary } from "@/lib/upload"; // ✅ your existing lib
+import { uploadToCloudinary } from "@/lib/upload";
 import { getSession } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const order_id = formData.get("order_id") as string;
 
-    // Support both single "file" and multiple "files[]"
+    // Support both "files" (multiple) and "file" (single)
     const fileEntries = formData.getAll("files") as File[];
     const singleFile = formData.get("file") as File | null;
     const files: File[] =
@@ -40,14 +41,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find order — customers can only upload to their own orders
-    const orderQuery: any = { order_id };
+    // ✅ FIX: Match by order_id field OR by _id (for old orders that used raw MongoDB _id).
+    // New orders use "ORD-timestamp-random" strings stored in order_id field.
+    // Old orders had no order_id field set, so their display ID was the raw _id.
+    const isObjectId = mongoose.isValidObjectId(order_id);
+    const orClauses: any[] = [{ order_id }];
+    if (isObjectId) {
+      orClauses.push({ _id: new mongoose.Types.ObjectId(order_id) });
+    }
+
+    const orderQuery: any = { $or: orClauses };
+
+    // Customers can only upload to their own orders
     if (session.role !== "admin") {
       orderQuery.user_id = session.userId;
     }
 
     const order = await Order.findOne(orderQuery);
     if (!order) {
+      console.error(
+        "[UPLOAD] Order not found for id:",
+        order_id,
+        "user:",
+        session.userId,
+      );
       return NextResponse.json(
         { success: false, message: "Order not found." },
         { status: 404 },
@@ -62,7 +79,7 @@ export async function POST(req: NextRequest) {
       }),
     );
 
-    // ✅ Push Cloudinary results into order.files and save to MongoDB
+    // Push Cloudinary results into order.files and save
     order.files.push(...uploaded);
     await order.save();
 
