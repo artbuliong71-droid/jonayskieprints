@@ -39,7 +39,6 @@ const IcoPrinter = () => (
     <rect x="6" y="14" width="12" height="8" />
   </svg>
 );
-
 const IcoCopy = () => (
   <svg
     width="22"
@@ -55,7 +54,6 @@ const IcoCopy = () => (
     <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
   </svg>
 );
-
 const IcoScan = () => (
   <svg
     width="22"
@@ -74,7 +72,6 @@ const IcoScan = () => (
     <line x1="3" y1="12" x2="21" y2="12" />
   </svg>
 );
-
 const IcoPhoto = () => (
   <svg
     width="22"
@@ -91,7 +88,6 @@ const IcoPhoto = () => (
     <polyline points="21 15 16 10 5 21" />
   </svg>
 );
-
 const IcoLaminate = () => (
   <svg
     width="22"
@@ -106,7 +102,6 @@ const IcoLaminate = () => (
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 );
-
 const IcoZap = () => (
   <svg
     width="22"
@@ -121,7 +116,6 @@ const IcoZap = () => (
     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
   </svg>
 );
-
 const IcoUsers = () => (
   <svg
     width="20"
@@ -139,7 +133,6 @@ const IcoUsers = () => (
     <path d="M16 3.13a4 4 0 010 7.75" />
   </svg>
 );
-
 const IcoUpload = () => (
   <svg
     width="20"
@@ -156,7 +149,6 @@ const IcoUpload = () => (
     <line x1="12" y1="3" x2="12" y2="15" />
   </svg>
 );
-
 const IcoTracking = () => (
   <svg
     width="20"
@@ -172,7 +164,6 @@ const IcoTracking = () => (
     <polyline points="12 6 12 12 16 14" />
   </svg>
 );
-
 const IcoMapPin = () => (
   <svg
     width="20"
@@ -188,7 +179,6 @@ const IcoMapPin = () => (
     <circle cx="12" cy="10" r="3" />
   </svg>
 );
-
 const IcoPhone = () => (
   <svg
     width="20"
@@ -203,7 +193,6 @@ const IcoPhone = () => (
     <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.63A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
   </svg>
 );
-
 const IcoMail = () => (
   <svg
     width="20"
@@ -219,7 +208,6 @@ const IcoMail = () => (
     <polyline points="22,6 12,13 2,6" />
   </svg>
 );
-
 const IcoClock = () => (
   <svg
     width="20"
@@ -235,11 +223,10 @@ const IcoClock = () => (
     <polyline points="12 6 12 12 16 14" />
   </svg>
 );
-
 const IcoPrinterNav = () => (
   <svg
-    width="18"
-    height="18"
+    width="14"
+    height="14"
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
@@ -343,6 +330,7 @@ function useInView(threshold = 0.15) {
 
 export default function HomePage() {
   const [activeNav, setActiveNav] = useState<NavSection>("home");
+  const [hoveredNav, setHoveredNav] = useState<NavSection | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -387,11 +375,19 @@ export default function HomePage() {
     setMenuOpen(false);
   }
 
+  function getLinkClass(section: NavSection) {
+    if (hoveredNav !== null) {
+      return hoveredNav === section
+        ? "nav-link-btn hovered"
+        : "nav-link-btn dimmed";
+    }
+    return activeNav === section ? "nav-link-btn active" : "nav-link-btn";
+  }
+
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@300;400;500;600&display=swap');
-
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
@@ -402,105 +398,133 @@ export default function HomePage() {
           --muted: #7a7a7a;
           --border: #e0ddd8;
           --success: #2d9b5a;
-          --nav-h: 90px;
+          --nav-h: 72px;
+          --nav-pad: 12px;
+          --logo-h: 80px;
         }
 
         html { scroll-behavior: smooth; }
         body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); overflow-x: hidden; }
 
-        /* ── NAV ── */
-        .nav {
-          position: fixed; top: 0; left: 0; right: 0;
-          z-index: 200; padding: 0 2.5rem; height: var(--nav-h);
-          display: grid; grid-template-columns: 1fr auto 1fr;
+        /* ── NAV SHELL ── */
+        .nav-bar {
+          position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+          padding: var(--nav-pad) 1.5rem;
+          transition: padding 0.25s;
+        }
+        .nav-bar.scrolled { padding: 8px 1.5rem; }
+
+        /* ── NAV INNER — white boxed pill ── */
+        .nav-inner {
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 0 1.5rem;
+          height: var(--nav-h);
+          display: flex;
           align-items: center;
-          background: #ffffff; box-shadow: 0 1px 0 var(--border);
+          justify-content: space-between;
+          gap: 1.5rem;
+          background: #ffffff;
+          border: 1.5px solid var(--border);
+          border-radius: 16px;
+          box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+          transition: box-shadow 0.25s;
+          overflow: visible;
         }
-        .nav.scrolled { box-shadow: 0 1px 8px rgba(0,0,0,0.08); }
+        .nav-bar.scrolled .nav-inner { box-shadow: 0 4px 24px rgba(0,0,0,0.11); }
 
+        /* ── LOGO — fixed size, independent of nav height ── */
         .nav-logo {
-          display: flex; align-items: center; gap: 0.75rem;
-          text-decoration: none; cursor: pointer;
+          display: flex; align-items: center;
+          cursor: pointer; flex-shrink: 0;
+          transition: opacity 0.2s, transform 0.18s;
+          outline: none; border-radius: 8px;
         }
-        .nav-logo-img-wrap {
-          width: 72px; height: 72px; flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center;
-          background: transparent; padding: 0; border-radius: 0;
-        }
-        .nav-logo-img-wrap img {
-          width: 72px; height: 72px;
-          object-fit: contain; filter: none;
-        }
-        .nav-logo-text {
-          display: flex; flex-direction: column; line-height: 1.2;
-        }
-        .nav-logo-name {
-          font-family: 'Playfair Display', serif;
-          font-size: 1.1rem; font-weight: 700;
-          color: var(--ink); letter-spacing: -0.01em;
-          white-space: nowrap;
-        }
-        .nav-logo-tagline {
-          font-size: 0.65rem; font-weight: 500;
-          color: var(--muted); letter-spacing: 0.07em;
-          text-transform: uppercase; white-space: nowrap;
-          margin-top: 1px;
+        .nav-logo:hover { opacity: 0.72; transform: scale(1.05); }
+        .nav-logo:active { transform: scale(0.95); opacity: 0.5; }
+        .nav-logo img {
+          height: var(--logo-h);
+          width: auto;
+          max-width: 200px;
+          object-fit: contain;
+          display: block;
         }
 
-        .nav-links { display: flex; align-items: center; gap: 0.25rem; list-style: none; }
+        /* ── NAV LINKS ── */
+        .nav-links {
+          display: flex; align-items: center; gap: 0.1rem;
+          list-style: none; flex: 1; justify-content: center;
+        }
         .nav-link-btn {
           background: none; border: none; cursor: pointer;
-          padding: 0.45rem 0.85rem; border-radius: 6px;
-          font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; color: var(--ink);
-          transition: color 0.2s, background 0.2s;
+          padding: 0.45rem 0.9rem; border-radius: 7px;
+          font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+          font-weight: 500; color: var(--ink);
+          transition: color 0.15s, opacity 0.15s;
+          white-space: nowrap;
         }
-        .nav-link-btn:hover { color: var(--accent); background: rgba(37,99,235,0.06); }
-        .nav-link-btn.active { color: var(--accent) !important; font-weight: 600; }
+        .nav-link-btn.active { color: var(--accent); font-weight: 600; }
+        .nav-link-btn.hovered { color: var(--accent); font-weight: 600; opacity: 1; }
+        .nav-link-btn.dimmed { color: var(--muted); opacity: 0.45; }
 
-        .nav-actions { display: flex; align-items: center; gap: 0.65rem; justify-content: flex-end; }
+        /* ── RIGHT ACTIONS ── */
+        .nav-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
         .btn-login {
-          padding: 0.5rem 1.25rem; background: var(--accent); color: #fff;
+          padding: 0.45rem 1.2rem; background: var(--accent); color: #fff;
           border: none; border-radius: 99px;
-          font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 600;
+          font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
           cursor: pointer; text-decoration: none; transition: background 0.2s, transform 0.15s;
           display: inline-flex; align-items: center;
         }
         .btn-login:hover { background: var(--accent-dark); transform: translateY(-1px); }
         .btn-register {
-          padding: 0.5rem 1.25rem; background: transparent; color: var(--accent);
-          border: 2px solid var(--accent); border-radius: 99px;
-          font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 600;
+          padding: 0.45rem 1.2rem; background: transparent; color: var(--accent);
+          border: 1.5px solid var(--accent); border-radius: 99px;
+          font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
           cursor: pointer; text-decoration: none; transition: all 0.2s;
           display: inline-flex; align-items: center;
         }
         .btn-register:hover { background: rgba(37,99,235,0.06); }
-        .hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--ink); padding: 4px; justify-content: flex-end; }
 
+        .hamburger {
+          display: none; background: none; border: none;
+          cursor: pointer; color: var(--ink); padding: 4px; flex-shrink: 0;
+        }
+
+        /* ── MOBILE MENU ── */
         .mobile-menu {
-          position: fixed; top: var(--nav-h); left: 0; right: 0;
-          background: var(--paper); border-bottom: 1px solid var(--border);
-          padding: 1rem 2rem 1.5rem; z-index: 190;
-          transform: translateY(-110%); transition: transform 0.3s;
+          position: fixed;
+          top: calc(var(--nav-h) + var(--nav-pad) * 2 + 8px);
+          left: 1.5rem; right: 1.5rem;
+          background: #fff;
+          border: 1.5px solid var(--border);
+          border-radius: 14px;
+          padding: 1rem 1.25rem 1.25rem;
+          z-index: 190;
+          transform: translateY(-20px); opacity: 0; pointer-events: none;
+          transition: transform 0.25s, opacity 0.25s;
           box-shadow: 0 8px 32px rgba(0,0,0,0.1);
         }
-        .mobile-menu.open { transform: translateY(0); }
-        .mobile-nav-links { list-style: none; display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 1rem; }
+        .mobile-menu.open { transform: translateY(0); opacity: 1; pointer-events: all; }
+        .mobile-nav-links { list-style: none; display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 1rem; }
         .mobile-nav-btn {
           width: 100%; text-align: left; background: none; border: none; cursor: pointer;
-          padding: 0.65rem 0.75rem;
+          padding: 0.65rem 0.75rem; border-radius: 7px;
           font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; color: var(--ink);
-          border-radius: 7px; transition: background 0.15s;
+          transition: background 0.15s;
         }
         .mobile-nav-btn:hover { background: rgba(0,0,0,0.04); }
         .mobile-nav-btn.active { color: var(--accent); font-weight: 600; }
         .mobile-actions { display: flex; gap: 0.75rem; }
-        .mobile-actions .btn-login { flex: 1; justify-content: center; }
+        .mobile-actions .btn-login,
         .mobile-actions .btn-register { flex: 1; justify-content: center; }
 
         /* ── HERO ── */
         .hero {
           min-height: 100vh; position: relative; overflow: hidden;
-          display: flex; align-items: center; padding: 8rem 2rem 4rem;
+          display: flex; align-items: center;
+          padding-top: calc(var(--nav-h) + var(--nav-pad) * 2 + 2rem);
+          padding-bottom: 4rem; padding-left: 2rem; padding-right: 2rem;
           background-color: #7c3aed;
         }
         .hero-gradient {
@@ -512,10 +536,7 @@ export default function HomePage() {
           position: absolute; inset: 0; z-index: 0;
           display: flex; align-items: center; justify-content: center; pointer-events: none;
         }
-        .hero-logo-bg img {
-          width: min(600px, 80vw); height: min(600px, 80vw);
-          object-fit: contain; opacity: 0.55;
-        }
+        .hero-logo-bg img { width: min(600px, 80vw); height: min(600px, 80vw); object-fit: contain; opacity: 0.55; }
         .hero::before {
           content: ''; position: absolute; top: -120px; left: -120px;
           width: 500px; height: 500px; border-radius: 50%;
@@ -543,9 +564,9 @@ export default function HomePage() {
         .hero-tag {
           display: inline-flex; align-items: center; gap: 0.5rem;
           background: rgba(255,255,255,0.15); border: 1px solid rgba(37,99,235,0.3);
-          color: rgba(255,255,255,0.9); font-size: 0.75rem; font-weight: 600;
+          color: rgba(255,255,255,0.9); font-size: 0.72rem; font-weight: 600;
           letter-spacing: 0.1em; text-transform: uppercase;
-          padding: 4px 14px; border-radius: 99px; margin-bottom: 1.5rem;
+          padding: 4px 12px; border-radius: 99px; margin-bottom: 1.5rem;
           animation: fadeUp 0.6s ease both;
         }
         .hero-title {
@@ -585,7 +606,7 @@ export default function HomePage() {
         .hero-stat-value { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #fff; font-weight: 700; }
         .hero-stat-label { font-size: 0.72rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; margin-top: 1px; }
 
-        /* ── SECTIONS SHARED ── */
+        /* ── SECTIONS ── */
         .section-inner { max-width: 1100px; margin: 0 auto; padding: 5rem 2rem; }
         .section-tag {
           font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
@@ -611,14 +632,14 @@ export default function HomePage() {
         .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
         .service-card {
           background: var(--paper); border: 1.5px solid var(--border); border-radius: 14px;
-          padding: 2rem 1.5rem; text-align: center; transition: box-shadow 0.2s; cursor: default;
+          padding: 2rem 1.5rem; text-align: center; transition: box-shadow 0.2s;
         }
         .service-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
         .service-icon-wrap {
           width: 56px; height: 56px; background: var(--accent); border-radius: 14px;
           display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: #fff;
         }
-        .service-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--ink); margin-bottom: 0.5rem; letter-spacing: -0.01em; }
+        .service-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--ink); margin-bottom: 0.5rem; }
         .service-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; font-weight: 300; }
 
         /* ── ABOUT ── */
@@ -659,11 +680,10 @@ export default function HomePage() {
         .footer-brand-desc { font-size: 0.85rem; color: rgba(255,255,255,0.4); line-height: 1.7; font-weight: 300; }
         .footer-col-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; }
         .footer-links { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
-        .footer-link-btn { background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.45); font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 400; text-align: left; padding: 0; transition: color 0.2s; }
+        .footer-link-btn { background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.45); font-family: 'DM Sans', sans-serif; font-size: 0.875rem; text-align: left; padding: 0; transition: color 0.2s; }
         .footer-link-btn:hover { color: rgba(255,255,255,0.85); }
         .footer-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: rgba(255,255,255,0.25); flex-wrap: wrap; gap: 0.5rem; }
 
-        /* ── KEYFRAMES ── */
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(24px); }
           to { opacity: 1; transform: translateY(0); }
@@ -671,9 +691,8 @@ export default function HomePage() {
 
         /* ── RESPONSIVE ── */
         @media (max-width: 900px) {
-          .nav { grid-template-columns: 1fr 1fr; }
           .nav-links, .nav-actions { display: none; }
-          .hamburger { display: flex; justify-content: flex-end; }
+          .hamburger { display: flex; }
           .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
           .footer-top { grid-template-columns: 1fr 1fr; }
         }
@@ -686,65 +705,66 @@ export default function HomePage() {
           .services-grid { grid-template-columns: 1fr; }
           .hero-stats { gap: 1.5rem; }
           .section-inner { padding: 3.5rem 1.25rem; }
-          .nav-logo-tagline { display: none; }
-          .nav-logo-img-wrap { width: 56px; height: 56px; }
-          .nav-logo-img-wrap img { width: 56px; height: 56px; }
-          .nav-logo-name { font-size: 0.95rem; }
+          :root { --nav-h: 58px; --nav-pad: 10px; --logo-h: 64px; }
         }
       `}</style>
 
       {/* ── NAV ── */}
-      <nav className={`nav ${scrolled ? "scrolled" : ""}`}>
-        <div className="nav-logo" onClick={() => scrollTo("home")}>
-          <div className="nav-logo-img-wrap">
-            <img src="/icon.png" alt="Jonayskie Prints Logo" />
-          </div>
-          <div className="nav-logo-text">
-            <span className="nav-logo-name">Jonayskie Prints</span>
-            <span className="nav-logo-tagline">Printing Services</span>
-          </div>
-        </div>
-
-        <ul className="nav-links">
-          {(["home", "services", "about", "contact"] as NavSection[]).map(
-            (s) => (
-              <li key={s}>
-                <button
-                  className={`nav-link-btn ${activeNav === s ? "active" : ""}`}
-                  onClick={() => scrollTo(s)}
-                >
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
-              </li>
-            ),
-          )}
-        </ul>
-
-        <div className="nav-actions">
-          <Link href="/login" className="btn-login">
-            Login
-          </Link>
-          <Link href="/register" className="btn-register">
-            Register
-          </Link>
-        </div>
-
-        <button className="hamburger" onClick={() => setMenuOpen((v) => !v)}>
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
+      <header className={`nav-bar ${scrolled ? "scrolled" : ""}`}>
+        <div className="nav-inner">
+          <div
+            className="nav-logo"
+            onClick={() => scrollTo("home")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && scrollTo("home")}
+            aria-label="Go to home"
           >
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
-      </nav>
+            <img src="/jp.png" alt="Jonayskie Prints" />
+          </div>
+
+          <ul className="nav-links" onMouseLeave={() => setHoveredNav(null)}>
+            {(["home", "services", "about", "contact"] as NavSection[]).map(
+              (s) => (
+                <li key={s}>
+                  <button
+                    className={getLinkClass(s)}
+                    onClick={() => scrollTo(s)}
+                    onMouseEnter={() => setHoveredNav(s)}
+                  >
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </button>
+                </li>
+              ),
+            )}
+          </ul>
+
+          <div className="nav-actions">
+            <Link href="/login" className="btn-login">
+              Login
+            </Link>
+            <Link href="/register" className="btn-register">
+              Register
+            </Link>
+          </div>
+
+          <button className="hamburger" onClick={() => setMenuOpen((v) => !v)}>
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            >
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </header>
 
       {/* ── MOBILE MENU ── */}
       <div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
@@ -783,8 +803,7 @@ export default function HomePage() {
           <div className="hero-inner">
             <div className="hero-content">
               <div className="hero-tag">
-                <IcoPrinterNav />
-                Professional Printing Services
+                <IcoPrinterNav /> Professional Printing Services
               </div>
               <h1 className="hero-title">
                 Print with <em>precision.</em>
