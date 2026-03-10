@@ -59,8 +59,12 @@ const OrderSchema = new Schema<IOrder>({
   updated_at: { type: Date, default: Date.now },
 });
 
+// ✅ Auto-generate order_id and update updated_at on every save
 OrderSchema.pre("save", async function () {
   this.updated_at = new Date();
+  if (!this.order_id) {
+    this.order_id = new mongoose.Types.ObjectId().toString().slice(-8);
+  }
 });
 
 export const Order =
