@@ -116,6 +116,18 @@ function pricingStrToNum(p: PricingStr): Pricing {
   };
 }
 
+// ── helpers to detect file type reliably ──────────────────────────
+function detectIsPdf(url: string, resource_type: string): boolean {
+  return (
+    resource_type === "raw" ||
+    url.toLowerCase().includes(".pdf") ||
+    url.toLowerCase().includes("/raw/upload/")
+  );
+}
+function detectIsImage(url: string, resource_type: string): boolean {
+  return !detectIsPdf(url, resource_type) && resource_type === "image";
+}
+
 const IC = {
   Menu: () => (
     <svg
@@ -821,25 +833,31 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
   const files: FileData[] = (order.files || []).map((f: any) =>
     typeof f === "string" ? { url: f, resource_type: "image" } : f,
   );
+
+  // ── download handler ─────────────────────────────────────────────
   async function handleDownload(url: string, filename: string) {
-    const finalName = filename.toLowerCase().endsWith(".pdf")
-      ? filename
-      : filename + ".pdf";
-    try {
-      const res = await fetch(url);
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = finalName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(blobUrl);
-    } catch {
-      window.open(url, "_blank");
+    const isPdf = detectIsPdf(url, "");
+
+    // For Cloudinary raw/PDF: inject fl_attachment so it sends correct Content-Type + filename
+    let downloadUrl = url;
+    if (isPdf && url.includes("/raw/upload/")) {
+      downloadUrl = url.replace("/raw/upload/", "/raw/upload/fl_attachment/");
     }
+
+    const finalName =
+      isPdf && !filename.toLowerCase().endsWith(".pdf")
+        ? filename + ".pdf"
+        : filename;
+
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = finalName;
+    a.target = "_blank";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   }
+
   return (
     <div
       style={{
@@ -861,12 +879,13 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
           background: "#fff",
           borderRadius: 14,
           width: "100%",
-          maxWidth: 600,
+          maxWidth: 640,
           maxHeight: "90vh",
           overflow: "auto",
           boxShadow: "0 24px 60px rgba(0,0,0,.25)",
         }}
       >
+        {/* header */}
         <div
           style={{
             display: "flex",
@@ -904,6 +923,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
             <IC.X />
           </button>
         </div>
+
         <div style={{ padding: "1.1rem 1.2rem" }}>
           {files.length === 0 ? (
             <div
@@ -921,6 +941,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
             </div>
           ) : (
             <>
+              {/* download-all button */}
               {files.length > 1 && (
                 <div
                   style={{
@@ -954,6 +975,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                   </button>
                 </div>
               )}
+
               <div
                 style={{
                   display: "flex",
@@ -963,7 +985,9 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
               >
                 {files.map((file, i) => {
                   const { url, resource_type } = file;
-                  const isImage = resource_type === "image";
+                  const isPdf = detectIsPdf(url, resource_type);
+                  const isImage = detectIsImage(url, resource_type);
+
                   return (
                     <div
                       key={i}
@@ -974,7 +998,8 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                         background: "#fafafa",
                       }}
                     >
-                      {isImage ? (
+                      {/* ── IMAGE ── */}
+                      {isImage && (
                         <div>
                           <img
                             src={url}
@@ -1059,7 +1084,98 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                             </div>
                           </div>
                         </div>
-                      ) : (
+                      )}
+
+                      {/* ── PDF ── */}
+                      {isPdf && (
+                        <div>
+                          {/* PDF preview via iframe */}
+                          <iframe
+                            src={`${url}#toolbar=1&view=FitH`}
+                            style={{
+                              width: "100%",
+                              height: 460,
+                              border: "none",
+                              display: "block",
+                              background: "#f3f4f6",
+                            }}
+                            title={getFileName(url)}
+                          />
+                          <div
+                            style={{
+                              padding: ".5rem .75rem",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              gap: ".5rem",
+                              borderTop: "1px solid #e5e7eb",
+                            }}
+                          >
+                            <span
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 5,
+                                fontSize: ".75rem",
+                                color: "#6b7280",
+                                flex: 1,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              <IC.File /> {getFileName(url)}
+                            </span>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: ".5rem",
+                                flexShrink: 0,
+                              }}
+                            >
+                              <a
+                                href={url}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{
+                                  fontSize: ".72rem",
+                                  color: "#7c3aed",
+                                  fontWeight: 600,
+                                  textDecoration: "none",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                }}
+                              >
+                                <IC.Eye /> View
+                              </a>
+                              <button
+                                onClick={() =>
+                                  handleDownload(url, getFileName(url))
+                                }
+                                style={{
+                                  fontSize: ".72rem",
+                                  color: "#16a34a",
+                                  fontWeight: 600,
+                                  border: "none",
+                                  background: "none",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 4,
+                                  fontFamily: "inherit",
+                                  padding: 0,
+                                }}
+                              >
+                                <IC.Download /> Download
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── FALLBACK (unknown type) ── */}
+                      {!isImage && !isPdf && (
                         <div
                           style={{
                             padding: ".75rem 1rem",
@@ -1184,8 +1300,7 @@ function CancelledBadge() {
   );
 }
 
-// ── POLL INTERVAL (ms) ──────────────────────────────────────────────
-const POLL_INTERVAL = 15000; // 15 seconds — change to 10000 for faster updates
+const POLL_INTERVAL = 15000;
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -1243,8 +1358,6 @@ export default function AdminDashboardPage() {
   const [reportChartData, setReportChartData] = useState<
     { label: string; Revenue: number; Orders: number }[]
   >([]);
-
-  // ── last-updated timestamp shown in header ───────────────────────
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -1323,13 +1436,11 @@ export default function AdminDashboardPage() {
     } catch {}
   }, []);
 
-  // ── initial load ─────────────────────────────────────────────────
   useEffect(() => {
     fetchStats();
     fetchPricing();
   }, [fetchStats, fetchPricing]);
 
-  // ── fetch on section / filter change ────────────────────────────
   useEffect(() => {
     if (section === "orders") fetchOrders(orderFilter);
     if (section === "customers") fetchCustomers();
@@ -1347,19 +1458,15 @@ export default function AdminDashboardPage() {
     fetchDeletedOrders,
   ]);
 
-  // ── ✅ POLLING — auto-refresh every POLL_INTERVAL ms ────────────
   useEffect(() => {
     const interval = setInterval(() => {
-      // always refresh stats (for notification badge + dashboard cards)
       fetchStats();
-      // refresh the data relevant to whichever section is visible
       if (section === "dashboard") fetchOrders("");
       if (section === "orders") fetchOrders(orderFilter);
       if (section === "customers") fetchCustomers();
       if (section === "deleted") fetchDeletedOrders();
     }, POLL_INTERVAL);
-
-    return () => clearInterval(interval); // cleanup on unmount / section change
+    return () => clearInterval(interval);
   }, [
     section,
     orderFilter,
@@ -1801,7 +1908,6 @@ export default function AdminDashboardPage() {
               <div className="hdr-title">Admin Dashboard</div>
             </div>
             <div className="hdr-r">
-              {/* ── live indicator ── */}
               <span
                 style={{
                   display: "flex",
@@ -1811,8 +1917,7 @@ export default function AdminDashboardPage() {
                   color: "rgba(255,255,255,.75)",
                 }}
               >
-                <span className="pulse-dot" />
-                Live
+                <span className="pulse-dot" /> Live
               </span>
               <div className="notif-wrapper" ref={notifRef}>
                 <button
@@ -1909,7 +2014,6 @@ export default function AdminDashboardPage() {
                 <div className="banner-title">
                   <IC.TrendUp /> Dashboard Overview
                 </div>
-                {/* last-updated timestamp */}
                 {lastUpdated && (
                   <div className="banner-updated">
                     <IC.Refresh />
