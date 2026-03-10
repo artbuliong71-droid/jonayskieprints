@@ -1543,6 +1543,14 @@ export default function AdminDashboardPage() {
       showToast("Invalid order ID", "error");
       return;
     }
+    // ✅ Optimistic update — update UI immediately without loading flash
+    setOrders((prev) =>
+      prev.map((o) =>
+        getOrderId(o) === orderId
+          ? { ...o, status: status as Order["status"] }
+          : o,
+      ),
+    );
     try {
       const fd = new FormData();
       fd.append("order_id", orderId);
@@ -1551,11 +1559,17 @@ export default function AdminDashboardPage() {
       const d = await r.json();
       if (d.success) {
         showToast("Status updated!");
-        fetchOrders(orderFilter);
         fetchStats();
-      } else showToast(d.message || "Update failed", "error");
+        // ✅ Only refetch if filtered — so the order correctly disappears from filtered view
+        if (orderFilter) fetchOrders(orderFilter);
+      } else {
+        // ✅ Revert optimistic update on failure
+        showToast(d.message || "Update failed", "error");
+        fetchOrders(orderFilter);
+      }
     } catch {
       showToast("Network error", "error");
+      fetchOrders(orderFilter);
     }
   }
 
