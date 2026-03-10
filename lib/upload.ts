@@ -30,16 +30,19 @@ export async function uploadToCloudinary(
   const isPdf = filename.toLowerCase().endsWith(".pdf");
 
   const sanitizedFilename = filename
-    .replace(/\.[^/.]+$/, "") // remove extension
-    .replace(/\s+/g, "_") // replace spaces with underscores
-    .replace(/[^a-zA-Z0-9_\-]/g, "_"); // replace ALL other special chars (commas, etc.) with underscore
+    .replace(/\.[^/.]+$/, "")
+    .replace(/\s+/g, "_")
+    .replace(/[^a-zA-Z0-9_\-]/g, "_");
+
+  const publicId = `${Date.now()}-${sanitizedFilename}${isPdf ? ".pdf" : ""}`;
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: "orders",
-        public_id: `${Date.now()}-${sanitizedFilename}`,
+        public_id: publicId,
         resource_type: isPdf ? "raw" : "image",
+        ...(isPdf && { format: "pdf" }),
         access_mode: "public",
         type: "upload",
       },
@@ -49,9 +52,12 @@ export async function uploadToCloudinary(
 
         let url = result.secure_url;
 
-        // Safety net: if PDF but Cloudinary returned /image/upload/, fix it
         if (isPdf && url.includes("/image/upload/")) {
           url = url.replace("/image/upload/", "/raw/upload/");
+        }
+
+        if (isPdf && !url.toLowerCase().endsWith(".pdf")) {
+          url = url + ".pdf";
         }
 
         resolve({
@@ -60,6 +66,7 @@ export async function uploadToCloudinary(
         });
       },
     );
+
     stream.end(fileBuffer);
   });
 }

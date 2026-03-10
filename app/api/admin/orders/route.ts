@@ -24,32 +24,24 @@ try {
   UserModel = mongoose.models.User || mongoose.model("User", UserSchema);
 }
 
-// ✅ FIX: Use .lean() so files array is preserved as a plain object
 async function enrichOrders(orders: any[]) {
   const missingIds = orders
     .filter((o) => !o.user_name && o.user_id)
     .map((o) => o.user_id);
+  let userMap: Record<string, any> = {};
 
-  if (missingIds.length === 0) {
-    // Still convert to plain objects to ensure files array serializes correctly
-    return orders.map((o) =>
-      typeof o.toObject === "function" ? o.toObject() : { ...o },
-    );
-  }
-
-  const users = await UserModel.find(
-    { _id: { $in: missingIds } },
-    "first_name last_name email",
-  ).lean();
-
-  const userMap: Record<string, any> = {};
-  for (const u of users) {
-    userMap[u._id.toString()] = u;
+  if (missingIds.length > 0) {
+    const users = await UserModel.find(
+      { _id: { $in: missingIds } },
+      "first_name last_name email",
+    ).lean();
+    for (const u of users) userMap[u._id.toString()] = u;
   }
 
   return orders.map((o) => {
-    // ✅ toObject() preserves subdocument arrays like files
+    // ✅ toObject() ensures subdocument arrays like files serialize correctly
     const plain = typeof o.toObject === "function" ? o.toObject() : { ...o };
+
     if (!plain.user_name && plain.user_id) {
       const u = userMap[plain.user_id.toString()];
       if (u) {
@@ -57,8 +49,14 @@ async function enrichOrders(orders: any[]) {
         plain.user_email = u.email || plain.user_email || "";
       }
     }
-    // ✅ Ensure files is always an array
-    if (!plain.files) plain.files = [];
+
+    // ✅ Normalize files — always an array of { url, resource_type }
+    plain.files = (plain.files || []).map((f: any) =>
+      typeof f === "string"
+        ? { url: f, resource_type: "image" }
+        : { url: f.url, resource_type: f.resource_type || "image" },
+    );
+
     return plain;
   });
 }
@@ -69,11 +67,11 @@ export async function GET(req: NextRequest) {
     await connectDB();
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
-
     const query: any = {};
     if (status) query.status = status;
 
-    const rawOrders = await Order.find(query).sort({ created_at: -1 });
+    // ✅ .lean() for reliable plain-object serialization including files array
+    const rawOrders = await Order.find(query).sort({ created_at: -1 }).lean();
     const orders = await enrichOrders(rawOrders);
 
     return NextResponse.json({ success: true, data: orders });
@@ -94,31 +92,28 @@ export async function PATCH(req: NextRequest) {
     const order_id = formData.get("order_id") as string;
     const status = formData.get("status") as string;
 
-    if (!order_id) {
+    if (!order_id)
       return NextResponse.json(
         { success: false, message: "Order ID is required." },
         { status: 400 },
       );
-    }
 
     const validStatuses = ["pending", "in-progress", "completed", "cancelled"];
-    if (!validStatuses.includes(status)) {
+    if (!validStatuses.includes(status))
       return NextResponse.json(
         { success: false, message: "Invalid status." },
         { status: 400 },
       );
-    }
 
     const orConditions: any[] = [{ order_id }];
-    if (mongoose.isValidObjectId(order_id)) {
+    if (mongoose.isValidObjectId(order_id))
       orConditions.push({ _id: new mongoose.Types.ObjectId(order_id) });
-    }
 
     const order = await Order.findOneAndUpdate(
       { $or: orConditions },
       { status, updated_at: new Date() },
       { new: true },
-    );
+    ).lean();
 
     if (!order) {
       console.error("[PATCH] Order not found for id:", order_id);
@@ -142,32 +137,29 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-// DELETE — save to DeletedOrder first, then delete
+// DELETE — archive to DeletedOrder, then remove from Orders
 export async function DELETE(req: NextRequest) {
   try {
     await connectDB();
     const { searchParams } = new URL(req.url);
     const order_id = searchParams.get("order_id");
 
-    if (!order_id) {
+    if (!order_id)
       return NextResponse.json(
         { success: false, message: "Order ID required." },
         { status: 400 },
       );
-    }
 
     const orConditions: any[] = [{ order_id }];
-    if (mongoose.isValidObjectId(order_id)) {
+    if (mongoose.isValidObjectId(order_id))
       orConditions.push({ _id: new mongoose.Types.ObjectId(order_id) });
-    }
 
     const order = await Order.findOne({ $or: orConditions });
-    if (!order) {
+    if (!order)
       return NextResponse.json(
         { success: false, message: "Order not found." },
         { status: 404 },
       );
-    }
 
     let user_name = order.user_name || "";
     let user_email = order.user_email || "";
@@ -181,6 +173,7 @@ export async function DELETE(req: NextRequest) {
       } catch {}
     }
 
+    // ✅ Archive with pickup_time + files preserved (both were missing before)
     await DeletedOrder.create({
       original_id: order._id.toString(),
       order_id: order.order_id || order._id.toString(),
@@ -191,7 +184,12 @@ export async function DELETE(req: NextRequest) {
       status: order.status || "cancelled",
       total_amount: order.total_amount || 0,
       delivery_option: order.delivery_option || "",
+      pickup_time: order.pickup_time || null,
       specifications: order.specifications || "",
+      files: (order.files || []).map((f: any) => ({
+        url: f.url,
+        resource_type: f.resource_type || "image",
+      })),
       created_at: order.created_at || new Date(),
       deleted_at: new Date(),
     });

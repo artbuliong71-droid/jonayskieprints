@@ -4,9 +4,8 @@ import { connectDB } from "@/lib/db";
 import { Order } from "@/models/order";
 import { Pricing } from "@/models/pricing";
 import { getSession } from "@/lib/auth";
+import { uploadToCloudinary } from "@/lib/upload";
 import mongoose from "mongoose";
-
-// ── Pricing helpers ──────────────────────────────────────────────────────────
 
 const PAPER_MULTIPLIERS: Record<string, number> = {
   A4: 1.0,
@@ -31,7 +30,6 @@ function calcTotal(
   const sl = service.toLowerCase();
   const multiplier = PAPER_MULTIPLIERS[paperSize] ?? 1.0;
   let price = 0;
-
   if (sl === "print") {
     price =
       (colorOption === "color" ? prices.print_color : prices.print_bw) *
@@ -45,15 +43,12 @@ function calcTotal(
   } else if (sl === "laminating") {
     price = prices.laminating;
   }
-
   let total = price * quantity;
   if (addLamination && sl !== "laminating") {
     total += prices.laminating * quantity;
   }
   return total;
 }
-
-// ── GET ──────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
   try {
@@ -64,36 +59,30 @@ export async function GET(req: NextRequest) {
         { status: 401 },
       );
     }
-
     await connectDB();
-
     const { searchParams } = new URL(req.url);
     const action = searchParams.get("action");
     const status = searchParams.get("status");
     const order_id = searchParams.get("order_id");
 
-    // ── Get single order ────────────────────────────────────────────────────
     if (action === "getOrder" && order_id) {
       const order = await Order.findOne({
-        order_id: order_id,
+        order_id,
         ...(session.role !== "admin" ? { user_id: session.userId } : {}),
       });
-      if (!order) {
+      if (!order)
         return NextResponse.json(
           { success: false, message: "Order not found." },
           { status: 404 },
         );
-      }
       return NextResponse.json({ success: true, data: formatOrder(order) });
     }
 
-    // ── Dashboard stats ─────────────────────────────────────────────────────
     if (action === "getDashboardStats") {
       const query =
         session.role === "admin"
           ? {}
           : { user_id: new mongoose.Types.ObjectId(session.userId) };
-
       const [totalOrders, pendingOrders, completedOrders, totalSpentAgg] =
         await Promise.all([
           Order.countDocuments(query),
@@ -104,7 +93,6 @@ export async function GET(req: NextRequest) {
             { $group: { _id: null, total: { $sum: "$total_amount" } } },
           ]),
         ]);
-
       return NextResponse.json({
         success: true,
         data: {
@@ -116,16 +104,14 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ── Get user info ────────────────────────────────────────────────────────
     if (action === "getUser") {
       const { User } = await import("@/models/user");
       const user = await User.findById(session.userId).lean();
-      if (!user) {
+      if (!user)
         return NextResponse.json(
           { success: false, message: "User not found." },
           { status: 404 },
         );
-      }
       return NextResponse.json({
         success: true,
         data: {
@@ -138,14 +124,11 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // ── Get orders (with optional status filter) ─────────────────────────────
     const query: any =
       session.role === "admin"
         ? {}
         : { user_id: new mongoose.Types.ObjectId(session.userId) };
-
     if (status) query.status = status;
-
     const orders = await Order.find(query).sort({ created_at: -1 });
     return NextResponse.json({
       success: true,
@@ -160,8 +143,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ── POST ─────────────────────────────────────────────────────────────────────
-
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
@@ -171,36 +152,27 @@ export async function POST(req: NextRequest) {
         { status: 401 },
       );
     }
-
     await connectDB();
-
     const urlAction = new URL(req.url).searchParams.get("action") || "";
     const formData = await req.formData();
     const action = (formData.get("action") as string) || urlAction;
 
-    // ── CANCEL ORDER (customer only, pending orders only) ────────────────────
     if (action === "cancelOrder") {
       const order_id = formData.get("order_id") as string;
-
-      if (!order_id) {
+      if (!order_id)
         return NextResponse.json(
           { success: false, message: "Order ID is required." },
           { status: 400 },
         );
-      }
-
-      const filterQuery: any = { order_id: order_id, status: "pending" };
-      if (session.role !== "admin") {
+      const filterQuery: any = { order_id, status: "pending" };
+      if (session.role !== "admin")
         filterQuery.user_id = new mongoose.Types.ObjectId(session.userId);
-      }
-
       const order = await Order.findOneAndUpdate(
         filterQuery,
         { status: "cancelled", updated_at: new Date() },
         { new: true },
       );
-
-      if (!order) {
+      if (!order)
         return NextResponse.json(
           {
             success: false,
@@ -209,8 +181,6 @@ export async function POST(req: NextRequest) {
           },
           { status: 404 },
         );
-      }
-
       return NextResponse.json({
         success: true,
         message: "Order cancelled successfully.",
@@ -218,18 +188,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── UPDATE ORDER STATUS (admin only) ─────────────────────────────────────
     if (action === "updateStatus") {
-      if (session.role !== "admin") {
+      if (session.role !== "admin")
         return NextResponse.json(
           { success: false, message: "Unauthorized." },
           { status: 403 },
         );
-      }
-
       const order_id = formData.get("order_id") as string;
       const newStatus = formData.get("status") as string;
-
       const adminAllowedStatuses = ["pending", "in-progress", "completed"];
       if (!adminAllowedStatuses.includes(newStatus)) {
         return NextResponse.json(
@@ -240,20 +206,16 @@ export async function POST(req: NextRequest) {
           { status: 400 },
         );
       }
-
       const order = await Order.findOneAndUpdate(
-        { order_id: order_id },
+        { order_id },
         { status: newStatus, updated_at: new Date() },
         { new: true },
       );
-
-      if (!order) {
+      if (!order)
         return NextResponse.json(
           { success: false, message: "Order not found." },
           { status: 404 },
         );
-      }
-
       return NextResponse.json({
         success: true,
         message: "Order status updated.",
@@ -261,22 +223,18 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── UPDATE ORDER (customer, pending orders only) ──────────────────────────
     if (action === "updateOrder") {
       const order_id = formData.get("order_id") as string;
       const order = await Order.findOne({
-        order_id: order_id,
+        order_id,
         user_id: session.userId,
         status: "pending",
       });
-
-      if (!order) {
+      if (!order)
         return NextResponse.json(
           { success: false, message: "Order not found or cannot be edited." },
           { status: 404 },
         );
-      }
-
       const service = formData.get("service") as string;
       const quantity = parseInt(formData.get("quantity") as string) || 1;
       const specifications = buildSpecifications(formData);
@@ -289,7 +247,6 @@ export async function POST(req: NextRequest) {
         delivery_option === "pickup"
           ? (formData.get("pickup_time") as string) || null
           : null;
-
       const prices = await getPrices();
       const colorOption = (formData.get("color_option") as string) || "bw";
       const paperSize = (formData.get("paper_size") as string) || "A4";
@@ -302,7 +259,6 @@ export async function POST(req: NextRequest) {
         addLamination,
         prices,
       );
-
       order.service = service;
       order.quantity = quantity;
       order.specifications = specifications;
@@ -311,7 +267,6 @@ export async function POST(req: NextRequest) {
       order.pickup_time = pickup_time;
       order.total_amount = total_amount;
       order.updated_at = new Date();
-
       await order.save();
       return NextResponse.json({
         success: true,
@@ -320,7 +275,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // ── UPDATE PROFILE ────────────────────────────────────────────────────────
     if (formData.get("update_profile") === "1") {
       const { User } = await import("@/models/user");
       const first_name = formData.get("first_name") as string;
@@ -329,35 +283,29 @@ export async function POST(req: NextRequest) {
       const phone = formData.get("phone") as string;
       const new_password = formData.get("new_password") as string;
       const current_password = formData.get("current_password") as string;
-
       const user = await User.findById(session.userId);
-      if (!user) {
+      if (!user)
         return NextResponse.json(
           { success: false, message: "User not found." },
           { status: 404 },
         );
-      }
-
       user.first_name = first_name;
       user.last_name = last_name;
       user.email = email;
       user.phone = phone;
-
       if (new_password) {
         const bcrypt = await import("bcryptjs");
         const isMatch = await bcrypt.default.compare(
           current_password,
           user.password,
         );
-        if (!isMatch) {
+        if (!isMatch)
           return NextResponse.json(
             { success: false, message: "Current password is incorrect." },
             { status: 400 },
           );
-        }
         user.password = await bcrypt.default.hash(new_password, 12);
       }
-
       await user.save();
       return NextResponse.json({ success: true, message: "Profile updated." });
     }
@@ -397,6 +345,27 @@ export async function POST(req: NextRequest) {
       prices,
     );
 
+    // ✅ Upload all files to Cloudinary before saving the order
+    const uploadedFiles: { url: string; resource_type: string }[] = [];
+    const fileEntries = formData.getAll("files") as File[];
+
+    for (const file of fileEntries) {
+      if (!file || typeof file === "string" || file.size === 0) continue;
+      try {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        // ✅ Pass file.name so isPdf detection works correctly
+        const result = await uploadToCloudinary(buffer, file.name);
+        uploadedFiles.push({
+          url: result.url,
+          resource_type: result.resource_type,
+        });
+        console.log(`[UPLOAD SUCCESS] ${file.name} → ${result.url}`);
+      } catch (uploadErr) {
+        console.error("[FILE UPLOAD ERROR]", file.name, uploadErr);
+      }
+    }
+
+    // ✅ Save order with files
     const order = await Order.create({
       user_id: new mongoose.Types.ObjectId(session.userId),
       service,
@@ -407,7 +376,7 @@ export async function POST(req: NextRequest) {
       pickup_time,
       total_amount,
       payment_method: "cash",
-      files: [], // ✅ initialize empty files array
+      files: uploadedFiles,
     });
 
     return NextResponse.json({
@@ -416,6 +385,7 @@ export async function POST(req: NextRequest) {
       data: {
         order_id: order.order_id || order._id.toString(),
         total_amount: order.total_amount,
+        files: order.files,
       },
     });
   } catch (err) {
@@ -427,8 +397,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 function buildSpecifications(formData: FormData): string {
   const parts: string[] = [];
   const paperSize = formData.get("paper_size") as string;
@@ -439,43 +407,28 @@ function buildSpecifications(formData: FormData): string {
   const userSpecs = (formData.get("specifications") as string)?.trim();
   const copies = formData.get("copies") as string;
   const pickupTime = formData.get("pickup_time") as string;
-
-  if (paperSize && ["print", "photocopy", "scanning"].includes(service)) {
+  if (paperSize && ["print", "photocopy", "scanning"].includes(service))
     parts.push(`Paper Size: ${paperSize}`);
-  }
-  if (colorOption === "color" && service === "print") {
+  if (colorOption === "color" && service === "print")
     parts.push("Print Type: Color");
-  } else if (colorOption === "bw" && service === "print") {
+  else if (colorOption === "bw" && service === "print")
     parts.push("Print Type: Black & White");
-  }
-  if (colorOption && service === "scanning") {
+  if (colorOption && service === "scanning")
     parts.push(
       `Scan Type: ${colorOption === "color" ? "Color" : "Black & White"}`,
     );
-  }
-  if (service === "photocopy") {
-    parts.push("Copy Type: Standard");
-  }
-  if (photoSize && service === "photo development") {
+  if (service === "photocopy") parts.push("Copy Type: Standard");
+  if (photoSize && service === "photo development")
     parts.push(`Photo Size: Glossy ${photoSize}`);
-  }
-  if (addLamination) {
-    parts.push("Add Lamination: Yes");
-  }
-  if (copies && ["print", "photocopy"].includes(service)) {
+  if (addLamination) parts.push("Add Lamination: Yes");
+  if (copies && ["print", "photocopy"].includes(service))
     parts.push(`Copies: ${copies}`);
-  }
-  if (pickupTime) {
-    parts.push(`Pickup Time: ${pickupTime}`);
-  }
-  if (userSpecs) {
-    parts.push(userSpecs);
-  }
-
+  if (pickupTime) parts.push(`Pickup Time: ${pickupTime}`);
+  if (userSpecs) parts.push(userSpecs);
   return parts.join("\n");
 }
 
-// ✅ FIX: files is now included in every formatOrder response
+// ✅ Always include files in every order response
 function formatOrder(order: any) {
   return {
     order_id: order.order_id || order._id.toString(),
@@ -487,10 +440,13 @@ function formatOrder(order: any) {
     pickup_time: order.pickup_time || null,
     status: order.status,
     payment_method: order.payment_method,
-    total_amount: order.total_amount.toFixed(2),
+    total_amount: Number(order.total_amount).toFixed(2),
     created_at: order.created_at,
     updated_at: order.updated_at,
     user_id: order.user_id?.toString(),
-    files: order.files || [], // ✅ THIS WAS THE ROOT CAUSE — was missing before
+    files: (order.files || []).map((f: any) => ({
+      url: f.url,
+      resource_type: f.resource_type || "image",
+    })),
   };
 }
