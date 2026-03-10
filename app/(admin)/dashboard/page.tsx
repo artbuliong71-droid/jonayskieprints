@@ -117,15 +117,15 @@ function pricingStrToNum(p: PricingStr): Pricing {
 }
 
 // ── helpers to detect file type reliably ──────────────────────────
+// ✅ PDFs are now uploaded with resource_type "image" + format "pdf"
+// so we detect by URL extension only — NOT resource_type
 function detectIsPdf(url: string, resource_type: string): boolean {
   return (
-    resource_type === "raw" ||
-    url.toLowerCase().includes(".pdf") ||
-    url.toLowerCase().includes("/raw/upload/")
+    url.toLowerCase().includes(".pdf") || resource_type === "raw" // legacy support for old uploads
   );
 }
 function detectIsImage(url: string, resource_type: string): boolean {
-  return !detectIsPdf(url, resource_type) && resource_type === "image";
+  return !detectIsPdf(url, resource_type);
 }
 
 const IC = {
@@ -838,10 +838,19 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
   async function handleDownload(url: string, filename: string) {
     const isPdf = detectIsPdf(url, "");
 
-    // For Cloudinary raw/PDF: inject fl_attachment so it sends correct Content-Type + filename
+    // ✅ For Cloudinary image-type PDFs, use fl_attachment transformation
+    // This forces browser to download instead of trying to navigate to it
     let downloadUrl = url;
-    if (isPdf && url.includes("/raw/upload/")) {
-      downloadUrl = url.replace("/raw/upload/", "/raw/upload/fl_attachment/");
+    if (isPdf) {
+      // Works for both /image/upload/ (new) and /raw/upload/ (legacy)
+      if (url.includes("/image/upload/")) {
+        downloadUrl = url.replace(
+          "/image/upload/",
+          "/image/upload/fl_attachment/",
+        );
+      } else if (url.includes("/raw/upload/")) {
+        downloadUrl = url.replace("/raw/upload/", "/raw/upload/fl_attachment/");
+      }
     }
 
     const finalName =

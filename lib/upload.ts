@@ -34,35 +34,31 @@ export async function uploadToCloudinary(
     .replace(/\s+/g, "_")
     .replace(/[^a-zA-Z0-9_\-]/g, "_");
 
-  const publicId = `${Date.now()}-${sanitizedFilename}${isPdf ? ".pdf" : ""}`;
+  const publicId = `${Date.now()}-${sanitizedFilename}`;
 
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
         folder: "orders",
         public_id: publicId,
-        resource_type: isPdf ? "raw" : "image",
+        // ✅ KEY FIX: PDFs must use resource_type "image" — NOT "raw"
+        // "raw" requires signed URLs (causes 401). "image" with format "pdf"
+        // is publicly accessible and also generates a preview in Cloudinary.
+        resource_type: "image",
         ...(isPdf && { format: "pdf" }),
-        access_mode: "public",
         type: "upload",
+        access_mode: "public",
+        invalidate: true,
       },
       (error, result) => {
         if (error) return reject(error);
         if (!result) return reject(new Error("No result from Cloudinary"));
 
-        let url = result.secure_url;
-
-        if (isPdf && url.includes("/image/upload/")) {
-          url = url.replace("/image/upload/", "/raw/upload/");
-        }
-
-        if (isPdf && !url.toLowerCase().endsWith(".pdf")) {
-          url = url + ".pdf";
-        }
-
+        const url = result.secure_url;
+        // resource_type is "image" for both images and PDFs now
         resolve({
           url,
-          resource_type: isPdf ? "raw" : "image",
+          resource_type: result.resource_type || "image",
         });
       },
     );
