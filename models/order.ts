@@ -63,7 +63,7 @@ const OrderSchema = new Schema<IOrder>({
 OrderSchema.pre("save", async function () {
   this.updated_at = new Date();
   if (!this.order_id) {
-    this.order_id = new mongoose.Types.ObjectId().toString().slice(-8);
+    this.order_id = "ORD-" + Date.now() + "-" + this._id.toString().slice(-4);
   }
 });
 
