@@ -1399,8 +1399,8 @@ export default function AdminDashboardPage() {
     } catch {}
   }, []);
 
-  const fetchOrders = useCallback(async (status = "") => {
-    setOrdersLoading(true);
+  const fetchOrders = useCallback(async (status = "", silent = false) => {
+    if (!silent) setOrdersLoading(true);
     try {
       const url = status
         ? `/api/admin/orders?status=${status}`
@@ -1409,7 +1409,7 @@ export default function AdminDashboardPage() {
       const d = await r.json();
       if (d.success) setOrders(d.data);
     } catch {}
-    setOrdersLoading(false);
+    if (!silent) setOrdersLoading(false);
   }, []);
 
   const fetchDeletedOrders = useCallback(async () => {
