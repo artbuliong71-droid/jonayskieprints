@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
           Order.countDocuments({ ...query, status: "pending" }),
           Order.countDocuments({ ...query, status: "completed" }),
           Order.aggregate([
-            { $match: query },
+            { $match: { ...query, status: "completed" } },
             { $group: { _id: null, total: { $sum: "$total_amount" } } },
           ]),
         ]);
