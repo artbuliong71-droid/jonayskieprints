@@ -19,6 +19,11 @@ interface NotificationState {
   type: "success" | "error";
   visible: boolean;
 }
+interface LoginErrors {
+  email?: string;
+  password?: string;
+  general?: string;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,9 +40,7 @@ export default function LoginPage() {
     type: "error",
     visible: false,
   });
-  const [errors, setErrors] = useState<
-    Partial<LoginFormData & { general: string }>
-  >({});
+  const [errors, setErrors] = useState<LoginErrors>({});
 
   useEffect(() => {
     fetch("/api/auth/logout", { method: "POST" }).finally(() =>
@@ -51,7 +54,7 @@ export default function LoginPage() {
   };
 
   const validate = (): boolean => {
-    const newErrors: Partial<LoginFormData & { general: string }> = {};
+    const newErrors: LoginErrors = {};
     if (!formData.email) newErrors.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email))
       newErrors.email = "Invalid email format";
@@ -140,22 +143,18 @@ export default function LoginPage() {
         }
         .page::before {
           content: ''; position: absolute; top: -10%; left: -10%;
-          width: clamp(200px,40vw,450px); height: clamp(200px,40vw,450px);
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,255,255,0.09) 0%, transparent 70%);
-          pointer-events: none;
+          width: clamp(200px,40vw,450px); height: clamp(200px,40vw,450px); border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,255,255,0.09) 0%, transparent 70%); pointer-events: none;
         }
         .page::after {
           content: ''; position: absolute; bottom: -8%; right: -8%;
-          width: clamp(180px,35vw,400px); height: clamp(180px,35vw,400px);
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%);
-          pointer-events: none;
+          width: clamp(180px,35vw,400px); height: clamp(180px,35vw,400px); border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%); pointer-events: none;
         }
 
         .card {
           background: #fff; border-radius: clamp(14px,3vw,22px);
-          padding: clamp(1.5rem,5vw,2.75rem) clamp(1.25rem,5vw,2.5rem);
+          padding: clamp(1.25rem,3vw,2rem) clamp(1.25rem,5vw,2.5rem) clamp(1.5rem,5vw,2.75rem);
           width: 100%; max-width: min(440px,100%);
           box-shadow: 0 24px 60px rgba(0,0,0,.22), 0 8px 24px rgba(0,0,0,.13);
           position: relative; z-index: 1;
@@ -163,21 +162,21 @@ export default function LoginPage() {
 
         .brand {
           display: flex; flex-direction: column; align-items: center;
-          margin-bottom: clamp(1rem,3vw,1.5rem); gap: .55rem;
+          margin-bottom: 0.25rem; gap: 0;
         }
-
+        .brand-logo-wrap {
+          width: 100px; height: 100px;
+          overflow: visible; margin: 0 auto;
+          display: flex; align-items: center; justify-content: center;
+        }
         .brand-logo {
-          width: clamp(56px, 12vw, 80px);
-          height: clamp(56px, 12vw, 80px);
-          object-fit: contain;
-          border-radius: clamp(12px, 2.5vw, 17px);
-          display: block;
+          width: 100px; height: 100px;
+          object-fit: contain; transform: none; display: block;
         }
 
-        .brand-name { font-size: clamp(.82rem,2.5vw,1rem); font-weight: 700; color: #111827; letter-spacing: -.01em; text-align: center; }
-        .form-header { text-align: center; margin-bottom: clamp(1.25rem,3.5vw,1.85rem); }
-        .form-header h2 { font-size: clamp(1.35rem,5vw,1.65rem); font-weight: 800; color: #111827; letter-spacing: -.03em; margin-bottom: .3rem; }
-        .form-header p  { font-size: clamp(.78rem,2.5vw,.86rem); color: #6b7280; line-height: 1.5; }
+        .form-header { text-align: center; margin-bottom: clamp(1rem,2.5vw,1.4rem); }
+        .form-header h2 { font-size: clamp(1.35rem,5vw,1.65rem); font-weight: 800; color: #111827; letter-spacing: -.03em; margin-bottom: .25rem; }
+        .form-header p { font-size: clamp(.78rem,2.5vw,.86rem); color: #6b7280; line-height: 1.5; }
 
         .form-group { margin-bottom: clamp(.75rem,2.5vw,1rem); }
         .form-group label { display: block; font-size: clamp(.72rem,2vw,.79rem); font-weight: 600; letter-spacing: .04em; color: #374151; margin-bottom: .4rem; }
@@ -213,8 +212,7 @@ export default function LoginPage() {
         }
         .checkbox-label {
           display: flex; align-items: center; gap: .5rem; cursor: pointer;
-          font-size: clamp(.8rem,2.3vw,.86rem); color: #4b5563;
-          user-select: none; padding: 4px 0;
+          font-size: clamp(.8rem,2.3vw,.86rem); color: #4b5563; user-select: none; padding: 4px 0;
         }
         .custom-checkbox {
           width: clamp(15px,3.5vw,18px); height: clamp(15px,3.5vw,18px);
@@ -255,22 +253,20 @@ export default function LoginPage() {
           transition: border-color .2s, background .2s;
           -webkit-tap-highlight-color: transparent; touch-action: manipulation;
         }
-        .btn-register:hover  { border-color: #7c3aed; background: #faf5ff; }
+        .btn-register:hover { border-color: #7c3aed; background: #faf5ff; }
         .btn-register:active { background: #f3e8ff; }
 
         .btn-google {
           width: 100%; padding: clamp(.72rem,2.5vw,.85rem);
-          background: #fff; color: #374151;
-          border: 1.5px solid #e5e7eb; border-radius: 10px;
-          font-family: 'Inter', sans-serif;
-          font-size: clamp(.84rem,2.5vw,.9rem); font-weight: 600; cursor: pointer;
-          text-align: center; text-decoration: none;
+          background: #fff; color: #374151; border: 1.5px solid #e5e7eb; border-radius: 10px;
+          font-family: 'Inter', sans-serif; font-size: clamp(.84rem,2.5vw,.9rem);
+          font-weight: 600; cursor: pointer; text-align: center; text-decoration: none;
           display: flex; align-items: center; justify-content: center; gap: .65rem;
           transition: border-color .2s, background .2s, box-shadow .2s;
           box-shadow: 0 1px 4px rgba(0,0,0,.08);
           -webkit-tap-highlight-color: transparent; touch-action: manipulation;
         }
-        .btn-google:hover  { border-color: #d1d5db; background: #f9fafb; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+        .btn-google:hover { border-color: #d1d5db; background: #f9fafb; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
         .btn-google:active { background: #f3f4f6; }
 
         .divider {
@@ -301,9 +297,9 @@ export default function LoginPage() {
           display: flex; align-items: center; gap: .5rem;
           font-family: 'Inter', sans-serif;
         }
-        .notification.visible  { transform: translateY(0); opacity: 1; }
-        .notification.success  { background: #22c55e; }
-        .notification.error    { background: #ef4444; }
+        .notification.visible { transform: translateY(0); opacity: 1; }
+        .notification.success { background: #22c55e; }
+        .notification.error { background: #ef4444; }
 
         .spinner {
           width: 16px; height: 16px;
@@ -312,42 +308,23 @@ export default function LoginPage() {
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        @media (max-width: 359px) {
-          .card { padding: 1.35rem 1rem; }
-          .form-footer-row { flex-direction: column; align-items: flex-start; gap: .5rem; }
-          .brand-name { font-size: .78rem; }
-        }
-        @media (max-height: 600px) and (orientation: landscape) {
-          .page { justify-content: flex-start; padding-top: 1rem; padding-bottom: 1rem; }
-          .brand { margin-bottom: .75rem; flex-direction: row; gap: .75rem; }
-          .brand-logo { width: 40px; height: 40px; }
-          .form-header { margin-bottom: 1rem; }
-          .form-header h2 { font-size: 1.25rem; }
-          .form-group { margin-bottom: .6rem; }
-          .form-footer-row { margin-bottom: .85rem; }
-        }
+        @media (max-width: 359px) { .card { padding: 1.35rem 1rem; } }
         @media (min-width: 768px) {
           .notification { top: 1.5rem; right: 1.5rem; left: auto; margin: 0; }
-          .card { padding: 2.75rem 2.5rem; }
-        }
-        @supports (padding: max(0px)) {
-          .page {
-            padding-left:   max(clamp(.75rem,4vw,1.5rem), env(safe-area-inset-left));
-            padding-right:  max(clamp(.75rem,4vw,1.5rem), env(safe-area-inset-right));
-            padding-bottom: max(clamp(1rem,4vw,2.5rem),   env(safe-area-inset-bottom));
-          }
+          .card { padding: 2rem 2.5rem 2.75rem; }
         }
       `}</style>
 
       <div className="page">
         <div className="card">
           <div className="brand">
-            {/* ✅ YOUR LOGO */}
-            <img
-              src="/logo.png"
-              alt="Jonayskie Prints"
-              className="brand-logo"
-            />
+            <div className="brand-logo-wrap">
+              <img
+                src="/logo.png"
+                alt="Jonayskie Prints"
+                className="brand-logo"
+              />
+            </div>
           </div>
 
           <div className="form-header">
@@ -356,7 +333,6 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} noValidate>
-            {/* Email */}
             <div className="form-group">
               <label htmlFor="email">Email Address</label>
               <div className="input-wrapper">
@@ -392,7 +368,6 @@ export default function LoginPage() {
               {errors.email && <p className="field-error">{errors.email}</p>}
             </div>
 
-            {/* Password */}
             <div className="form-group">
               <label htmlFor="password">Password</label>
               <div className="input-wrapper">
@@ -465,7 +440,6 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Remember + Forgot */}
             <div className="form-footer-row">
               <label
                 className="checkbox-label"
@@ -495,7 +469,6 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            {/* Sign In Button */}
             <button type="submit" className="btn-signin" disabled={isLoading}>
               {isLoading ? (
                 <>
@@ -507,7 +480,6 @@ export default function LoginPage() {
               )}
             </button>
 
-            {/* Google */}
             <div className="divider">or continue with</div>
             <a href="/api/auth/google" className="btn-google">
               <svg
@@ -536,7 +508,6 @@ export default function LoginPage() {
               Continue with Google
             </a>
 
-            {/* Register */}
             <div className="divider">Don&apos;t have an account?</div>
             <Link href="/register" className="btn-register">
               Create Account

@@ -214,7 +214,6 @@ export default function RegisterPage() {
     type: "error",
     visible: false,
   });
-
   const strength = getPasswordStrength(formData.password);
 
   const showNotification = (message: string, type: "success" | "error") => {
@@ -301,47 +300,39 @@ export default function RegisterPage() {
         }
         .page::before {
           content: ''; position: absolute; top: -10%; left: -10%;
-          width: clamp(200px, 40vw, 420px); height: clamp(200px, 40vw, 420px);
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,255,255,0.09) 0%, transparent 70%);
-          pointer-events: none;
+          width: clamp(200px, 40vw, 420px); height: clamp(200px, 40vw, 420px); border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,255,255,0.09) 0%, transparent 70%); pointer-events: none;
         }
         .page::after {
           content: ''; position: absolute; bottom: -8%; right: -8%;
-          width: clamp(180px, 35vw, 380px); height: clamp(180px, 35vw, 380px);
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%);
-          pointer-events: none;
+          width: clamp(180px, 35vw, 380px); height: clamp(180px, 35vw, 380px); border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%); pointer-events: none;
         }
 
         .card {
           background: #fff; border-radius: clamp(14px, 3vw, 22px);
-          padding: clamp(1.5rem, 5vw, 2.75rem) clamp(1.25rem, 5vw, 2.25rem);
+          padding: clamp(1.25rem, 3vw, 2rem) clamp(1.25rem, 5vw, 2.25rem) clamp(1.5rem, 5vw, 2.75rem);
           width: 100%; max-width: min(490px, 100%);
           box-shadow: 0 20px 60px rgba(0,0,0,0.22), 0 8px 24px rgba(0,0,0,0.12);
           margin: auto 0; position: relative; z-index: 1;
         }
 
-        .card-header { text-align: center; margin-bottom: clamp(1.25rem, 3.5vw, 1.85rem); }
+        .card-header { text-align: center; margin-bottom: clamp(0.75rem, 2vw, 1rem); }
 
+        .brand-logo-wrap {
+          width: 100px; height: 100px;
+          overflow: visible; margin: 0 auto 0.25rem;
+          display: flex; align-items: center; justify-content: center;
+        }
         .brand-logo {
-          width: clamp(56px, 12vw, 80px);
-          height: clamp(56px, 12vw, 80px);
-          object-fit: contain;
-          border-radius: clamp(11px, 2.5vw, 15px);
-          margin: 0 auto clamp(0.45rem, 1.5vw, 0.65rem);
-          display: block;
+          width: 100px; height: 100px;
+          object-fit: contain; transform: none; display: block;
         }
 
-        .brand-name { font-size: clamp(0.82rem, 2.5vw, 1rem); font-weight: 700; color: #0f0e11; margin-bottom: clamp(0.35rem, 1.5vw, 0.6rem); }
         .card-title { font-size: clamp(1.25rem, 4.5vw, 1.6rem); font-weight: 700; color: #0f0e11; margin-bottom: 0.2rem; letter-spacing: -0.02em; }
         .card-subtitle { font-size: clamp(0.78rem, 2.3vw, 0.88rem); color: #6b7280; }
 
-        .name-grid {
-          display: grid; grid-template-columns: 1fr 1fr;
-          gap: clamp(0.6rem, 2vw, 0.9rem);
-          margin-bottom: clamp(0.75rem, 2.5vw, 1rem);
-        }
+        .name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(0.6rem, 2vw, 0.9rem); margin-bottom: clamp(0.75rem, 2.5vw, 1rem); }
 
         .form-group { margin-bottom: clamp(0.7rem, 2.5vw, 1rem); }
         .form-group label { display: block; font-size: clamp(0.75rem, 2vw, 0.85rem); font-weight: 600; color: #0f0e11; margin-bottom: 0.38rem; }
@@ -396,8 +387,8 @@ export default function RegisterPage() {
 
         .btn-primary {
           width: 100%; padding: clamp(0.75rem, 3vw, 0.9rem);
-          background: linear-gradient(135deg, #5b6dee, #7c3aed);
-          color: #fff; border: none; border-radius: 10px;
+          background: linear-gradient(135deg, #5b6dee, #7c3aed); color: #fff;
+          border: none; border-radius: 10px;
           font-family: 'DM Sans', sans-serif; font-size: clamp(0.86rem, 2.5vw, 0.95rem);
           font-weight: 600; cursor: pointer; transition: opacity 0.2s, transform 0.15s;
           display: flex; align-items: center; justify-content: center; gap: 0.5rem;
@@ -411,8 +402,7 @@ export default function RegisterPage() {
 
         .btn-google {
           width: 100%; padding: clamp(0.72rem, 2.5vw, 0.875rem);
-          background: #fff; color: #374151;
-          border: 1.5px solid #e5e7eb; border-radius: 10px;
+          background: #fff; color: #374151; border: 1.5px solid #e5e7eb; border-radius: 10px;
           font-family: 'DM Sans', sans-serif; font-size: clamp(0.84rem, 2.5vw, 0.92rem);
           font-weight: 600; cursor: pointer; text-align: center; text-decoration: none;
           display: flex; align-items: center; justify-content: center; gap: 0.65rem;
@@ -421,7 +411,7 @@ export default function RegisterPage() {
           margin-bottom: clamp(0.75rem, 2vw, 1rem);
           -webkit-tap-highlight-color: transparent;
         }
-        .btn-google:hover  { border-color: #d1d5db; background: #f9fafb; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .btn-google:hover { border-color: #d1d5db; background: #f9fafb; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .btn-google:active { background: #f3f4f6; }
 
         .divider {
@@ -433,8 +423,7 @@ export default function RegisterPage() {
 
         .btn-outline {
           width: 100%; padding: clamp(0.72rem, 2.5vw, 0.875rem);
-          background: transparent; color: #7c3aed;
-          border: 1.5px solid #c4b5fd; border-radius: 10px;
+          background: transparent; color: #7c3aed; border: 1.5px solid #c4b5fd; border-radius: 10px;
           font-family: 'DM Sans', sans-serif; font-size: clamp(0.84rem, 2.5vw, 0.92rem);
           font-weight: 600; cursor: pointer; text-align: center; text-decoration: none;
           display: flex; align-items: center; justify-content: center;
@@ -443,73 +432,44 @@ export default function RegisterPage() {
         .btn-outline:hover { border-color: #7c3aed; background: #faf5ff; }
         .btn-outline:active { background: #f3e8ff; }
 
-        .spinner {
-          width: 15px; height: 15px;
-          border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
-          border-radius: 50%; animation: spin 0.6s linear infinite; flex-shrink: 0;
-        }
+        .spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; flex-shrink: 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .notification {
-          position: fixed; top: env(safe-area-inset-top, 1rem);
-          left: 1rem; right: 1rem;
+          position: fixed; top: env(safe-area-inset-top, 1rem); left: 1rem; right: 1rem;
           padding: clamp(0.7rem, 2.5vw, 0.85rem) clamp(1rem, 3vw, 1.25rem);
           border-radius: 10px; color: #fff; font-weight: 600;
           font-size: clamp(0.78rem, 2.3vw, 0.88rem);
           z-index: 9999; transform: translateY(-10px); opacity: 0;
           transition: all 0.3s; pointer-events: none;
           box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-          display: flex; align-items: center; gap: 0.5rem;
-          font-family: 'DM Sans', sans-serif;
+          display: flex; align-items: center; gap: 0.5rem; font-family: 'DM Sans', sans-serif;
         }
         .notification.visible { transform: translateY(0); opacity: 1; }
         .notification.success { background: #2d9b5a; }
-        .notification.error   { background: #e63329; }
+        .notification.error { background: #e63329; }
 
-        @media (max-width: 359px) {
-          .card { padding: 1.35rem 1rem; }
-          .name-grid { grid-template-columns: 1fr; gap: 0; }
-        }
-        @media (max-height: 600px) and (orientation: landscape) {
-          .page { padding-top: 0.75rem; padding-bottom: 0.75rem; align-items: flex-start; }
-          .card-header { margin-bottom: 0.9rem; }
-          .brand-logo { width: 38px; height: 38px; margin-bottom: 0.3rem; }
-          .card-title { font-size: 1.15rem; }
-          .form-group { margin-bottom: 0.55rem; }
-          .terms-row { margin-bottom: 0.75rem; }
-        }
-        @media (min-width: 540px) {
-          .notification { top: 1.5rem; right: 1.5rem; left: auto; max-width: 340px; }
-        }
-        @media (min-width: 768px) {
-          .card { padding: 2.75rem 2.5rem; }
-          .page { align-items: center; }
-        }
-        @supports (padding: max(0px)) {
-          .page {
-            padding-left: max(clamp(0.75rem, 4vw, 1.25rem), env(safe-area-inset-left));
-            padding-right: max(clamp(0.75rem, 4vw, 1.25rem), env(safe-area-inset-right));
-            padding-bottom: max(clamp(1rem, 4vw, 2.5rem), env(safe-area-inset-bottom));
-          }
-        }
+        @media (max-width: 359px) { .card { padding: 1.35rem 1rem; } .name-grid { grid-template-columns: 1fr; gap: 0; } }
+        @media (min-width: 540px) { .notification { top: 1.5rem; right: 1.5rem; left: auto; max-width: 340px; } }
+        @media (min-width: 768px) { .card { padding: 2rem 2.5rem 2.75rem; } .page { align-items: center; } }
       `}</style>
 
       <div className="page">
         <div className="card">
           <div className="card-header">
-            {/* ✅ YOUR LOGO */}
-            <img
-              src="/logo.png"
-              alt="Jonayskie Prints"
-              className="brand-logo"
-            />
+            <div className="brand-logo-wrap">
+              <img
+                src="/logo.png"
+                alt="Jonayskie Prints"
+                className="brand-logo"
+              />
+            </div>
             <h1 className="card-title">Create Account</h1>
             <p className="card-subtitle">
               Join our community — it&apos;s completely free!
             </p>
           </div>
 
-          {/* ── Google Sign-Up ── */}
           <a href="/api/auth/google" className="btn-google">
             <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
               <path
@@ -535,7 +495,6 @@ export default function RegisterPage() {
           <div className="divider">or sign up with email</div>
 
           <form onSubmit={handleSubmit} noValidate>
-            {/* Name Row */}
             <div className="name-grid">
               <div>
                 <label htmlFor="firstName">First Name</label>
@@ -585,7 +544,6 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Email */}
             <div className="form-group">
               <label htmlFor="email">Email Address</label>
               <div className="input-wrapper">
@@ -611,7 +569,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Phone */}
             <div className="form-group">
               <label htmlFor="phone">Phone Number</label>
               <div className="input-wrapper">
@@ -637,7 +594,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Password */}
             <div className="form-group">
               <label htmlFor="password">Password</label>
               <div className="input-wrapper">
@@ -695,7 +651,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Confirm Password */}
             <div className="form-group">
               <label htmlFor="confirmPassword">Confirm Password</label>
               <div className="input-wrapper">
@@ -728,7 +683,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Terms */}
             <div
               className="terms-row"
               onClick={() => setField("terms", !formData.terms)}
@@ -755,7 +709,6 @@ export default function RegisterPage() {
               </p>
             )}
 
-            {/* Submit */}
             <button type="submit" className="btn-primary" disabled={isLoading}>
               {isLoading ? (
                 <>

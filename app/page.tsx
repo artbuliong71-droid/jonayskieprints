@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 type NavSection = "home" | "services" | "about" | "contact";
 
 interface ServiceCard {
@@ -24,8 +22,6 @@ interface FeatureCard {
   title: string;
   description: string;
 }
-
-// ─── SVG Icons ───────────────────────────────────────────────────────────────
 
 const IcoPrinter = () => (
   <svg
@@ -257,8 +253,6 @@ const IcoPrinterNav = () => (
   </svg>
 );
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
 const SERVICES: ServiceCard[] = [
   {
     icon: <IcoPrinter />,
@@ -326,8 +320,6 @@ const CONTACT_ITEMS: ContactItem[] = [
   },
 ];
 
-// ─── Hook: Intersection Observer ─────────────────────────────────────────────
-
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
@@ -348,8 +340,6 @@ function useInView(threshold = 0.15) {
   }, [threshold]);
   return { ref, inView };
 }
-
-// ─── Main Component ──────────────────────────────────────────────────────────
 
 export default function HomePage() {
   const [activeNav, setActiveNav] = useState<NavSection>("home");
@@ -412,6 +402,7 @@ export default function HomePage() {
           --muted: #7a7a7a;
           --border: #e0ddd8;
           --success: #2d9b5a;
+          --nav-h: 90px;
         }
 
         html { scroll-behavior: smooth; }
@@ -420,17 +411,41 @@ export default function HomePage() {
         /* ── NAV ── */
         .nav {
           position: fixed; top: 0; left: 0; right: 0;
-          z-index: 200; padding: 0 2rem; height: 68px;
-          display: flex; align-items: center; justify-content: space-between;
+          z-index: 200; padding: 0 2.5rem; height: var(--nav-h);
+          display: grid; grid-template-columns: 1fr auto 1fr;
+          align-items: center;
           background: #ffffff; box-shadow: 0 1px 0 var(--border);
         }
-        .nav.scrolled { background: #ffffff; box-shadow: 0 1px 8px rgba(0,0,0,0.08); }
+        .nav.scrolled { box-shadow: 0 1px 8px rgba(0,0,0,0.08); }
 
-        .nav-logo { display: flex; align-items: center; gap: 0.6rem; text-decoration: none; cursor: pointer; }
-        .nav-logo-icon { width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; }
-        .nav-logo-icon img { width: 38px; height: 38px; object-fit: contain; }
-        .nav-logo-text { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--ink); line-height: 1.1; letter-spacing: -0.01em; }
-        .nav-logo-sub { font-family: 'DM Sans', sans-serif; font-size: 0.62rem; font-weight: 300; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; display: block; }
+        .nav-logo {
+          display: flex; align-items: center; gap: 0.75rem;
+          text-decoration: none; cursor: pointer;
+        }
+        .nav-logo-img-wrap {
+          width: 72px; height: 72px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          background: transparent; padding: 0; border-radius: 0;
+        }
+        .nav-logo-img-wrap img {
+          width: 72px; height: 72px;
+          object-fit: contain; filter: none;
+        }
+        .nav-logo-text {
+          display: flex; flex-direction: column; line-height: 1.2;
+        }
+        .nav-logo-name {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.1rem; font-weight: 700;
+          color: var(--ink); letter-spacing: -0.01em;
+          white-space: nowrap;
+        }
+        .nav-logo-tagline {
+          font-size: 0.65rem; font-weight: 500;
+          color: var(--muted); letter-spacing: 0.07em;
+          text-transform: uppercase; white-space: nowrap;
+          margin-top: 1px;
+        }
 
         .nav-links { display: flex; align-items: center; gap: 0.25rem; list-style: none; }
         .nav-link-btn {
@@ -442,7 +457,7 @@ export default function HomePage() {
         .nav-link-btn:hover { color: var(--accent); background: rgba(37,99,235,0.06); }
         .nav-link-btn.active { color: var(--accent) !important; font-weight: 600; }
 
-        .nav-actions { display: flex; align-items: center; gap: 0.65rem; }
+        .nav-actions { display: flex; align-items: center; gap: 0.65rem; justify-content: flex-end; }
         .btn-login {
           padding: 0.5rem 1.25rem; background: var(--accent); color: #fff;
           border: none; border-radius: 99px;
@@ -459,10 +474,10 @@ export default function HomePage() {
           display: inline-flex; align-items: center;
         }
         .btn-register:hover { background: rgba(37,99,235,0.06); }
-        .hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--ink); padding: 4px; }
+        .hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--ink); padding: 4px; justify-content: flex-end; }
 
         .mobile-menu {
-          position: fixed; top: 68px; left: 0; right: 0;
+          position: fixed; top: var(--nav-h); left: 0; right: 0;
           background: var(--paper); border-bottom: 1px solid var(--border);
           padding: 1rem 2rem 1.5rem; z-index: 190;
           transform: translateY(-110%); transition: transform 0.3s;
@@ -479,39 +494,50 @@ export default function HomePage() {
         .mobile-nav-btn:hover { background: rgba(0,0,0,0.04); }
         .mobile-nav-btn.active { color: var(--accent); font-weight: 600; }
         .mobile-actions { display: flex; gap: 0.75rem; }
-        .mobile-actions .btn-login { flex: 1; justify-content: center; background: var(--accent); color: #fff !important; border-color: var(--accent) !important; }
-        .mobile-actions .btn-register { flex: 1; justify-content: center; color: var(--ink) !important; border-color: var(--border) !important; }
+        .mobile-actions .btn-login { flex: 1; justify-content: center; }
+        .mobile-actions .btn-register { flex: 1; justify-content: center; }
 
         /* ── HERO ── */
         .hero {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #5b6dee 0%, #7c3aed 50%, #a855f7 100%);
-          display: flex; align-items: center;
-          position: relative; overflow: hidden;
-          padding: 7rem 2rem 4rem;
+          min-height: 100vh; position: relative; overflow: hidden;
+          display: flex; align-items: center; padding: 8rem 2rem 4rem;
+          background-color: #7c3aed;
+        }
+        .hero-gradient {
+          position: absolute; inset: 0;
+          background: linear-gradient(135deg, rgba(91,109,238,0.55) 0%, rgba(124,58,237,0.55) 50%, rgba(168,85,247,0.55) 100%);
+          z-index: 1; pointer-events: none;
+        }
+        .hero-logo-bg {
+          position: absolute; inset: 0; z-index: 0;
+          display: flex; align-items: center; justify-content: center; pointer-events: none;
+        }
+        .hero-logo-bg img {
+          width: min(600px, 80vw); height: min(600px, 80vw);
+          object-fit: contain; opacity: 0.55;
         }
         .hero::before {
           content: ''; position: absolute; top: -120px; left: -120px;
           width: 500px; height: 500px; border-radius: 50%;
           background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
-          pointer-events: none;
+          pointer-events: none; z-index: 2;
         }
         .hero::after {
           content: ''; position: absolute; bottom: -80px; right: 15%;
           width: 350px; height: 350px; border-radius: 50%;
           background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
-          pointer-events: none;
+          pointer-events: none; z-index: 2;
         }
         .hero-stripe {
           position: absolute; top: 0; right: 0; width: 38%; height: 100%;
           background: rgba(255,255,255,0.025);
           clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
-          pointer-events: none;
+          pointer-events: none; z-index: 2;
         }
         .hero-inner {
           max-width: 1200px; width: 100%; margin: 0 auto;
           display: flex; flex-direction: column; align-items: center;
-          gap: 3rem; position: relative; z-index: 1; text-align: center;
+          gap: 3rem; position: relative; z-index: 3; text-align: center;
         }
         .hero-content { flex: 1; max-width: 720px; display: flex; flex-direction: column; align-items: center; }
         .hero-tag {
@@ -522,7 +548,6 @@ export default function HomePage() {
           padding: 4px 14px; border-radius: 99px; margin-bottom: 1.5rem;
           animation: fadeUp 0.6s ease both;
         }
-        .hero-tag svg { color: rgba(255,255,255,0.8); }
         .hero-title {
           font-family: 'Playfair Display', serif;
           font-size: clamp(2.8rem, 5.5vw, 4.5rem);
@@ -531,7 +556,7 @@ export default function HomePage() {
         }
         .hero-title em { color: #93c5fd; font-style: italic; }
         .hero-subtitle {
-          font-size: 1rem; color: rgba(255,255,255,0.55); line-height: 1.7;
+          font-size: 1rem; color: rgba(255,255,255,0.75); line-height: 1.7;
           max-width: 520px; font-weight: 300; margin-bottom: 2.25rem;
           animation: fadeUp 0.65s 0.2s ease both;
         }
@@ -558,7 +583,7 @@ export default function HomePage() {
           animation: fadeUp 0.65s 0.45s ease both; justify-content: center;
         }
         .hero-stat-value { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #fff; font-weight: 700; }
-        .hero-stat-label { font-size: 0.72rem; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; margin-top: 1px; }
+        .hero-stat-label { font-size: 0.72rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; margin-top: 1px; }
 
         /* ── SECTIONS SHARED ── */
         .section-inner { max-width: 1100px; margin: 0 auto; padding: 5rem 2rem; }
@@ -586,20 +611,13 @@ export default function HomePage() {
         .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
         .service-card {
           background: var(--paper); border: 1.5px solid var(--border); border-radius: 14px;
-          padding: 2rem 1.5rem; text-align: center;
-          transition: box-shadow 0.2s; cursor: default;
+          padding: 2rem 1.5rem; text-align: center; transition: box-shadow 0.2s; cursor: default;
         }
-        .service-card:hover {
-          border-color: var(--border);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.07);
-          transform: none;
-        }
+        .service-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
         .service-icon-wrap {
           width: 56px; height: 56px; background: var(--accent); border-radius: 14px;
-          display: flex; align-items: center; justify-content: center;
-          margin: 0 auto 1rem; color: #fff;
+          display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: #fff;
         }
-        .service-card:hover .service-icon-wrap { background: var(--accent); }
         .service-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--ink); margin-bottom: 0.5rem; letter-spacing: -0.01em; }
         .service-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; font-weight: 300; }
 
@@ -611,17 +629,12 @@ export default function HomePage() {
         .about-check { display: flex; align-items: center; gap: 0.65rem; font-size: 0.9rem; color: var(--ink); font-weight: 400; }
         .check-dot { width: 20px; height: 20px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
         .check-dot svg { width: 11px; height: 11px; }
-
         .feature-cards { display: flex; flex-direction: column; gap: 1rem; }
         .feature-card {
           background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
-          padding: 1.25rem 1.5rem; display: flex; gap: 1rem; align-items: flex-start;
-          transition: box-shadow 0.2s;
+          padding: 1.25rem 1.5rem; display: flex; gap: 1rem; align-items: flex-start; transition: box-shadow 0.2s;
         }
-        .feature-card:hover {
-          border-color: var(--border);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.07);
-        }
+        .feature-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
         .feature-icon { width: 42px; height: 42px; background: var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
         .feature-title { font-family: 'Playfair Display', serif; font-size: 0.95rem; color: var(--ink); margin-bottom: 0.25rem; }
         .feature-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.55; font-weight: 300; }
@@ -631,13 +644,9 @@ export default function HomePage() {
         .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
         .contact-card {
           background: var(--paper); border: 1.5px solid var(--border); border-radius: 12px;
-          padding: 1.5rem; display: flex; align-items: center; gap: 1rem;
-          transition: box-shadow 0.2s;
+          padding: 1.5rem; display: flex; align-items: center; gap: 1rem; transition: box-shadow 0.2s;
         }
-        .contact-card:hover {
-          border-color: var(--border);
-          box-shadow: 0 4px 16px rgba(0,0,0,0.07);
-        }
+        .contact-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
         .contact-icon { width: 44px; height: 44px; background: var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
         .contact-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
         .contact-value { font-size: 0.9rem; color: var(--ink); font-weight: 500; }
@@ -647,7 +656,6 @@ export default function HomePage() {
         .footer-inner { max-width: 1100px; margin: 0 auto; }
         .footer-top { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 3rem; padding-bottom: 2.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.5rem; }
         .footer-brand-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #fff; margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.6rem; }
-        .footer-logo-box { width: 32px; height: 32px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; color: #fff; }
         .footer-brand-desc { font-size: 0.85rem; color: rgba(255,255,255,0.4); line-height: 1.7; font-weight: 300; }
         .footer-col-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); margin-bottom: 1rem; }
         .footer-links { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
@@ -663,34 +671,37 @@ export default function HomePage() {
 
         /* ── RESPONSIVE ── */
         @media (max-width: 900px) {
+          .nav { grid-template-columns: 1fr 1fr; }
           .nav-links, .nav-actions { display: none; }
-          .hamburger { display: flex; }
+          .hamburger { display: flex; justify-content: flex-end; }
           .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
           .footer-top { grid-template-columns: 1fr 1fr; }
         }
         @media (max-width: 720px) {
           .services-grid { grid-template-columns: 1fr 1fr; }
           .contact-grid { grid-template-columns: 1fr; }
-          .hero-inner { justify-content: center; }
-          .hero-content { max-width: 560px; }
           .footer-top { grid-template-columns: 1fr; gap: 2rem; }
         }
         @media (max-width: 480px) {
           .services-grid { grid-template-columns: 1fr; }
           .hero-stats { gap: 1.5rem; }
           .section-inner { padding: 3.5rem 1.25rem; }
+          .nav-logo-tagline { display: none; }
+          .nav-logo-img-wrap { width: 56px; height: 56px; }
+          .nav-logo-img-wrap img { width: 56px; height: 56px; }
+          .nav-logo-name { font-size: 0.95rem; }
         }
       `}</style>
 
       {/* ── NAV ── */}
       <nav className={`nav ${scrolled ? "scrolled" : ""}`}>
         <div className="nav-logo" onClick={() => scrollTo("home")}>
-          <div className="nav-logo-icon">
-            <img src="/logo.png" alt="Jonayskie Prints Logo" />
+          <div className="nav-logo-img-wrap">
+            <img src="/icon.png" alt="Jonayskie Prints Logo" />
           </div>
           <div className="nav-logo-text">
-            Jonayskie Prints
-            <span className="nav-logo-sub">Premium Printing</span>
+            <span className="nav-logo-name">Jonayskie Prints</span>
+            <span className="nav-logo-tagline">Printing Services</span>
           </div>
         </div>
 
@@ -764,6 +775,10 @@ export default function HomePage() {
       {/* ── HERO ── */}
       <section id="home" ref={heroRef as React.RefObject<HTMLElement>}>
         <div className="hero">
+          <div className="hero-logo-bg">
+            <img src="/bg.png" alt="" aria-hidden="true" />
+          </div>
+          <div className="hero-gradient" />
           <div className="hero-stripe" />
           <div className="hero-inner">
             <div className="hero-content">
@@ -885,7 +900,6 @@ export default function HomePage() {
                 ))}
               </ul>
             </div>
-
             <div className="feature-cards">
               {FEATURES.map((f, i) => (
                 <div
@@ -945,9 +959,21 @@ export default function HomePage() {
           <div className="footer-top">
             <div>
               <div className="footer-brand-name">
-                <div className="footer-logo-box">
-                  <IcoPrinterNav />
-                </div>
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{ color: "#2563eb", flexShrink: 0 }}
+                >
+                  <polyline points="6 9 6 2 18 2 18 9" />
+                  <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+                  <rect x="6" y="14" width="12" height="8" />
+                </svg>
                 Jonayskie Prints
               </div>
               <p className="footer-brand-desc">
