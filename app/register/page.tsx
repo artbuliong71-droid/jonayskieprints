@@ -227,7 +227,7 @@ const IconScroll = () => (
   </svg>
 );
 
-// ── TERMS OF SERVICE MODAL ──
+// ── TERMS OF SERVICE MODAL ──────────────────────────────────────────
 function TermsModal({
   onClose,
   onAccept,
@@ -248,8 +248,8 @@ function TermsModal({
   const handleScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
-    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
-    if (atBottom) setHasScrolled(true);
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40)
+      setHasScrolled(true);
   };
 
   return (
@@ -286,17 +286,19 @@ function TermsModal({
             Prints as a service provider.
           </div>
 
+          {/* 01 */}
           <div className="tos-section">
             <div className="tos-section-badge">01</div>
             <h3 className="tos-section-title">Acceptance of Terms</h3>
             <p>
               By creating an account, placing an order, or using any of our
-              services, you confirm that you are at least 18 years of age and
-              have the legal capacity to enter into a binding agreement. Use of
-              this platform constitutes full acceptance of these terms.
+              services, you confirm that you have the legal capacity to enter
+              into a binding agreement. Use of this platform constitutes full
+              acceptance of these terms.
             </p>
           </div>
 
+          {/* 02 */}
           <div className="tos-section">
             <div className="tos-section-badge">02</div>
             <h3 className="tos-section-title">Services Offered</h3>
@@ -309,45 +311,92 @@ function TermsModal({
             </p>
           </div>
 
+          {/* 03 — UPDATED: GCash-only policy */}
           <div className="tos-section highlight-section">
             <div className="tos-section-badge accent">03</div>
             <h3 className="tos-section-title">
-              Large Orders & Downpayment Policy
+              Payment Methods &amp; Downpayment Policy
             </h3>
+
+            {/* GCash-only card */}
+            <div
+              className="tos-highlight-box"
+              style={{ marginBottom: "0.75rem" }}
+            >
+              <div
+                className="highlight-icon"
+                style={{
+                  background: "linear-gradient(135deg,#7c3aed,#a855f7)",
+                  fontSize: "1.1rem",
+                }}
+              >
+                💜
+              </div>
+              <div>
+                <p style={{ fontWeight: 700, marginBottom: "0.4rem" }}>
+                  Online Payments — GCash Only
+                </p>
+                <p>
+                  All online payments (downpayments and full payments) are
+                  processed exclusively through <strong>GCash</strong>. No other
+                  online payment channels are accepted.
+                </p>
+                <ul className="tos-list" style={{ marginTop: "0.55rem" }}>
+                  <li>
+                    Customers may choose to pay the full amount via GCash before
+                    the order is processed.
+                  </li>
+                  <li>
+                    GCash payers must provide a valid reference number and
+                    upload a receipt screenshot as proof of payment.
+                  </li>
+                  <li>
+                    Payments are verified before any order proceeds to
+                    production.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Cash + downpayment card */}
             <div className="tos-highlight-box">
               <div className="highlight-icon">₱</div>
               <div>
-                <p>
-                  <strong>Orders exceeding ₱500.00</strong> are classified as
-                  large transactions and are subject to the following
-                  requirements:
+                <p style={{ fontWeight: 700, marginBottom: "0.4rem" }}>
+                  Cash Payments &amp; ₱500+ Downpayment Requirement
                 </p>
-                <ul className="tos-list">
+                <p>
+                  Cash on pickup is accepted for all orders. However,{" "}
+                  <strong>cash orders exceeding ₱500.00</strong> require a{" "}
+                  <strong>50% downpayment via GCash</strong> before processing
+                  begins:
+                </p>
+                <ul className="tos-list" style={{ marginTop: "0.55rem" }}>
                   <li>
-                    A <strong>downpayment of 50%</strong> of the total order
-                    amount must be settled online prior to processing.
+                    Downpayment must be settled via GCash prior to processing —
+                    no exceptions.
                   </li>
                   <li>
-                    Downpayment may be made via GCash, Maya, or bank transfer to
-                    our registered account.
-                  </li>
-                  <li>
-                    The remaining balance is due upon pickup or delivery of the
-                    completed order.
+                    Remaining balance is paid in cash upon pickup or delivery.
                   </li>
                   <li>
                     Orders will <strong>not be processed</strong> until the
-                    downpayment has been confirmed.
+                    GCash downpayment is confirmed.
                   </li>
                   <li>
-                    In the event of order cancellation after processing has
-                    begun, the downpayment is <strong>non-refundable</strong>.
+                    Downpayment is <strong>non-refundable</strong> if
+                    cancellation occurs after processing begins.
+                  </li>
+                  <li>
+                    Customers choosing full GCash payment are exempt from this
+                    cash downpayment rule.
                   </li>
                 </ul>
               </div>
             </div>
           </div>
 
+          {/* 04 */}
           <div className="tos-section highlight-section">
             <div className="tos-section-badge accent">04</div>
             <h3 className="tos-section-title">
@@ -391,9 +440,12 @@ function TermsModal({
             </div>
           </div>
 
+          {/* 05 */}
           <div className="tos-section">
             <div className="tos-section-badge">05</div>
-            <h3 className="tos-section-title">Order Processing & Turnaround</h3>
+            <h3 className="tos-section-title">
+              Order Processing &amp; Turnaround
+            </h3>
             <p>
               Standard orders are processed within 1–2 business days. Urgent
               requests may be accommodated based on availability and may incur
@@ -403,9 +455,10 @@ function TermsModal({
             </p>
           </div>
 
+          {/* 06 */}
           <div className="tos-section">
             <div className="tos-section-badge">06</div>
-            <h3 className="tos-section-title">File Submission & Quality</h3>
+            <h3 className="tos-section-title">File Submission &amp; Quality</h3>
             <p>
               Customers are responsible for submitting print-ready files in
               accepted formats (PDF, JPG, PNG, DOCX). Jonayskie Prints will
@@ -416,22 +469,28 @@ function TermsModal({
             </p>
           </div>
 
+          {/* 07 — UPDATED: GCash clarification */}
           <div className="tos-section">
             <div className="tos-section-badge">07</div>
-            <h3 className="tos-section-title">Payments & Pricing</h3>
+            <h3 className="tos-section-title">Payments &amp; Pricing</h3>
             <p>
               All prices are in Philippine Peso (PHP). Final pricing is
               calculated based on paper size, color, quantity, and finishing
               options. Quoted prices are valid for 48 hours. Jonayskie Prints
               reserves the right to adjust pricing with reasonable notice.
-              Payment methods accepted include cash on pickup and online payment
-              for downpayments.
+              Accepted payment methods: <strong>(1) Cash on pickup</strong> for
+              any order amount. <strong>(2) GCash</strong> — customers may pay
+              the full amount online, or pay a 50% downpayment via GCash for
+              cash orders exceeding ₱500.00 with the balance due on pickup.
+              GCash is the <strong>only accepted online payment channel</strong>
+              .
             </p>
           </div>
 
+          {/* 08 */}
           <div className="tos-section">
             <div className="tos-section-badge">08</div>
-            <h3 className="tos-section-title">Cancellations & Refunds</h3>
+            <h3 className="tos-section-title">Cancellations &amp; Refunds</h3>
             <p>
               Orders may be cancelled without charge prior to processing. Once
               production has commenced, cancellations are not accepted and
@@ -441,9 +500,10 @@ function TermsModal({
             </p>
           </div>
 
+          {/* 09 */}
           <div className="tos-section">
             <div className="tos-section-badge">09</div>
-            <h3 className="tos-section-title">Privacy & Data Protection</h3>
+            <h3 className="tos-section-title">Privacy &amp; Data Protection</h3>
             <p>
               Your personal information is collected solely for order processing
               and service delivery purposes. We do not sell, rent, or share your
@@ -453,6 +513,7 @@ function TermsModal({
             </p>
           </div>
 
+          {/* 10 */}
           <div className="tos-section">
             <div className="tos-section-badge">10</div>
             <h3 className="tos-section-title">Prohibited Content</h3>
@@ -465,6 +526,7 @@ function TermsModal({
             </p>
           </div>
 
+          {/* 11 */}
           <div className="tos-section">
             <div className="tos-section-badge">11</div>
             <h3 className="tos-section-title">Limitation of Liability</h3>
@@ -477,6 +539,7 @@ function TermsModal({
             </p>
           </div>
 
+          {/* 12 */}
           <div className="tos-section">
             <div className="tos-section-badge">12</div>
             <h3 className="tos-section-title">Amendments</h3>
@@ -510,11 +573,13 @@ function TermsModal({
             <button
               className={`tos-btn-accept ${hasScrolled ? "ready" : ""}`}
               onClick={() => {
-                onAccept();
-                onClose();
+                if (hasScrolled) {
+                  onAccept();
+                  onClose();
+                }
               }}
             >
-              {hasScrolled ? "I Accept These Terms" : "Read All Terms First"}
+              {hasScrolled ? "✓ I Accept These Terms" : "Read All Terms First"}
             </button>
           </div>
         </div>
@@ -649,7 +714,7 @@ export default function RegisterPage() {
 
         .card-header { text-align: center; margin-bottom: clamp(0.75rem, 2vw, 1rem); }
         .brand-logo-wrap { width: 100px; height: 100px; overflow: visible; margin: 0 auto 0.25rem; display: flex; align-items: center; justify-content: center; }
-        .brand-logo { width: 100px; height: 100px; object-fit: contain; transform: none; display: block; }
+        .brand-logo { width: 100px; height: 100px; object-fit: contain; display: block; }
         .card-title { font-size: clamp(1.25rem, 4.5vw, 1.6rem); font-weight: 700; color: #0f0e11; margin-bottom: 0.2rem; letter-spacing: -0.02em; }
         .card-subtitle { font-size: clamp(0.78rem, 2.3vw, 0.88rem); color: #6b7280; }
 
@@ -662,8 +727,7 @@ export default function RegisterPage() {
         .input-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9ca3af; pointer-events: none; display: flex; align-items: center; }
 
         .form-input {
-          width: 100%;
-          padding: clamp(0.6rem, 2.5vw, 0.8rem) 1rem clamp(0.6rem, 2.5vw, 0.8rem) 2.45rem;
+          width: 100%; padding: clamp(0.6rem, 2.5vw, 0.8rem) 1rem clamp(0.6rem, 2.5vw, 0.8rem) 2.45rem;
           border: 1.5px solid #e5e7eb; border-radius: 10px;
           font-family: 'DM Sans', sans-serif; font-size: max(16px, 0.875rem);
           color: #0f0e11; background: #fff;
@@ -707,8 +771,7 @@ export default function RegisterPage() {
           color: #7c3aed; font-weight: 600; text-decoration: underline;
           text-decoration-style: dotted; cursor: pointer;
           background: none; border: none; font-family: 'DM Sans', sans-serif;
-          font-size: inherit; padding: 0; transition: opacity 0.2s;
-          display: inline;
+          font-size: inherit; padding: 0; transition: opacity 0.2s; display: inline;
         }
         .terms-link:hover { opacity: 0.75; }
 
@@ -780,41 +843,33 @@ export default function RegisterPage() {
         .tos-backdrop {
           position: fixed; inset: 0; z-index: 1000;
           background: rgba(10, 8, 20, 0.65);
-          backdrop-filter: blur(6px);
-          -webkit-backdrop-filter: blur(6px);
+          backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
           display: flex; align-items: center; justify-content: center;
-          padding: 1rem;
-          animation: backdropIn 0.25s ease;
+          padding: 1rem; animation: backdropIn 0.25s ease;
         }
         @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
 
         .tos-modal {
-          background: #fff;
-          border-radius: 20px;
-          width: 100%; max-width: 580px;
-          max-height: 88vh;
+          background: #fff; border-radius: 20px;
+          width: 100%; max-width: 580px; max-height: 88vh;
           display: flex; flex-direction: column;
           box-shadow: 0 32px 80px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.15);
-          animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-          overflow: hidden;
+          animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); overflow: hidden;
         }
         @keyframes modalIn {
           from { opacity: 0; transform: scale(0.88) translateY(20px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         .tos-header {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 1.4rem 1.6rem 1.1rem;
-          border-bottom: 1.5px solid #f0eef9;
-          flex-shrink: 0;
+          padding: 1.4rem 1.6rem 1.1rem; border-bottom: 1.5px solid #f0eef9; flex-shrink: 0;
         }
         .tos-header-left { display: flex; align-items: center; gap: 0.85rem; }
         .tos-icon-wrap {
           width: 42px; height: 42px;
           background: linear-gradient(135deg, #5b6dee, #7c3aed);
-          border-radius: 11px;
-          display: flex; align-items: center; justify-content: center;
+          border-radius: 11px; display: flex; align-items: center; justify-content: center;
           color: #fff; flex-shrink: 0;
         }
         .tos-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: #0f0e11; letter-spacing: -0.02em; }
@@ -828,8 +883,7 @@ export default function RegisterPage() {
         .tos-close-btn:hover { background: #ede9fb; color: #7c3aed; }
 
         .tos-body {
-          flex: 1; overflow-y: auto; padding: 1.4rem 1.6rem;
-          scroll-behavior: smooth;
+          flex: 1; overflow-y: auto; padding: 1.4rem 1.6rem; scroll-behavior: smooth;
         }
         .tos-body::-webkit-scrollbar { width: 5px; }
         .tos-body::-webkit-scrollbar-track { background: #f5f4f8; border-radius: 99px; }
@@ -839,7 +893,7 @@ export default function RegisterPage() {
           font-size: 0.87rem; color: #4b5563; line-height: 1.75;
           background: #faf9ff; border-left: 3px solid #7c3aed;
           padding: 0.9rem 1rem; border-radius: 0 8px 8px 0;
-          margin-bottom: 1.5rem; font-weight: 400;
+          margin-bottom: 1.5rem;
         }
 
         .tos-section { margin-bottom: 1.5rem; }
@@ -847,31 +901,26 @@ export default function RegisterPage() {
           display: inline-flex; align-items: center; justify-content: center;
           width: 28px; height: 28px; border-radius: 7px;
           background: #f0eef9; color: #7c3aed;
-          font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em;
-          margin-bottom: 0.6rem;
+          font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em; margin-bottom: 0.6rem;
         }
         .tos-section-badge.accent { background: linear-gradient(135deg, #5b6dee, #7c3aed); color: #fff; }
         .tos-section-title {
-          font-family: 'Playfair Display', serif;
-          font-size: 1rem; color: #0f0e11;
+          font-family: 'Playfair Display', serif; font-size: 1rem; color: #0f0e11;
           margin-bottom: 0.5rem; letter-spacing: -0.01em;
         }
         .tos-section p { font-size: 0.855rem; color: #4b5563; line-height: 1.75; font-weight: 400; }
 
-        /* Highlighted policy boxes */
         .highlight-section .tos-section-title { color: #1d4ed8; }
         .tos-highlight-box {
           background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
-          border: 1.5px solid #c7d2fe;
-          border-radius: 12px;
-          padding: 1rem 1.1rem;
-          display: flex; gap: 0.85rem; align-items: flex-start;
+          border: 1.5px solid #c7d2fe; border-radius: 12px;
+          padding: 1rem 1.1rem; display: flex; gap: 0.85rem; align-items: flex-start;
         }
         .highlight-icon {
           width: 36px; height: 36px; border-radius: 10px;
           background: linear-gradient(135deg, #2563eb, #7c3aed);
           display: flex; align-items: center; justify-content: center;
-          font-size: 1rem; flex-shrink: 0;
+          font-size: 1rem; flex-shrink: 0; color: #fff; font-weight: 700;
           box-shadow: 0 3px 10px rgba(37,99,235,0.25);
         }
         .tos-list {
@@ -882,45 +931,31 @@ export default function RegisterPage() {
           font-size: 0.845rem; color: #374151; line-height: 1.65;
           padding-left: 1.1rem; position: relative;
         }
-        .tos-list li::before {
-          content: '›'; position: absolute; left: 0;
-          color: #7c3aed; font-weight: 700;
-        }
+        .tos-list li::before { content: '›'; position: absolute; left: 0; color: #7c3aed; font-weight: 700; }
 
         .tos-contact-box {
           background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 10px;
-          padding: 1rem 1.1rem; font-size: 0.83rem; color: #4b5563; line-height: 1.6;
-          margin-top: 0.5rem;
+          padding: 1rem 1.1rem; font-size: 0.83rem; color: #4b5563; line-height: 1.6; margin-top: 0.5rem;
         }
         .tos-contact-box span { color: #7c3aed; font-weight: 600; }
 
-        .tos-footer {
-          padding: 1rem 1.6rem 1.3rem;
-          border-top: 1.5px solid #f0eef9;
-          flex-shrink: 0;
-        }
+        .tos-footer { padding: 1rem 1.6rem 1.3rem; border-top: 1.5px solid #f0eef9; flex-shrink: 0; }
         .tos-scroll-hint {
           text-align: center; font-size: 0.75rem; color: #9ca3af;
           margin-bottom: 0.75rem; animation: bounceHint 1.8s ease infinite;
         }
-        @keyframes bounceHint {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(3px); }
-        }
+        @keyframes bounceHint { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
         .tos-footer-btns { display: flex; gap: 0.75rem; }
         .tos-btn-decline {
           flex: 1; padding: 0.72rem;
-          background: transparent; color: #6b7280;
-          border: 1.5px solid #e5e7eb; border-radius: 10px;
+          background: transparent; color: #6b7280; border: 1.5px solid #e5e7eb; border-radius: 10px;
           font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
           cursor: pointer; transition: all 0.2s;
         }
         .tos-btn-decline:hover { border-color: #d1d5db; background: #f9fafb; }
-
         .tos-btn-accept {
           flex: 2; padding: 0.72rem;
-          background: #e5e7eb; color: #9ca3af;
-          border: none; border-radius: 10px;
+          background: #e5e7eb; color: #9ca3af; border: none; border-radius: 10px;
           font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
           cursor: not-allowed; transition: all 0.3s;
         }
@@ -936,7 +971,6 @@ export default function RegisterPage() {
         @media (max-width: 480px) { .tos-modal { max-height: 94vh; border-radius: 16px; } .tos-header { padding: 1.1rem 1.2rem 0.9rem; } .tos-body { padding: 1.1rem 1.2rem; } .tos-footer { padding: 0.9rem 1.2rem 1.1rem; } }
       `}</style>
 
-      {/* Terms of Service Modal */}
       {showTos && (
         <TermsModal
           onClose={() => setShowTos(false)}
@@ -1173,7 +1207,6 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Terms row */}
             <div className="terms-row">
               <div
                 className={`custom-checkbox ${formData.terms ? "checked" : ""} ${errors.terms ? "err" : ""}`}

@@ -26,7 +26,7 @@ interface Prices {
   laminating: number;
 }
 interface Order {
-  order_id: string; // ✅ changed from number to string — MongoDB IDs are strings
+  order_id: string;
   service: string;
   quantity: number;
   specifications: string;
@@ -186,6 +186,9 @@ function calcTotal(
     total += sp(prices.laminating, 20) * qty;
   return total;
 }
+
+// ── ADDITION 1: TOS key constant ─────────────────────────────────
+const TOS_ACCEPTED_KEY = "jonayskie_tos_accepted";
 
 const IC = {
   Menu: () => (
@@ -552,6 +555,707 @@ const IC = {
   ),
 };
 
+// ── ADDITION 2a: TosSection component ────────────────────────────
+function TosSection({
+  num,
+  title,
+  body,
+}: {
+  num: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div style={{ marginBottom: "1.3rem" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: ".55rem",
+          marginBottom: ".45rem",
+        }}
+      >
+        <div
+          style={{
+            width: 26,
+            height: 26,
+            borderRadius: 7,
+            background: "#f0eef9",
+            color: "#7c3aed",
+            fontSize: ".65rem",
+            fontWeight: 700,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          {num}
+        </div>
+        <div
+          style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: ".97rem",
+            color: "#111827",
+            fontWeight: 700,
+          }}
+        >
+          {title}
+        </div>
+      </div>
+      <p
+        style={{
+          fontSize: ".83rem",
+          color: "#4b5563",
+          lineHeight: 1.75,
+          paddingLeft: "2.6rem",
+        }}
+      >
+        {body}
+      </p>
+    </div>
+  );
+}
+
+// ── ADDITION 2b: FirstLoginTosModal component ─────────────────────
+function FirstLoginTosModal({
+  onAccept,
+  onDecline,
+}: {
+  onAccept: () => void;
+  onDecline: () => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [hasScrolled, setHasScrolled] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  function handleScroll() {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40)
+      setHasScrolled(true);
+  }
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
+        @keyframes tosBackdropIn { from{opacity:0} to{opacity:1} }
+        @keyframes tosModalIn { from{opacity:0;transform:scale(.9) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
+        @keyframes tosBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(4px)} }
+        .tos-bounce { animation: tosBounce 1.6s ease infinite; }
+      `}</style>
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 3000,
+          background: "rgba(8,6,18,0.78)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "1rem",
+          animation: "tosBackdropIn .2s ease",
+        }}
+      >
+        <div
+          style={{
+            background: "#fff",
+            borderRadius: 20,
+            width: "100%",
+            maxWidth: 560,
+            maxHeight: "88vh",
+            display: "flex",
+            flexDirection: "column",
+            boxShadow: "0 40px 100px rgba(0,0,0,.4)",
+            animation: "tosModalIn .32s cubic-bezier(.34,1.56,.64,1)",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              height: 4,
+              background: "linear-gradient(90deg,#5b6dee,#7c3aed,#a855f7)",
+              flexShrink: 0,
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: ".9rem",
+              padding: "1.2rem 1.5rem 1rem",
+              borderBottom: "1.5px solid #f0eef9",
+              flexShrink: 0,
+              background: "linear-gradient(135deg,#faf9ff,#f5f3ff)",
+            }}
+          >
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                background: "linear-gradient(135deg,#5b6dee,#7c3aed)",
+                borderRadius: 12,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                boxShadow: "0 4px 14px rgba(124,58,237,.35)",
+              }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#fff"
+                strokeWidth="2"
+                strokeLinecap="round"
+              >
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+            </div>
+            <div>
+              <div
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: "1.15rem",
+                  fontWeight: 700,
+                  color: "#111827",
+                }}
+              >
+                Terms of Service
+              </div>
+              <div
+                style={{ fontSize: ".72rem", color: "#9ca3af", marginTop: 2 }}
+              >
+                Jonayskie Prints — Effective January 1, 2026
+              </div>
+            </div>
+          </div>
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            style={{ flex: 1, overflowY: "auto", padding: "1.3rem 1.5rem" }}
+          >
+            <div
+              style={{
+                background: "#f5f3ff",
+                border: "1.5px solid #ddd6fe",
+                borderLeft: "4px solid #7c3aed",
+                borderRadius: "0 8px 8px 0",
+                padding: ".85rem 1rem",
+                marginBottom: "1.4rem",
+                fontSize: ".83rem",
+                color: "#4b5563",
+                lineHeight: 1.7,
+              }}
+            >
+              By using <strong>Jonayskie Prints</strong>, you acknowledge that
+              you have read, understood, and agree to be bound by the following
+              Terms of Service.
+            </div>
+            <TosSection
+              num="01"
+              title="Acceptance of Terms"
+              body="By creating an account, placing an order, or using any of our services, you confirm that you have the legal capacity to enter into a binding agreement. Use of this platform constitutes full acceptance of these terms."
+            />
+            <TosSection
+              num="02"
+              title="Services Offered"
+              body="Jonayskie Prints provides professional printing services including, but not limited to: document printing, photocopying (Xerox), scanning, photo development, and laminating. All services are subject to availability and may vary based on current equipment and supplies."
+            />
+            <div style={{ marginBottom: "1.4rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: ".55rem",
+                  marginBottom: ".55rem",
+                }}
+              >
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 7,
+                    background: "linear-gradient(135deg,#5b6dee,#7c3aed)",
+                    color: "#fff",
+                    fontSize: ".65rem",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  03
+                </div>
+                <div
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: ".97rem",
+                    color: "#1d4ed8",
+                    fontWeight: 700,
+                  }}
+                >
+                  Payment Methods & Downpayment Policy
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: ".65rem",
+                }}
+              >
+                {/* GCash-only rule */}
+                <div
+                  style={{
+                    background: "linear-gradient(135deg,#f5f3ff,#faf5ff)",
+                    border: "1.5px solid #ddd6fe",
+                    borderRadius: 12,
+                    padding: "1rem 1.1rem",
+                    display: "flex",
+                    gap: ".85rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: "linear-gradient(135deg,#7c3aed,#a855f7)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "1.1rem",
+                      flexShrink: 0,
+                    }}
+                  >
+                    💜
+                  </div>
+                  <div>
+                    <p
+                      style={{
+                        fontSize: ".84rem",
+                        color: "#374151",
+                        lineHeight: 1.65,
+                        marginBottom: ".45rem",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Online Payments — GCash Only
+                    </p>
+                    <p
+                      style={{
+                        fontSize: ".82rem",
+                        color: "#374151",
+                        lineHeight: 1.65,
+                        marginBottom: ".4rem",
+                      }}
+                    >
+                      All online payments (downpayments and full payments) are
+                      processed exclusively through <strong>GCash</strong>. No
+                      other online payment channels are accepted.
+                    </p>
+                    <ul
+                      style={{
+                        listStyle: "none",
+                        padding: 0,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: ".3rem",
+                      }}
+                    >
+                      {[
+                        "Customers may choose to pay the full amount via GCash before the order is processed.",
+                        "GCash payers must provide a valid reference number and upload a receipt screenshot as proof of payment.",
+                        "Payments are verified before any order proceeds to production.",
+                      ].map((item, i) => (
+                        <li
+                          key={i}
+                          style={{
+                            fontSize: ".81rem",
+                            color: "#374151",
+                            paddingLeft: "1rem",
+                            position: "relative",
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          <span
+                            style={{
+                              position: "absolute",
+                              left: 0,
+                              color: "#7c3aed",
+                              fontWeight: 700,
+                            }}
+                          >
+                            ›
+                          </span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+                {/* Cash + downpayment rule */}
+                <div
+                  style={{
+                    background: "linear-gradient(135deg,#eff6ff,#f5f3ff)",
+                    border: "1.5px solid #c7d2fe",
+                    borderRadius: 12,
+                    padding: "1rem 1.1rem",
+                    display: "flex",
+                    gap: ".85rem",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 10,
+                      background: "linear-gradient(135deg,#2563eb,#7c3aed)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#fff",
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      flexShrink: 0,
+                    }}
+                  >
+                    ₱
+                  </div>
+                  <div>
+                    <p
+                      style={{
+                        fontSize: ".84rem",
+                        color: "#374151",
+                        lineHeight: 1.65,
+                        marginBottom: ".45rem",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Cash Payments & ₱500+ Downpayment Requirement
+                    </p>
+                    <p
+                      style={{
+                        fontSize: ".82rem",
+                        color: "#374151",
+                        lineHeight: 1.65,
+                        marginBottom: ".4rem",
+                      }}
+                    >
+                      Cash on pickup is accepted for all orders. However,{" "}
+                      <strong>cash orders exceeding ₱500.00</strong> require a{" "}
+                      <strong>50% downpayment via GCash</strong> before
+                      processing begins:
+                    </p>
+                    <ul
+                      style={{
+                        listStyle: "none",
+                        padding: 0,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: ".3rem",
+                      }}
+                    >
+                      {[
+                        "Downpayment must be settled via GCash prior to processing — no exceptions.",
+                        "Remaining balance is paid in cash upon pickup or delivery.",
+                        "Orders will not be processed until the GCash downpayment is confirmed.",
+                        "Downpayment is non-refundable if cancellation occurs after processing begins.",
+                        "Customers choosing full GCash payment are exempt from this cash downpayment rule.",
+                      ].map((item, i) => (
+                        <li
+                          key={i}
+                          style={{
+                            fontSize: ".81rem",
+                            color: "#374151",
+                            paddingLeft: "1rem",
+                            position: "relative",
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          <span
+                            style={{
+                              position: "absolute",
+                              left: 0,
+                              color: "#7c3aed",
+                              fontWeight: 700,
+                            }}
+                          >
+                            ›
+                          </span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ marginBottom: "1.4rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: ".55rem",
+                  marginBottom: ".55rem",
+                }}
+              >
+                <div
+                  style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: 7,
+                    background: "linear-gradient(135deg,#5b6dee,#7c3aed)",
+                    color: "#fff",
+                    fontSize: ".65rem",
+                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  04
+                </div>
+                <div
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: ".97rem",
+                    color: "#1d4ed8",
+                    fontWeight: 700,
+                  }}
+                >
+                  Personal Information Requirements
+                </div>
+              </div>
+              <div
+                style={{
+                  background: "linear-gradient(135deg,#eff6ff,#f5f3ff)",
+                  border: "1.5px solid #c7d2fe",
+                  borderRadius: 12,
+                  padding: "1rem 1.1rem",
+                  display: "flex",
+                  gap: ".85rem",
+                }}
+              >
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: "linear-gradient(135deg,#2563eb,#7c3aed)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "1rem",
+                    flexShrink: 0,
+                  }}
+                >
+                  👤
+                </div>
+                <div>
+                  <p
+                    style={{
+                      fontSize: ".83rem",
+                      color: "#374151",
+                      lineHeight: 1.65,
+                      marginBottom: ".5rem",
+                    }}
+                  >
+                    For large transactions and order verification, we require:
+                  </p>
+                  <ul
+                    style={{
+                      listStyle: "none",
+                      padding: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: ".38rem",
+                    }}
+                  >
+                    {[
+                      "Full legal name (first and last name)",
+                      "Valid contact number (active mobile number)",
+                      "Email address for order confirmations and receipts",
+                      "Complete delivery address (if delivery is requested)",
+                      "Valid government-issued ID may be requested for orders above ₱1,000.00",
+                    ].map((item, i) => (
+                      <li
+                        key={i}
+                        style={{
+                          fontSize: ".82rem",
+                          color: "#374151",
+                          paddingLeft: "1rem",
+                          position: "relative",
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        <span
+                          style={{
+                            position: "absolute",
+                            left: 0,
+                            color: "#7c3aed",
+                            fontWeight: 700,
+                          }}
+                        >
+                          ›
+                        </span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <TosSection
+              num="05"
+              title="Order Processing & Turnaround"
+              body="Standard orders are processed within 1–2 business days. Urgent requests may be accommodated based on availability and may incur additional rush fees. Jonayskie Prints is not liable for delays caused by incomplete file submissions, unclear instructions, or force majeure events."
+            />
+            <TosSection
+              num="06"
+              title="File Submission & Quality"
+              body="Customers are responsible for submitting print-ready files in accepted formats (PDF, JPG, PNG, DOCX). Jonayskie Prints will print files as submitted. We are not responsible for pixelation, incorrect margins, spelling errors, or layout issues present in the original file. A digital proof may be requested before final printing."
+            />
+            <TosSection
+              num="07"
+              title="Payments & Pricing"
+              body="All prices are in Philippine Peso (PHP). Final pricing is calculated based on paper size, color, quantity, and finishing options. Accepted payment methods: (1) Cash on pickup for any order amount. (2) GCash — customers may pay the full amount online, or pay a 50% downpayment via GCash for cash orders exceeding ₱500.00 with the balance due on pickup. GCash is the only accepted online payment channel."
+            />
+            <TosSection
+              num="08"
+              title="Cancellations & Refunds"
+              body="Orders may be cancelled without charge prior to processing. Once production has commenced, cancellations are not accepted and downpayments are forfeited. In cases where we cannot fulfill an order, a full refund will be issued within 3–5 business days."
+            />
+            <TosSection
+              num="09"
+              title="Privacy & Data Protection"
+              body="Your personal information is collected solely for order processing and service delivery. We do not sell, rent, or share your data with third parties. All submitted files are deleted from our systems within 30 days of order completion."
+            />
+            <TosSection
+              num="10"
+              title="Prohibited Content"
+              body="Jonayskie Prints reserves the right to refuse printing of any content deemed illegal, defamatory, obscene, or in violation of intellectual property rights. Customers are solely responsible for ensuring their content complies with applicable laws."
+            />
+            <TosSection
+              num="11"
+              title="Limitation of Liability"
+              body="Our maximum liability for any claim shall not exceed the amount paid for the specific order. We are not liable for indirect, incidental, or consequential damages including lost profits or data loss."
+            />
+            <TosSection
+              num="12"
+              title="Amendments"
+              body="Jonayskie Prints reserves the right to update these Terms of Service at any time. Continued use of the platform after changes are published constitutes acceptance of the updated terms. Material changes will be communicated via email or platform notification."
+            />
+            <div
+              style={{
+                background: "#f9fafb",
+                border: "1.5px solid #e5e7eb",
+                borderRadius: 10,
+                padding: ".9rem 1rem",
+                fontSize: ".8rem",
+                color: "#4b5563",
+                lineHeight: 1.6,
+              }}
+            >
+              <strong>Questions?</strong> Contact us at{" "}
+              <span style={{ color: "#7c3aed", fontWeight: 600 }}>
+                jonalynpascual2704@gmail.com
+              </span>{" "}
+              or call{" "}
+              <span style={{ color: "#7c3aed", fontWeight: 600 }}>
+                +63 935 033 6938
+              </span>{" "}
+              — Mon–Sat, 8:00 AM – 6:00 PM.
+            </div>
+          </div>
+          <div
+            style={{
+              padding: ".95rem 1.5rem 1.2rem",
+              borderTop: "1.5px solid #f0eef9",
+              flexShrink: 0,
+              background: "#fafafa",
+            }}
+          >
+            {!hasScrolled && (
+              <p
+                className="tos-bounce"
+                style={{
+                  textAlign: "center",
+                  fontSize: ".72rem",
+                  color: "#9ca3af",
+                  marginBottom: ".7rem",
+                }}
+              >
+                ↓ Scroll down to read all terms before accepting
+              </p>
+            )}
+            <div style={{ display: "flex", gap: ".7rem" }}>
+              <button
+                onClick={onDecline}
+                style={{
+                  flex: 1,
+                  padding: ".68rem",
+                  background: "transparent",
+                  color: "#6b7280",
+                  border: "1.5px solid #e5e7eb",
+                  borderRadius: 10,
+                  fontFamily: "'Inter',sans-serif",
+                  fontSize: ".84rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Decline & Logout
+              </button>
+              <button
+                onClick={hasScrolled ? onAccept : undefined}
+                style={{
+                  flex: 2,
+                  padding: ".68rem",
+                  border: "none",
+                  borderRadius: 10,
+                  fontFamily: "'Inter',sans-serif",
+                  fontSize: ".84rem",
+                  fontWeight: 700,
+                  cursor: hasScrolled ? "pointer" : "not-allowed",
+                  background: hasScrolled
+                    ? "linear-gradient(135deg,#5b6dee,#7c3aed)"
+                    : "#e5e7eb",
+                  color: hasScrolled ? "#fff" : "#9ca3af",
+                  boxShadow: hasScrolled
+                    ? "0 4px 14px rgba(124,58,237,.35)"
+                    : "none",
+                  transition: "all .3s",
+                }}
+              >
+                {hasScrolled
+                  ? "\u2713 I Accept These Terms"
+                  : "Read All Terms First"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 function ToastNotification({ toast }: { toast: Toast }) {
   return (
     <div
@@ -913,7 +1617,6 @@ function PickupTimeDropdown({
   );
 }
 
-// ✅ Helper: upload files to /api/upload after order is created
 async function uploadFilesForOrder(
   orderId: string,
   files: FileList,
@@ -930,6 +1633,9 @@ async function uploadFilesForOrder(
 function DashboardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // ── ADDITION 3: TOS modal state ───────────────────────────────
+  const [showTosModal, setShowTosModal] = useState(false);
 
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -951,8 +1657,9 @@ function DashboardPageInner() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [cancelModalOrderId, setCancelModalOrderId] = useState<string | null>(
     null,
-  ); // ✅ string
-  const [cancellingId, setCancellingId] = useState<string | null>(null); // ✅ string
+  );
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [viewDetailsOrder, setViewDetailsOrder] = useState<Order | null>(null);
   const [step, setStep] = useState(0);
   const [noService, setNoService] = useState("");
   const [noQuantity, setNoQuantity] = useState<number | "">("");
@@ -968,6 +1675,18 @@ function DashboardPageInner() {
   const [noFiles, setNoFiles] = useState<FileList | null>(null);
   const [noSubmitting, setNoSubmitting] = useState(false);
   const [noPdfPages, setNoPdfPages] = useState(0);
+  const [noPaymentMethod, setNoPaymentMethod] = useState<"cash" | "gcash">(
+    "cash",
+  );
+  const [noGcashPayType, setNoGcashPayType] = useState<"downpayment" | "full">(
+    "full",
+  );
+  const [noGcashReceipt, setNoGcashReceipt] = useState<File | null>(null);
+  const [noGcashReceiptPreview, setNoGcashReceiptPreview] = useState<
+    string | null
+  >(null);
+  const [noGcashRefNum, setNoGcashRefNum] = useState("");
+  const gcashReceiptRef = useRef<HTMLInputElement>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editOrder, setEditOrder] = useState<Partial<Order> | null>(null);
   const [eoService, setEoService] = useState("");
@@ -1014,6 +1733,27 @@ function DashboardPageInner() {
     },
     [],
   );
+
+  // ── ADDITION 3b: TOS check useEffect (BEFORE fetchPrices useEffect) ──
+  useEffect(() => {
+    const accepted = localStorage.getItem(TOS_ACCEPTED_KEY);
+    if (!accepted) setShowTosModal(true);
+  }, []);
+
+  function handleTosAccept() {
+    localStorage.setItem(TOS_ACCEPTED_KEY, "true");
+    setShowTosModal(false);
+    showToast("Welcome! You have agreed to our Terms of Service.", "success");
+  }
+
+  async function handleTosDecline() {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } catch {}
+    localStorage.clear();
+    sessionStorage.clear();
+    router.replace("/login");
+  }
 
   const fetchPrices = useCallback(async () => {
     try {
@@ -1112,7 +1852,6 @@ function DashboardPageInner() {
     return () => clearTimeout(timer);
   }, [searchParams, user.first_name, showToast]);
 
-  // ✅ FIX: order_id is now a string, no status field needed
   async function handleCancelOrder(orderId: string) {
     setCancellingId(orderId);
     try {
@@ -1263,7 +2002,6 @@ function DashboardPageInner() {
     return true;
   }
 
-  // ✅ FIX: Create order first, then upload files separately via /api/upload
   async function handleSubmitOrder(e: React.FormEvent) {
     e.preventDefault();
     if (
@@ -1273,12 +2011,22 @@ function DashboardPageInner() {
       showToast("Please upload at least one file.", "error");
       return;
     }
+    if (noPaymentMethod === "gcash" && !noGcashReceipt) {
+      showToast(
+        "Please upload your GCash receipt as proof of payment.",
+        "error",
+      );
+      return;
+    }
+    if (noPaymentMethod === "gcash" && !noGcashRefNum.trim()) {
+      showToast("Please enter your GCash reference number.", "error");
+      return;
+    }
     let finalQuantity = Number(noQuantity);
     if (showsCopies && (finalQuantity < 1 || noQuantity === ""))
       finalQuantity = Number(noCopies) || 1;
     setNoSubmitting(true);
     try {
-      // Step 1: Create the order (no files)
       const fd = new FormData();
       fd.append("service", noService);
       fd.append("quantity", String(finalQuantity));
@@ -1292,6 +2040,14 @@ function DashboardPageInner() {
       fd.append("color_option", noColorOption);
       if (noLamination) fd.append("add_lamination", "on");
       if (showsCopies) fd.append("copies", String(noCopies || 1));
+      fd.append(
+        "payment_method",
+        noPaymentMethod === "gcash" ? "GCash" : "Cash",
+      );
+      if (noPaymentMethod === "gcash") {
+        fd.append("gcash_pay_type", noGcashPayType);
+        if (noGcashRefNum) fd.append("gcash_ref_num", noGcashRefNum);
+      }
 
       const res = await fetch("/api/dashboard", { method: "POST", body: fd });
       const r = await res.json();
@@ -1304,12 +2060,10 @@ function DashboardPageInner() {
 
       const newOrderId: string = r.data.order_id;
 
-      // Step 2: Upload files to Cloudinary via /api/upload ✅
       if (noFiles && noFiles.length > 0) {
         try {
           await uploadFilesForOrder(newOrderId, noFiles);
-        } catch (uploadErr) {
-          // Order created but files failed — warn but don't block
+        } catch {
           showToast(
             `Order placed! But file upload failed. Please contact support.`,
             "error",
@@ -1320,6 +2074,18 @@ function DashboardPageInner() {
           fetchRecentOrders();
           setNoSubmitting(false);
           return;
+        }
+      }
+
+      if (noPaymentMethod === "gcash" && noGcashReceipt) {
+        try {
+          const gfd = new FormData();
+          gfd.append("order_id", newOrderId);
+          gfd.append("gcash_receipt", noGcashReceipt);
+          gfd.append("gcash_ref_num", noGcashRefNum);
+          await fetch("/api/gcash-receipt", { method: "POST", body: gfd });
+        } catch {
+          // non-fatal — order still placed
         }
       }
 
@@ -1354,10 +2120,15 @@ function DashboardPageInner() {
     setNoSpecs("");
     setNoFiles(null);
     setNoPdfPages(0);
+    setNoPaymentMethod("cash");
+    setNoGcashPayType("full");
+    setNoGcashReceipt(null);
+    setNoGcashReceiptPreview(null);
+    setNoGcashRefNum("");
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (gcashReceiptRef.current) gcashReceiptRef.current.value = "";
   }
 
-  // ✅ FIX: order_id is string now
   async function openEditModal(orderId: string) {
     try {
       const res = await fetch(
@@ -1395,7 +2166,6 @@ function DashboardPageInner() {
     }
   }
 
-  // ✅ FIX: Update order details, then upload new files separately via /api/upload
   async function handleEditSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!editOrder) return;
@@ -1426,7 +2196,6 @@ function DashboardPageInner() {
 
     setEoSubmitting(true);
     try {
-      // Step 1: Update order details
       const fd = new FormData();
       fd.append("action", "updateOrder");
       fd.append("order_id", String(editOrder.order_id));
@@ -1452,7 +2221,6 @@ function DashboardPageInner() {
         return;
       }
 
-      // Step 2: Upload new files if provided ✅
       const newFiles = editFileInputRef.current?.files;
       if (newFiles && newFiles.length > 0) {
         try {
@@ -1638,7 +2406,6 @@ function DashboardPageInner() {
           : "badge-completed";
   }
 
-  // ✅ Helper to get display ID (last 6 chars)
   function displayId(id: string | number | undefined): string {
     return id ? String(id).slice(-6) : "------";
   }
@@ -1853,7 +2620,14 @@ function DashboardPageInner() {
 
       <ToastNotification toast={toast} />
 
-      {/* ✅ cancelModalOrderId is now string */}
+      {/* ── ADDITION 4: TOS Modal ─────────────────────────────────── */}
+      {showTosModal && (
+        <FirstLoginTosModal
+          onAccept={handleTosAccept}
+          onDecline={handleTosDecline}
+        />
+      )}
+
       {cancelModalOrderId !== null && (
         <CancelConfirmModal
           orderId={cancelModalOrderId}
@@ -2431,110 +3205,1088 @@ function DashboardPageInner() {
                         </div>
                       )}
                     </div>
-                    <div
-                      style={{
-                        fontSize: ".8rem",
-                        color: "#7c3aed",
-                        fontWeight: 600,
-                        marginBottom: ".8rem",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: ".4rem",
-                      }}
-                    >
-                      <IC.Card /> Payment: Cash Only
+                    {/* ── PAYMENT METHOD ── */}
+                    <div style={{ marginBottom: "1rem" }}>
+                      <div
+                        className="form-label"
+                        style={{ marginBottom: ".5rem" }}
+                      >
+                        Payment Method
+                      </div>
+
+                      {/* Top-level toggle: Cash vs GCash */}
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: ".6rem",
+                          marginBottom: ".75rem",
+                        }}
+                      >
+                        {(["cash", "gcash"] as const).map((pm) => (
+                          <button
+                            key={pm}
+                            type="button"
+                            onClick={() => setNoPaymentMethod(pm)}
+                            style={{
+                              flex: 1,
+                              padding: ".65rem .5rem",
+                              border: `2px solid ${noPaymentMethod === pm ? (pm === "gcash" ? "#7c3aed" : "#16a34a") : "#e5e7eb"}`,
+                              borderRadius: 10,
+                              background:
+                                noPaymentMethod === pm
+                                  ? pm === "gcash"
+                                    ? "#f5f3ff"
+                                    : "#f0fdf4"
+                                  : "#fff",
+                              cursor: "pointer",
+                              fontFamily: "'Inter',sans-serif",
+                              fontWeight: 700,
+                              fontSize: ".82rem",
+                              color:
+                                noPaymentMethod === pm
+                                  ? pm === "gcash"
+                                    ? "#7c3aed"
+                                    : "#16a34a"
+                                  : "#6b7280",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: ".4rem",
+                              transition: "all .15s",
+                            }}
+                          >
+                            {pm === "cash" ? (
+                              <>
+                                <svg
+                                  width="15"
+                                  height="15"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                >
+                                  <rect
+                                    x="1"
+                                    y="4"
+                                    width="22"
+                                    height="16"
+                                    rx="2"
+                                  />
+                                  <line x1="1" y1="10" x2="23" y2="10" />
+                                </svg>{" "}
+                                Cash on Pickup
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  width="15"
+                                  height="15"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                >
+                                  <rect x="3" y="3" width="7" height="7" />
+                                  <rect x="14" y="3" width="7" height="7" />
+                                  <rect x="3" y="14" width="7" height="7" />
+                                  <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M14 14v4h4v-4h-4z" />
+                                </svg>{" "}
+                                Pay via GCash
+                              </>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* CASH selected */}
+                      {noPaymentMethod === "cash" && (
+                        <div
+                          style={{
+                            background: "#f0fdf4",
+                            border: "1.5px solid #bbf7d0",
+                            borderRadius: 10,
+                            padding: ".65rem .9rem",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: ".5rem",
+                            fontSize: ".78rem",
+                            color: "#374151",
+                          }}
+                        >
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#16a34a"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          Pay in cash when you pick up or receive your order. No
+                          advance payment needed.
+                        </div>
+                      )}
+
+                      {/* GCASH selected */}
+                      {noPaymentMethod === "gcash" && (
+                        <div
+                          style={{
+                            border: "2px solid #7c3aed",
+                            borderRadius: 12,
+                            overflow: "hidden",
+                          }}
+                        >
+                          {/* Header */}
+                          <div
+                            style={{
+                              background:
+                                "linear-gradient(135deg,#5b6dee,#7c3aed)",
+                              padding: ".65rem 1rem",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: ".5rem",
+                            }}
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="#fff"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            >
+                              <rect x="3" y="3" width="7" height="7" />
+                              <rect x="14" y="3" width="7" height="7" />
+                              <rect x="3" y="14" width="7" height="7" />
+                              <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M14 14v4h4v-4h-4z" />
+                            </svg>
+                            <span
+                              style={{
+                                color: "#fff",
+                                fontWeight: 700,
+                                fontSize: ".84rem",
+                              }}
+                            >
+                              Pay via GCash
+                            </span>
+                            <span
+                              style={{
+                                marginLeft: "auto",
+                                background: "rgba(255,255,255,.2)",
+                                color: "#fff",
+                                fontSize: ".65rem",
+                                fontWeight: 700,
+                                padding: "2px 8px",
+                                borderRadius: 99,
+                              }}
+                            >
+                              Online Payment
+                            </span>
+                          </div>
+
+                          <div style={{ padding: "1rem" }}>
+                            {/* Payment type sub-toggle */}
+                            <div style={{ marginBottom: "1rem" }}>
+                              <div
+                                style={{
+                                  fontSize: ".72rem",
+                                  fontWeight: 700,
+                                  color: "#374151",
+                                  textTransform: "uppercase",
+                                  letterSpacing: ".06em",
+                                  marginBottom: ".5rem",
+                                }}
+                              >
+                                How much would you like to pay?
+                              </div>
+                              <div style={{ display: "flex", gap: ".5rem" }}>
+                                {[
+                                  {
+                                    val: "full" as const,
+                                    label: "Full Payment",
+                                    sub: `₱${summaryTotal.toFixed(2)}`,
+                                    icon: "💯",
+                                    disabled: false as const,
+                                  },
+                                  {
+                                    val: "downpayment" as const,
+                                    label: "Downpayment (50%)",
+                                    sub:
+                                      summaryTotal >= 500
+                                        ? `₱${(summaryTotal * 0.5).toFixed(2)}`
+                                        : "Only for ₱500+",
+                                    icon: "⬇️",
+                                    disabled: summaryTotal < 500,
+                                  },
+                                ].map(({ val, label, sub, icon, disabled }) => (
+                                  <button
+                                    key={val}
+                                    type="button"
+                                    disabled={!!disabled}
+                                    onClick={() =>
+                                      !disabled && setNoGcashPayType(val)
+                                    }
+                                    style={{
+                                      flex: 1,
+                                      padding: ".6rem .5rem",
+                                      border: `2px solid ${noGcashPayType === val && !disabled ? "#7c3aed" : "#e5e7eb"}`,
+                                      borderRadius: 10,
+                                      background:
+                                        noGcashPayType === val && !disabled
+                                          ? "#f5f3ff"
+                                          : disabled
+                                            ? "#f9fafb"
+                                            : "#fff",
+                                      cursor: disabled
+                                        ? "not-allowed"
+                                        : "pointer",
+                                      fontFamily: "'Inter',sans-serif",
+                                      transition: "all .15s",
+                                      opacity: disabled ? 0.45 : 1,
+                                    }}
+                                  >
+                                    <div
+                                      style={{
+                                        fontSize: "1rem",
+                                        marginBottom: 2,
+                                      }}
+                                    >
+                                      {icon}
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontWeight: 700,
+                                        fontSize: ".76rem",
+                                        color:
+                                          noGcashPayType === val && !disabled
+                                            ? "#7c3aed"
+                                            : "#374151",
+                                      }}
+                                    >
+                                      {label}
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontSize: ".68rem",
+                                        color:
+                                          noGcashPayType === val && !disabled
+                                            ? "#7c3aed"
+                                            : "#9ca3af",
+                                        fontWeight: 600,
+                                        marginTop: 1,
+                                      }}
+                                    >
+                                      {sub}
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                              {noGcashPayType === "downpayment" &&
+                                summaryTotal >= 500 && (
+                                  <div
+                                    style={{
+                                      marginTop: ".5rem",
+                                      background: "#fffbeb",
+                                      border: "1px solid #fcd34d",
+                                      borderRadius: 8,
+                                      padding: ".45rem .7rem",
+                                      fontSize: ".72rem",
+                                      color: "#92400e",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: ".4rem",
+                                    }}
+                                  >
+                                    <span>⚠️</span> Balance of{" "}
+                                    <strong>
+                                      ₱{(summaryTotal * 0.5).toFixed(2)}
+                                    </strong>{" "}
+                                    is due on pickup/delivery.
+                                  </div>
+                                )}
+                            </div>
+
+                            {/* Amount to send */}
+                            <div
+                              style={{
+                                background: "#f5f3ff",
+                                border: "1.5px solid #ddd6fe",
+                                borderRadius: 8,
+                                padding: ".5rem .85rem",
+                                marginBottom: "1rem",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: ".76rem",
+                                  color: "#6b7280",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                Send exactly:
+                              </span>
+                              <span
+                                style={{
+                                  fontWeight: 800,
+                                  fontSize: "1.05rem",
+                                  color: "#7c3aed",
+                                }}
+                              >
+                                ₱
+                                {(noGcashPayType === "downpayment" &&
+                                summaryTotal >= 500
+                                  ? summaryTotal * 0.5
+                                  : summaryTotal
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+
+                            {/* Step 1 — QR */}
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "flex-start",
+                                gap: ".6rem",
+                                marginBottom: ".85rem",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: "50%",
+                                  background: "#7c3aed",
+                                  color: "#fff",
+                                  fontSize: ".7rem",
+                                  fontWeight: 800,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                1
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div
+                                  style={{
+                                    fontWeight: 700,
+                                    fontSize: ".8rem",
+                                    color: "#111827",
+                                    marginBottom: ".4rem",
+                                  }}
+                                >
+                                  Scan the GCash QR Code
+                                </div>
+                                <div
+                                  style={{
+                                    background: "#fff",
+                                    border: "2px solid #e5e7eb",
+                                    borderRadius: 10,
+                                    padding: ".75rem",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    gap: ".5rem",
+                                  }}
+                                >
+                                  <img
+                                    src="/gcash-qr.jpg"
+                                    alt="GCash QR Code"
+                                    style={{
+                                      width: 160,
+                                      height: 160,
+                                      imageRendering: "pixelated",
+                                      border: "1px solid #e5e7eb",
+                                      borderRadius: 8,
+                                    }}
+                                    onError={(e) => {
+                                      (
+                                        e.target as HTMLImageElement
+                                      ).style.display = "none";
+                                      (
+                                        e.target as HTMLImageElement
+                                      ).nextElementSibling?.removeAttribute(
+                                        "style",
+                                      );
+                                    }}
+                                  />
+                                  <div
+                                    style={{
+                                      width: 160,
+                                      height: 160,
+                                      background: "#f3f4f6",
+                                      border: "2px dashed #d1d5db",
+                                      borderRadius: 8,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      flexDirection: "column",
+                                      gap: 4,
+                                      visibility: "hidden",
+                                      position: "absolute",
+                                    }}
+                                  >
+                                    <svg
+                                      width="32"
+                                      height="32"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="#9ca3af"
+                                      strokeWidth="1.5"
+                                      strokeLinecap="round"
+                                    >
+                                      <rect x="3" y="3" width="7" height="7" />
+                                      <rect x="14" y="3" width="7" height="7" />
+                                      <rect x="3" y="14" width="7" height="7" />
+                                      <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M14 14v4h4v-4h-4z" />
+                                    </svg>
+                                    <span
+                                      style={{
+                                        fontSize: ".65rem",
+                                        color: "#9ca3af",
+                                        textAlign: "center",
+                                      }}
+                                    >
+                                      Place gcash-qr.jpg in
+                                      <br />
+                                      your /public folder
+                                    </span>
+                                  </div>
+                                  <div
+                                    style={{
+                                      fontSize: ".72rem",
+                                      color: "#6b7280",
+                                      textAlign: "center",
+                                      lineHeight: 1.4,
+                                    }}
+                                  >
+                                    Open GCash → Scan QR
+                                    <br />
+                                    <strong style={{ color: "#7c3aed" }}>
+                                      Jonayskie Prints
+                                    </strong>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Step 2 — Reference number */}
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "flex-start",
+                                gap: ".6rem",
+                                marginBottom: ".85rem",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: "50%",
+                                  background: "#7c3aed",
+                                  color: "#fff",
+                                  fontSize: ".7rem",
+                                  fontWeight: 800,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                2
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div
+                                  style={{
+                                    fontWeight: 700,
+                                    fontSize: ".8rem",
+                                    color: "#111827",
+                                    marginBottom: ".35rem",
+                                  }}
+                                >
+                                  Enter GCash Reference Number
+                                </div>
+                                <input
+                                  className="form-input"
+                                  type="text"
+                                  inputMode="numeric"
+                                  placeholder="e.g. 1234567890123"
+                                  value={noGcashRefNum}
+                                  onChange={(e) =>
+                                    setNoGcashRefNum(
+                                      e.target.value.replace(/[^0-9]/g, ""),
+                                    )
+                                  }
+                                  maxLength={20}
+                                  style={{ fontSize: "max(16px,.875rem)" }}
+                                />
+                                <div className="hint-text">
+                                  Found in your GCash transaction receipt
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Step 3 — Upload receipt */}
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "flex-start",
+                                gap: ".6rem",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: "50%",
+                                  background: "#7c3aed",
+                                  color: "#fff",
+                                  fontSize: ".7rem",
+                                  fontWeight: 800,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  flexShrink: 0,
+                                }}
+                              >
+                                3
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div
+                                  style={{
+                                    fontWeight: 700,
+                                    fontSize: ".8rem",
+                                    color: "#111827",
+                                    marginBottom: ".35rem",
+                                  }}
+                                >
+                                  Upload GCash Receipt Screenshot{" "}
+                                  <span style={{ color: "#ef4444" }}>*</span>
+                                </div>
+                                <input
+                                  ref={gcashReceiptRef}
+                                  className="form-input"
+                                  type="file"
+                                  accept="image/*,.pdf"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0] || null;
+                                    setNoGcashReceipt(file);
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = (ev) =>
+                                        setNoGcashReceiptPreview(
+                                          ev.target?.result as string,
+                                        );
+                                      reader.readAsDataURL(file);
+                                    } else setNoGcashReceiptPreview(null);
+                                  }}
+                                />
+                                {noGcashReceiptPreview && (
+                                  <div
+                                    style={{
+                                      marginTop: ".5rem",
+                                      position: "relative",
+                                      display: "inline-block",
+                                    }}
+                                  >
+                                    <img
+                                      src={noGcashReceiptPreview}
+                                      alt="Receipt preview"
+                                      style={{
+                                        width: "100%",
+                                        maxWidth: 200,
+                                        borderRadius: 8,
+                                        border: "2px solid #22c55e",
+                                        display: "block",
+                                      }}
+                                    />
+                                    <div
+                                      style={{
+                                        position: "absolute",
+                                        top: 4,
+                                        right: 4,
+                                        background: "#22c55e",
+                                        borderRadius: "50%",
+                                        width: 20,
+                                        height: 20,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                      }}
+                                    >
+                                      <svg
+                                        width="10"
+                                        height="10"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="#fff"
+                                        strokeWidth="3"
+                                        strokeLinecap="round"
+                                      >
+                                        <polyline points="20 6 9 17 4 12" />
+                                      </svg>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setNoGcashReceipt(null);
+                                        setNoGcashReceiptPreview(null);
+                                        if (gcashReceiptRef.current)
+                                          gcashReceiptRef.current.value = "";
+                                      }}
+                                      style={{
+                                        position: "absolute",
+                                        top: 4,
+                                        left: 4,
+                                        background: "rgba(0,0,0,.55)",
+                                        border: "none",
+                                        borderRadius: "50%",
+                                        width: 20,
+                                        height: 20,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        cursor: "pointer",
+                                        color: "#fff",
+                                        fontSize: "10px",
+                                      }}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                )}
+                                <div className="hint-text">
+                                  Screenshot of your GCash payment confirmation
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="sum-box">
                       <div
                         style={{
-                          fontWeight: 600,
-                          fontSize: ".8rem",
-                          marginBottom: ".6rem",
+                          fontWeight: 700,
+                          fontSize: ".85rem",
+                          marginBottom: ".75rem",
                           color: "var(--text)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: ".4rem",
                         }}
                       >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="#7c3aed"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                        >
+                          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                          <polyline points="14 2 14 8 20 8" />
+                          <line x1="16" y1="13" x2="8" y2="13" />
+                          <line x1="16" y1="17" x2="8" y2="17" />
+                        </svg>
                         Order Summary
                       </div>
-                      <div className="sum-row">
-                        <span>Service</span>
-                        <span>{noService || "—"}</span>
-                      </div>
-                      {showsCopies && (
-                        <div className="sum-row">
-                          <span>Copies</span>
-                          <span>{noCopies || 1}</span>
+
+                      {/* Service & Delivery Info */}
+                      <div
+                        style={{
+                          background: "#f5f3ff",
+                          borderRadius: 8,
+                          padding: ".55rem .75rem",
+                          marginBottom: ".65rem",
+                        }}
+                      >
+                        <div className="sum-row" style={{ paddingBottom: 2 }}>
+                          <span style={{ fontWeight: 600, color: "#374151" }}>
+                            Service
+                          </span>
+                          <span style={{ fontWeight: 700, color: "#7c3aed" }}>
+                            {noService || "—"}
+                          </span>
                         </div>
-                      )}
-                      {noPdfPages > 0 && (
                         <div className="sum-row">
-                          <span>Pages per Copy</span>
-                          <span>{noPdfPages}</span>
+                          <span>Delivery</span>
+                          <span>
+                            {noDelivery.charAt(0).toUpperCase() +
+                              noDelivery.slice(1)}
+                          </span>
                         </div>
-                      )}
-                      <div className="sum-row">
-                        <span>{showsCopies ? "Total Pages" : "Quantity"}</span>
-                        <span>
-                          {effectiveQuantity || "—"}
-                          {noPdfPages > 0 && (
-                            <span
-                              style={{
-                                color: "#7c3aed",
-                                fontSize: ".68rem",
-                                marginLeft: 4,
-                              }}
-                            >
-                              (auto)
+                        {noDelivery === "pickup" && noPickupTime && (
+                          <div className="sum-row">
+                            <span>Pickup Time</span>
+                            <span style={{ color: "#7c3aed", fontWeight: 600 }}>
+                              {formatPickupTime(noPickupTime)}
                             </span>
+                          </div>
+                        )}
+                        {showsPaper && (
+                          <div className="sum-row">
+                            <span>Paper Size</span>
+                            <span>
+                              {noPaperSize}
+                              {noPaperSize === "Long" ? " (+20%)" : ""}
+                            </span>
+                          </div>
+                        )}
+                        {showsPhoto && (
+                          <div className="sum-row">
+                            <span>Photo Size</span>
+                            <span>Glossy {noPhotoSize}</span>
+                          </div>
+                        )}
+                        {showsColor && (
+                          <div className="sum-row">
+                            <span>Print Type</span>
+                            <span>
+                              {noColorOption === "color" ? "Color" : "B&W"}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Price Breakdown */}
+                      <div
+                        style={{
+                          borderTop: "1px dashed #e5e7eb",
+                          paddingTop: ".6rem",
+                          marginBottom: ".5rem",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: ".63rem",
+                            fontWeight: 700,
+                            letterSpacing: ".07em",
+                            textTransform: "uppercase",
+                            color: "#9ca3af",
+                            marginBottom: ".4rem",
+                          }}
+                        >
+                          Price Breakdown
+                        </div>
+
+                        {/* Base service price line */}
+                        {noService &&
+                          effectiveQuantity >= 1 &&
+                          (() => {
+                            const sl = noService.toLowerCase().trim();
+                            const m = PAPER_MULTIPLIERS[noPaperSize] ?? 1.0;
+                            let unitPrice = 0;
+                            let priceLabel = "";
+                            if (sl === "print") {
+                              unitPrice =
+                                (noColorOption === "color"
+                                  ? sp(prices.print_color, 2)
+                                  : sp(prices.print_bw, 1)) * m;
+                              priceLabel = `₱${(noColorOption === "color" ? sp(prices.print_color, 2) : sp(prices.print_bw, 1)).toFixed(2)}/page${noPaperSize === "Long" ? " × 1.2 (Long)" : ""}`;
+                            } else if (sl === "photocopy") {
+                              unitPrice = sp(prices.photocopying, 2) * m;
+                              priceLabel = `₱${sp(prices.photocopying, 2).toFixed(2)}/page${noPaperSize === "Long" ? " × 1.2 (Long)" : ""}`;
+                            } else if (sl === "scanning") {
+                              unitPrice = sp(prices.scanning, 5) * m;
+                              priceLabel = `₱${sp(prices.scanning, 5).toFixed(2)}/page${noPaperSize === "Long" ? " × 1.2 (Long)" : ""}`;
+                            } else if (sl === "photo development") {
+                              unitPrice = sp(prices.photo_development, 15);
+                              priceLabel = `₱${sp(prices.photo_development, 15).toFixed(2)}/photo`;
+                            } else if (sl === "laminating") {
+                              unitPrice = sp(prices.laminating, 20);
+                              priceLabel = `₱${sp(prices.laminating, 20).toFixed(2)}/item`;
+                            }
+                            const baseTotal = unitPrice * effectiveQuantity;
+                            return (
+                              <div
+                                className="sum-row"
+                                style={{
+                                  padding: "4px 0",
+                                  alignItems: "flex-start",
+                                }}
+                              >
+                                <span style={{ flex: 1 }}>
+                                  {noService}
+                                  {showsCopies && noPdfPages > 0 && (
+                                    <span
+                                      style={{
+                                        display: "block",
+                                        fontSize: ".63rem",
+                                        color: "#9ca3af",
+                                        marginTop: 1,
+                                      }}
+                                    >
+                                      {noPdfPages} pages × {noCopies} copies
+                                    </span>
+                                  )}
+                                  {showsCopies && noPdfPages === 0 && (
+                                    <span
+                                      style={{
+                                        display: "block",
+                                        fontSize: ".63rem",
+                                        color: "#9ca3af",
+                                        marginTop: 1,
+                                      }}
+                                    >
+                                      {effectiveQuantity} pages
+                                    </span>
+                                  )}
+                                  {!showsCopies && (
+                                    <span
+                                      style={{
+                                        display: "block",
+                                        fontSize: ".63rem",
+                                        color: "#9ca3af",
+                                        marginTop: 1,
+                                      }}
+                                    >
+                                      {effectiveQuantity} × {priceLabel}
+                                    </span>
+                                  )}
+                                </span>
+                                <span
+                                  style={{
+                                    fontWeight: 600,
+                                    color: "#111827",
+                                    whiteSpace: "nowrap",
+                                    paddingLeft: 8,
+                                  }}
+                                >
+                                  ₱{baseTotal.toFixed(2)}
+                                </span>
+                              </div>
+                            );
+                          })()}
+
+                        {/* Lamination add-on line */}
+                        {noLamination &&
+                          noService.toLowerCase() !== "laminating" &&
+                          effectiveQuantity >= 1 && (
+                            <div
+                              className="sum-row"
+                              style={{ padding: "4px 0" }}
+                            >
+                              <span>
+                                Lamination add-on{" "}
+                                <span
+                                  style={{
+                                    fontSize: ".63rem",
+                                    color: "#9ca3af",
+                                  }}
+                                >
+                                  {effectiveQuantity} × ₱
+                                  {sp(prices.laminating, 20).toFixed(2)}
+                                </span>
+                              </span>
+                              <span
+                                style={{ fontWeight: 600, color: "#111827" }}
+                              >
+                                ₱
+                                {(
+                                  sp(prices.laminating, 20) * effectiveQuantity
+                                ).toFixed(2)}
+                              </span>
+                            </div>
+                          )}
+                      </div>
+
+                      {/* Grand Total */}
+                      <div
+                        style={{
+                          background: "linear-gradient(135deg,#f5f3ff,#ede9fe)",
+                          borderRadius: 8,
+                          padding: ".6rem .75rem",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginTop: ".3rem",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontSize: ".88rem",
+                            color: "#374151",
+                          }}
+                        >
+                          Total Amount
+                        </span>
+                        <span
+                          style={{
+                            fontWeight: 800,
+                            fontSize: "1.15rem",
+                            color: "#7c3aed",
+                            letterSpacing: "-.02em",
+                          }}
+                        >
+                          ₱{summaryTotal.toFixed(2)}
+                        </span>
+                      </div>
+
+                      {/* Payment method indicator */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginTop: ".55rem",
+                          padding: ".5rem .75rem",
+                          background: "#f9fafb",
+                          border: "1.5px solid #e5e7eb",
+                          borderRadius: 8,
+                          fontSize: ".75rem",
+                        }}
+                      >
+                        <span style={{ color: "#6b7280" }}>Payment via</span>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            color:
+                              noPaymentMethod === "gcash"
+                                ? "#7c3aed"
+                                : "#16a34a",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          {noPaymentMethod === "gcash" ? (
+                            <>
+                              💜 GCash{" "}
+                              {noGcashPayType === "downpayment" &&
+                              summaryTotal >= 500 ? (
+                                <span
+                                  style={{ fontWeight: 500, color: "#9ca3af" }}
+                                >
+                                  · 50% downpayment
+                                </span>
+                              ) : (
+                                <span
+                                  style={{ fontWeight: 500, color: "#9ca3af" }}
+                                >
+                                  · full payment
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            "💵 Cash on Pickup"
                           )}
                         </span>
                       </div>
-                      <div className="sum-row">
-                        <span>Delivery</span>
-                        <span>
-                          {noDelivery.charAt(0).toUpperCase() +
-                            noDelivery.slice(1)}
-                        </span>
-                      </div>
-                      {noDelivery === "pickup" && noPickupTime && (
-                        <div className="sum-row">
-                          <span>Pickup Time</span>
+
+                      {/* Amount due now (GCash only) */}
+                      {noPaymentMethod === "gcash" && (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            marginTop: ".4rem",
+                            padding: ".5rem .75rem",
+                            background: "#f5f3ff",
+                            border: "1.5px solid #ddd6fe",
+                            borderRadius: 8,
+                            fontSize: ".75rem",
+                          }}
+                        >
                           <span style={{ color: "#7c3aed", fontWeight: 600 }}>
-                            {formatPickupTime(noPickupTime)}
+                            Send via GCash now:
+                          </span>
+                          <span
+                            style={{
+                              fontWeight: 800,
+                              color: "#7c3aed",
+                              fontSize: ".9rem",
+                            }}
+                          >
+                            ₱
+                            {(noGcashPayType === "downpayment" &&
+                            summaryTotal >= 500
+                              ? summaryTotal * 0.5
+                              : summaryTotal
+                            ).toFixed(2)}
                           </span>
                         </div>
                       )}
-                      {showsPaper && (
-                        <div className="sum-row">
-                          <span>Paper</span>
-                          <span>{noPaperSize}</span>
-                        </div>
-                      )}
-                      {showsPhoto && (
-                        <div className="sum-row">
-                          <span>Photo Size</span>
-                          <span>Glossy {noPhotoSize}</span>
-                        </div>
-                      )}
-                      {showsColor && (
-                        <div className="sum-row">
-                          <span>Print Type</span>
+
+                      {/* Downpayment balance notice */}
+                      {noPaymentMethod === "gcash" &&
+                        noGcashPayType === "downpayment" &&
+                        summaryTotal >= 500 && (
+                          <div
+                            style={{
+                              background: "#fffbeb",
+                              border: "1.5px solid #fcd34d",
+                              borderRadius: 8,
+                              padding: ".5rem .75rem",
+                              marginTop: ".4rem",
+                              fontSize: ".72rem",
+                              color: "#92400e",
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: ".4rem",
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            <span style={{ fontSize: "1rem", flexShrink: 0 }}>
+                              ⚠️
+                            </span>
+                            <span>
+                              Balance of{" "}
+                              <strong>
+                                ₱{(summaryTotal * 0.5).toFixed(2)}
+                              </strong>{" "}
+                              is due upon pickup or delivery.
+                            </span>
+                          </div>
+                        )}
+
+                      {/* Cash + large order reminder */}
+                      {noPaymentMethod === "cash" && summaryTotal >= 500 && (
+                        <div
+                          style={{
+                            background: "#fffbeb",
+                            border: "1.5px solid #fcd34d",
+                            borderRadius: 8,
+                            padding: ".5rem .75rem",
+                            marginTop: ".55rem",
+                            fontSize: ".72rem",
+                            color: "#92400e",
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: ".4rem",
+                            lineHeight: 1.5,
+                          }}
+                        >
+                          <span style={{ fontSize: "1rem", flexShrink: 0 }}>
+                            ⚠️
+                          </span>
                           <span>
-                            {noColorOption === "color" ? "Color" : "B&W"}
+                            Your order exceeds <strong>₱500.00</strong>. A{" "}
+                            <strong>
+                              50% GCash downpayment of ₱
+                              {(summaryTotal * 0.5).toFixed(2)}
+                            </strong>{" "}
+                            is required before processing. Switch to GCash above
+                            to pay the downpayment (or full amount) now.
+                            Remaining cash balance of{" "}
+                            <strong>₱{(summaryTotal * 0.5).toFixed(2)}</strong>{" "}
+                            is due on pickup/delivery.
                           </span>
                         </div>
                       )}
-                      <div className="sum-row">
-                        <span>Lamination</span>
-                        <span>
-                          {noLamination && effectiveQuantity >= 1
-                            ? `Yes (+₱${(sp(prices.laminating, 20) * effectiveQuantity).toFixed(2)})`
-                            : "No"}
-                        </span>
-                      </div>
-                      <div className="sum-total">
-                        <span>Total</span>
-                        <span>₱{summaryTotal.toFixed(2)}</span>
-                      </div>
                     </div>
                     <div
                       className="btn-row between"
@@ -2600,7 +4352,6 @@ function DashboardPageInner() {
                         className="ord-item"
                       >
                         <div style={{ minWidth: 0, flex: 1 }}>
-                          {/* ✅ Show short display ID */}
                           <div className="ord-id">
                             #{displayId(o.order_id)} — {o.service}
                           </div>
@@ -2639,34 +4390,42 @@ function DashboardPageInner() {
                           >
                             {new Date(o.created_at).toLocaleDateString()}
                           </div>
-                          {o.status === "pending" && (
-                            <div className="ord-actions">
-                              {/* ✅ Pass string order_id */}
-                              <button
-                                className="edit-btn"
-                                onClick={() => openEditModal(o.order_id)}
-                              >
-                                <IC.Pencil /> Edit
-                              </button>
-                              <button
-                                className="cancel-btn"
-                                disabled={isCancelling}
-                                onClick={() =>
-                                  setCancelModalOrderId(o.order_id)
-                                }
-                              >
-                                <IC.XCircle />{" "}
-                                {isCancelling
-                                  ? "Cancelling..."
-                                  : "Cancel Order"}
-                              </button>
-                            </div>
-                          )}
-                          {o.status === "cancelled" && (
-                            <div className="cancelled-note">
-                              <IC.Lock /> Order cancelled
-                            </div>
-                          )}
+                          <div className="ord-actions">
+                            <button
+                              className="edit-btn"
+                              style={{ color: "#2563eb" }}
+                              onClick={() => setViewDetailsOrder(o)}
+                            >
+                              <IC.Eye /> View Details
+                            </button>
+                            {o.status === "pending" && (
+                              <>
+                                <button
+                                  className="edit-btn"
+                                  onClick={() => openEditModal(o.order_id)}
+                                >
+                                  <IC.Pencil /> Edit
+                                </button>
+                                <button
+                                  className="cancel-btn"
+                                  disabled={isCancelling}
+                                  onClick={() =>
+                                    setCancelModalOrderId(o.order_id)
+                                  }
+                                >
+                                  <IC.XCircle />{" "}
+                                  {isCancelling
+                                    ? "Cancelling..."
+                                    : "Cancel Order"}
+                                </button>
+                              </>
+                            )}
+                            {o.status === "cancelled" && (
+                              <div className="cancelled-note">
+                                <IC.Lock /> Order cancelled
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -3182,6 +4941,452 @@ function DashboardPageInner() {
         </div>
       </div>
 
+      {/* ══ VIEW ORDER DETAILS MODAL ══ */}
+      {viewDetailsOrder && (
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setViewDetailsOrder(null);
+          }}
+        >
+          <div className="modal">
+            <div className="modal-head">
+              <div
+                style={{ display: "flex", alignItems: "center", gap: ".55rem" }}
+              >
+                <div
+                  style={{
+                    width: 32,
+                    height: 32,
+                    background: "linear-gradient(135deg,#5b6dee,#7c3aed)",
+                    borderRadius: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <IC.List />
+                </div>
+                <div>
+                  <div className="modal-title">
+                    Order #{displayId(viewDetailsOrder.order_id)}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: ".63rem",
+                      color: "#9ca3af",
+                      marginTop: 1,
+                    }}
+                  >
+                    {new Date(viewDetailsOrder.created_at).toLocaleDateString(
+                      "en-PH",
+                      { year: "numeric", month: "long", day: "numeric" },
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                className="modal-close"
+                onClick={() => setViewDetailsOrder(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Status Banner */}
+            <div
+              style={{
+                background:
+                  viewDetailsOrder.status === "completed"
+                    ? "#d1fae5"
+                    : viewDetailsOrder.status === "cancelled"
+                      ? "#fee2e2"
+                      : viewDetailsOrder.status === "in-progress"
+                        ? "#dbeafe"
+                        : "#fef3c7",
+                borderRadius: 10,
+                padding: ".65rem 1rem",
+                marginBottom: "1rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: ".8rem",
+                  fontWeight: 700,
+                  color:
+                    viewDetailsOrder.status === "completed"
+                      ? "#065f46"
+                      : viewDetailsOrder.status === "cancelled"
+                        ? "#991b1b"
+                        : viewDetailsOrder.status === "in-progress"
+                          ? "#1e40af"
+                          : "#92400e",
+                }}
+              >
+                Status:{" "}
+                {viewDetailsOrder.status.charAt(0).toUpperCase() +
+                  viewDetailsOrder.status.slice(1)}
+              </span>
+              <span
+                className={`badge ${viewDetailsOrder.status === "pending" ? "badge-pending" : viewDetailsOrder.status === "cancelled" ? "badge-cancelled" : viewDetailsOrder.status === "in-progress" ? "badge-progress" : "badge-completed"}`}
+              >
+                {viewDetailsOrder.status}
+              </span>
+            </div>
+
+            {/* Service & Delivery */}
+            <div style={{ marginBottom: "1rem" }}>
+              <div
+                style={{
+                  fontSize: ".63rem",
+                  fontWeight: 700,
+                  letterSpacing: ".07em",
+                  textTransform: "uppercase",
+                  color: "#9ca3af",
+                  marginBottom: ".5rem",
+                }}
+              >
+                Service Details
+              </div>
+              <div
+                style={{
+                  background: "#f9fafb",
+                  borderRadius: 10,
+                  border: "1.5px solid #e5e7eb",
+                  overflow: "hidden",
+                }}
+              >
+                {[
+                  ["Service", viewDetailsOrder.service],
+                  ["Quantity", String(viewDetailsOrder.quantity)],
+                  [
+                    "Delivery",
+                    viewDetailsOrder.delivery_option.charAt(0).toUpperCase() +
+                      viewDetailsOrder.delivery_option.slice(1),
+                  ],
+                  ...(viewDetailsOrder.pickup_time
+                    ? [
+                        [
+                          "Pickup Time",
+                          formatPickupTime(viewDetailsOrder.pickup_time),
+                        ],
+                      ]
+                    : []),
+                  ...(viewDetailsOrder.delivery_address
+                    ? [["Delivery Address", viewDetailsOrder.delivery_address]]
+                    : []),
+                ].map(([label, val], i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: ".5rem .85rem",
+                      borderBottom: "1px solid #f3f4f6",
+                      gap: "1rem",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: ".75rem",
+                        color: "#6b7280",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {label}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: ".75rem",
+                        fontWeight: 600,
+                        color: "#111827",
+                        textAlign: "right",
+                      }}
+                    >
+                      {val}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Specifications */}
+            <div style={{ marginBottom: "1rem" }}>
+              <div
+                style={{
+                  fontSize: ".63rem",
+                  fontWeight: 700,
+                  letterSpacing: ".07em",
+                  textTransform: "uppercase",
+                  color: "#9ca3af",
+                  marginBottom: ".5rem",
+                }}
+              >
+                Specifications
+              </div>
+              <div
+                style={{
+                  background: "#f9fafb",
+                  borderRadius: 10,
+                  border: "1.5px solid #e5e7eb",
+                  padding: ".7rem .85rem",
+                  fontSize: ".78rem",
+                  color: "#374151",
+                  lineHeight: 1.7,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                {viewDetailsOrder.specifications ||
+                  "No specifications provided."}
+              </div>
+            </div>
+
+            {/* Price Breakdown */}
+            <div style={{ marginBottom: "1rem" }}>
+              <div
+                style={{
+                  fontSize: ".63rem",
+                  fontWeight: 700,
+                  letterSpacing: ".07em",
+                  textTransform: "uppercase",
+                  color: "#9ca3af",
+                  marginBottom: ".5rem",
+                }}
+              >
+                Price Breakdown
+              </div>
+              <div
+                style={{
+                  background: "#f9fafb",
+                  borderRadius: 10,
+                  border: "1.5px solid #e5e7eb",
+                  overflow: "hidden",
+                }}
+              >
+                {(() => {
+                  const specs = viewDetailsOrder.specifications;
+                  const p = parseSpecsOptions(specs);
+                  const sl = viewDetailsOrder.service.toLowerCase().trim();
+                  const paperSize = p.paperSize || "A4";
+                  const m = PAPER_MULTIPLIERS[paperSize as PaperSize] ?? 1.0;
+                  const colorOpt = p.colorOption || "bw";
+                  const qty = viewDetailsOrder.quantity;
+                  let unitPrice = 0;
+                  let priceNote = "";
+                  if (sl === "print") {
+                    unitPrice =
+                      (colorOpt === "color"
+                        ? sp(prices.print_color, 2)
+                        : sp(prices.print_bw, 1)) * m;
+                    priceNote = `${qty} page${qty > 1 ? "s" : ""} × ₱${((colorOpt === "color" ? sp(prices.print_color, 2) : sp(prices.print_bw, 1)) * m).toFixed(2)}`;
+                  } else if (sl === "photocopy") {
+                    unitPrice = sp(prices.photocopying, 2) * m;
+                    priceNote = `${qty} page${qty > 1 ? "s" : ""} × ₱${(sp(prices.photocopying, 2) * m).toFixed(2)}`;
+                  } else if (sl === "scanning") {
+                    unitPrice = sp(prices.scanning, 5) * m;
+                    priceNote = `${qty} page${qty > 1 ? "s" : ""} × ₱${(sp(prices.scanning, 5) * m).toFixed(2)}`;
+                  } else if (sl === "photo development") {
+                    unitPrice = sp(prices.photo_development, 15);
+                    priceNote = `${qty} photo${qty > 1 ? "s" : ""} × ₱${sp(prices.photo_development, 15).toFixed(2)}`;
+                  } else if (sl === "laminating") {
+                    unitPrice = sp(prices.laminating, 20);
+                    priceNote = `${qty} item${qty > 1 ? "s" : ""} × ₱${sp(prices.laminating, 20).toFixed(2)}`;
+                  }
+                  const baseTotal = unitPrice * qty;
+                  const lamTotal =
+                    p.addLamination && sl !== "laminating"
+                      ? sp(prices.laminating, 20) * qty
+                      : 0;
+                  const grandTotal = parseFloat(
+                    viewDetailsOrder.total_amount || "0",
+                  );
+                  return (
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: ".5rem .85rem",
+                          borderBottom: "1px solid #f3f4f6",
+                          gap: "1rem",
+                        }}
+                      >
+                        <span style={{ fontSize: ".75rem", color: "#6b7280" }}>
+                          {viewDetailsOrder.service}{" "}
+                          <span
+                            style={{ fontSize: ".68rem", color: "#9ca3af" }}
+                          >
+                            ({priceNote})
+                          </span>
+                        </span>
+                        <span
+                          style={{
+                            fontSize: ".75rem",
+                            fontWeight: 600,
+                            color: "#111827",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          ₱{baseTotal.toFixed(2)}
+                        </span>
+                      </div>
+                      {p.addLamination && sl !== "laminating" && (
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            padding: ".5rem .85rem",
+                            borderBottom: "1px solid #f3f4f6",
+                            gap: "1rem",
+                          }}
+                        >
+                          <span
+                            style={{ fontSize: ".75rem", color: "#6b7280" }}
+                          >
+                            Lamination add-on{" "}
+                            <span
+                              style={{ fontSize: ".68rem", color: "#9ca3af" }}
+                            >
+                              ({qty} × ₱{sp(prices.laminating, 20).toFixed(2)})
+                            </span>
+                          </span>
+                          <span
+                            style={{
+                              fontSize: ".75rem",
+                              fontWeight: 600,
+                              color: "#111827",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            ₱{lamTotal.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: ".6rem .85rem",
+                          background: "linear-gradient(135deg,#f5f3ff,#ede9fe)",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: ".82rem",
+                            fontWeight: 700,
+                            color: "#374151",
+                          }}
+                        >
+                          Total Amount
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "1rem",
+                            fontWeight: 800,
+                            color: "#7c3aed",
+                          }}
+                        >
+                          ₱{grandTotal.toFixed(2)}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Payment */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "#f9fafb",
+                border: "1.5px solid #e5e7eb",
+                borderRadius: 10,
+                padding: ".6rem .85rem",
+                marginBottom: "1rem",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: ".75rem",
+                  color: "#6b7280",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: ".4rem",
+                }}
+              >
+                <IC.Card /> Payment Method
+              </span>
+              <span
+                style={{
+                  fontSize: ".78rem",
+                  fontWeight: 700,
+                  color: (viewDetailsOrder.payment_method || "")
+                    .toLowerCase()
+                    .includes("gcash")
+                    ? "#7c3aed"
+                    : "#111827",
+                }}
+              >
+                {(viewDetailsOrder.payment_method || "")
+                  .toLowerCase()
+                  .includes("gcash")
+                  ? "💜 GCash"
+                  : "💵 " + (viewDetailsOrder.payment_method || "Cash")}
+              </span>
+            </div>
+
+            {/* Actions */}
+            {viewDetailsOrder.status === "pending" && (
+              <div style={{ display: "flex", gap: ".6rem" }}>
+                <button
+                  className="btn btn-ghost"
+                  style={{ flex: 1, justifyContent: "center" }}
+                  onClick={() => {
+                    setViewDetailsOrder(null);
+                    openEditModal(viewDetailsOrder.order_id);
+                  }}
+                >
+                  <IC.Pencil /> Edit Order
+                </button>
+                <button
+                  className="btn"
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    background: "#fee2e2",
+                    color: "#ef4444",
+                    border: "none",
+                    fontWeight: 700,
+                  }}
+                  onClick={() => {
+                    setViewDetailsOrder(null);
+                    setCancelModalOrderId(viewDetailsOrder.order_id);
+                  }}
+                >
+                  <IC.XCircle /> Cancel
+                </button>
+              </div>
+            )}
+            {viewDetailsOrder.status !== "pending" && (
+              <button
+                className="btn btn-ghost btn-full"
+                onClick={() => setViewDetailsOrder(null)}
+              >
+                Close
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ══ EDIT ORDER MODAL ══ */}
       {editModalOpen && editOrder && (
         <div
@@ -3192,7 +5397,6 @@ function DashboardPageInner() {
         >
           <div className="modal">
             <div className="modal-head">
-              {/* ✅ Show short display ID */}
               <div className="modal-title">
                 Edit Order #{displayId(editOrder.order_id)}
               </div>

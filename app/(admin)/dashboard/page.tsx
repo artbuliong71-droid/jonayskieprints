@@ -31,6 +31,9 @@ interface Order {
   specifications: string;
   created_at: string;
   files?: FileData[];
+  payment_method?: string;
+  gcash_ref_num?: string;
+  gcash_receipt_url?: string;
 }
 interface DeletedOrder {
   _id: string;
@@ -45,6 +48,7 @@ interface DeletedOrder {
   pickup_time?: string | null;
   created_at: string;
   deleted_at: string;
+  payment_method?: string;
 }
 interface Customer {
   id: string;
@@ -115,14 +119,12 @@ function pricingStrToNum(p: PricingStr): Pricing {
     laminating: parseFloat(p.laminating) || 0,
   };
 }
+function isGcash(method?: string) {
+  return (method || "").toLowerCase().includes("gcash");
+}
 
-// ── helpers to detect file type reliably ──────────────────────────
-// ✅ PDFs are now uploaded with resource_type "image" + format "pdf"
-// so we detect by URL extension only — NOT resource_type
 function detectIsPdf(url: string, resource_type: string): boolean {
-  return (
-    url.toLowerCase().includes(".pdf") || resource_type === "raw" // legacy support for old uploads
-  );
+  return url.toLowerCase().includes(".pdf") || resource_type === "raw";
 }
 function detectIsImage(url: string, resource_type: string): boolean {
   return !detectIsPdf(url, resource_type);
@@ -598,6 +600,22 @@ const IC = {
       <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
     </svg>
   ),
+  GCash: () => (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <rect x="3" y="3" width="7" height="7" />
+      <rect x="14" y="3" width="7" height="7" />
+      <rect x="3" y="14" width="7" height="7" />
+      <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M14 14v4h4v-4h-4z" />
+    </svg>
+  ),
 };
 
 import {
@@ -664,6 +682,285 @@ function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
   );
 }
 
+// ── GCash Receipt Viewer Modal ────────────────────────────────────
+function GcashReceiptModal({
+  order,
+  onClose,
+}: {
+  order: Order;
+  onClose: () => void;
+}) {
+  const receiptUrl = order.gcash_receipt_url;
+  const isPdf = receiptUrl ? detectIsPdf(receiptUrl, "") : false;
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,.6)",
+        zIndex: 900,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1rem",
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        style={{
+          background: "#fff",
+          borderRadius: 14,
+          width: "100%",
+          maxWidth: 500,
+          maxHeight: "90vh",
+          overflow: "auto",
+          boxShadow: "0 24px 60px rgba(0,0,0,.3)",
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: ".9rem 1.2rem",
+            borderBottom: "1px solid #e5e7eb",
+            position: "sticky",
+            top: 0,
+            background: "#fff",
+            zIndex: 1,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: ".5rem" }}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: "#f5f3ff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <IC.GCash />
+            </div>
+            <div>
+              <div
+                style={{ fontWeight: 700, fontSize: ".9rem", color: "#111827" }}
+              >
+                GCash Receipt
+              </div>
+              <div style={{ fontSize: ".7rem", color: "#6b7280" }}>
+                Order #{getOrderDisplay(order)}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#6b7280",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 32,
+              height: 32,
+              borderRadius: 6,
+            }}
+          >
+            <IC.X />
+          </button>
+        </div>
+
+        <div style={{ padding: "1.1rem 1.2rem" }}>
+          {/* Reference number */}
+          {order.gcash_ref_num && (
+            <div
+              style={{
+                background: "#f5f3ff",
+                border: "1.5px solid #ddd6fe",
+                borderRadius: 10,
+                padding: ".65rem .9rem",
+                marginBottom: ".85rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: ".65rem",
+                    fontWeight: 700,
+                    color: "#7c3aed",
+                    textTransform: "uppercase",
+                    letterSpacing: ".06em",
+                    marginBottom: 2,
+                  }}
+                >
+                  GCash Reference Number
+                </div>
+                <div
+                  style={{
+                    fontSize: ".95rem",
+                    fontWeight: 800,
+                    color: "#111827",
+                    letterSpacing: ".05em",
+                  }}
+                >
+                  {order.gcash_ref_num}
+                </div>
+              </div>
+              <div
+                style={{
+                  background: "#22c55e",
+                  borderRadius: "50%",
+                  width: 28,
+                  height: 28,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#fff"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                >
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+            </div>
+          )}
+
+          {/* Amount paid */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+              borderRadius: 8,
+              padding: ".55rem .85rem",
+              marginBottom: ".85rem",
+              fontSize: ".8rem",
+            }}
+          >
+            <span style={{ color: "#6b7280" }}>Amount Paid</span>
+            <span
+              style={{ fontWeight: 800, color: "#7c3aed", fontSize: "1rem" }}
+            >
+              ₱{Number(order.total_amount).toFixed(2)}
+            </span>
+          </div>
+
+          {/* Receipt image / PDF */}
+          {receiptUrl ? (
+            <div
+              style={{
+                border: "1.5px solid #e5e7eb",
+                borderRadius: 10,
+                overflow: "hidden",
+              }}
+            >
+              {!isPdf ? (
+                <img
+                  src={receiptUrl}
+                  alt="GCash receipt"
+                  style={{
+                    width: "100%",
+                    display: "block",
+                    maxHeight: 460,
+                    objectFit: "contain",
+                    background: "#f3f4f6",
+                  }}
+                />
+              ) : (
+                <iframe
+                  src={`${receiptUrl}#toolbar=1`}
+                  style={{
+                    width: "100%",
+                    height: 400,
+                    border: "none",
+                    display: "block",
+                  }}
+                  title="GCash receipt PDF"
+                />
+              )}
+              <div
+                style={{
+                  padding: ".5rem .75rem",
+                  borderTop: "1px solid #e5e7eb",
+                  display: "flex",
+                  gap: ".5rem",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <a
+                  href={receiptUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    fontSize: ".72rem",
+                    color: "#7c3aed",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <IC.Eye /> View Full
+                </a>
+                <a
+                  href={receiptUrl}
+                  download
+                  style={{
+                    fontSize: ".72rem",
+                    color: "#16a34a",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  }}
+                >
+                  <IC.Download /> Download
+                </a>
+              </div>
+            </div>
+          ) : (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "2rem",
+                color: "#9ca3af",
+                fontSize: ".82rem",
+                border: "2px dashed #e5e7eb",
+                borderRadius: 10,
+              }}
+            >
+              No receipt image uploaded.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function DetailsModal({
   order,
   onClose,
@@ -671,6 +968,8 @@ function DetailsModal({
   order: Order;
   onClose: () => void;
 }) {
+  const gcashPay = isGcash(order.payment_method);
+
   const detailRows = [
     { label: "Customer", value: `${order.user_name} (${order.user_email})` },
     { label: "Service", value: order.service },
@@ -690,6 +989,7 @@ function DetailsModal({
     { label: "Status", value: order.status },
     { label: "Date", value: new Date(order.created_at).toLocaleString() },
   ];
+
   return (
     <div
       style={{
@@ -717,6 +1017,7 @@ function DetailsModal({
           boxShadow: "0 24px 60px rgba(0,0,0,.25)",
         }}
       >
+        {/* sticky header */}
         <div
           style={{
             display: "flex",
@@ -754,6 +1055,7 @@ function DetailsModal({
             <IC.X />
           </button>
         </div>
+
         <div style={{ padding: "1.1rem 1.2rem" }}>
           {detailRows.map((row: any) => (
             <div
@@ -795,6 +1097,81 @@ function DetailsModal({
               </div>
             </div>
           ))}
+
+          {/* ── Payment method row ── */}
+          <div
+            style={{
+              display: "flex",
+              gap: ".75rem",
+              padding: ".45rem 0",
+              borderBottom: "1px solid #f3f4f6",
+              fontSize: ".84rem",
+            }}
+          >
+            <div
+              style={{
+                width: 90,
+                color: "#6b7280",
+                fontWeight: 600,
+                flexShrink: 0,
+                fontSize: ".75rem",
+                textTransform: "uppercase",
+                letterSpacing: ".04em",
+                paddingTop: 2,
+              }}
+            >
+              Payment
+            </div>
+            <div
+              style={{ flex: 1, display: "flex", alignItems: "center", gap: 6 }}
+            >
+              {gcashPay ? (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    background: "#f5f3ff",
+                    color: "#7c3aed",
+                    border: "1.5px solid #ddd6fe",
+                    padding: "3px 10px",
+                    borderRadius: 99,
+                    fontSize: ".72rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  <IC.GCash /> GCash
+                </span>
+              ) : (
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    background: "#f0fdf4",
+                    color: "#16a34a",
+                    border: "1.5px solid #bbf7d0",
+                    padding: "3px 10px",
+                    borderRadius: 99,
+                    fontSize: ".72rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  💵 Cash
+                </span>
+              )}
+              {gcashPay && order.gcash_ref_num && (
+                <span style={{ fontSize: ".72rem", color: "#6b7280" }}>
+                  Ref:{" "}
+                  <strong style={{ color: "#111827" }}>
+                    {order.gcash_ref_num}
+                  </strong>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* ── Specifications ── */}
           <div style={{ marginTop: ".85rem" }}>
             <div
               style={{
@@ -823,6 +1200,72 @@ function DetailsModal({
               {order.specifications || "N/A"}
             </div>
           </div>
+
+          {/* ── GCash receipt inline preview ── */}
+          {gcashPay && order.gcash_receipt_url && (
+            <div style={{ marginTop: ".85rem" }}>
+              <div
+                style={{
+                  fontSize: ".75rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: ".04em",
+                  color: "#6b7280",
+                  marginBottom: ".4rem",
+                }}
+              >
+                GCash Receipt
+              </div>
+              <div
+                style={{
+                  border: "1.5px solid #ddd6fe",
+                  borderRadius: 10,
+                  overflow: "hidden",
+                }}
+              >
+                <img
+                  src={order.gcash_receipt_url}
+                  alt="GCash receipt"
+                  style={{
+                    width: "100%",
+                    maxHeight: 220,
+                    objectFit: "contain",
+                    display: "block",
+                    background: "#f9fafb",
+                  }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+                <div
+                  style={{
+                    padding: ".4rem .75rem",
+                    borderTop: "1px solid #e5e7eb",
+                    display: "flex",
+                    gap: ".5rem",
+                    justifyContent: "flex-end",
+                  }}
+                >
+                  <a
+                    href={order.gcash_receipt_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      fontSize: ".72rem",
+                      color: "#7c3aed",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    <IC.Eye /> View Full Receipt
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -834,30 +1277,22 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
     typeof f === "string" ? { url: f, resource_type: "image" } : f,
   );
 
-  // ── download handler ─────────────────────────────────────────────
   async function handleDownload(url: string, filename: string) {
     const isPdf = detectIsPdf(url, "");
-
-    // ✅ For Cloudinary image-type PDFs, use fl_attachment transformation
-    // This forces browser to download instead of trying to navigate to it
     let downloadUrl = url;
     if (isPdf) {
-      // Works for both /image/upload/ (new) and /raw/upload/ (legacy)
-      if (url.includes("/image/upload/")) {
+      if (url.includes("/image/upload/"))
         downloadUrl = url.replace(
           "/image/upload/",
           "/image/upload/fl_attachment/",
         );
-      } else if (url.includes("/raw/upload/")) {
+      else if (url.includes("/raw/upload/"))
         downloadUrl = url.replace("/raw/upload/", "/raw/upload/fl_attachment/");
-      }
     }
-
     const finalName =
       isPdf && !filename.toLowerCase().endsWith(".pdf")
         ? filename + ".pdf"
         : filename;
-
     const a = document.createElement("a");
     a.href = downloadUrl;
     a.download = finalName;
@@ -894,7 +1329,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
           boxShadow: "0 24px 60px rgba(0,0,0,.25)",
         }}
       >
-        {/* header */}
         <div
           style={{
             display: "flex",
@@ -932,7 +1366,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
             <IC.X />
           </button>
         </div>
-
         <div style={{ padding: "1.1rem 1.2rem" }}>
           {files.length === 0 ? (
             <div
@@ -950,7 +1383,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
             </div>
           ) : (
             <>
-              {/* download-all button */}
               {files.length > 1 && (
                 <div
                   style={{
@@ -984,7 +1416,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                   </button>
                 </div>
               )}
-
               <div
                 style={{
                   display: "flex",
@@ -995,8 +1426,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                 {files.map((file, i) => {
                   const { url, resource_type } = file;
                   const isPdf = detectIsPdf(url, resource_type);
-                  const isImage = detectIsImage(url, resource_type);
-
+                  const isImg = detectIsImage(url, resource_type);
                   return (
                     <div
                       key={i}
@@ -1007,8 +1437,7 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                         background: "#fafafa",
                       }}
                     >
-                      {/* ── IMAGE ── */}
-                      {isImage && (
+                      {isImg && (
                         <div>
                           <img
                             src={url}
@@ -1094,11 +1523,8 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                           </div>
                         </div>
                       )}
-
-                      {/* ── PDF ── */}
                       {isPdf && (
                         <div>
-                          {/* PDF preview via iframe */}
                           <iframe
                             src={`${url}#toolbar=1&view=FitH`}
                             style={{
@@ -1182,78 +1608,6 @@ function FilesModal({ order, onClose }: { order: Order; onClose: () => void }) {
                           </div>
                         </div>
                       )}
-
-                      {/* ── FALLBACK (unknown type) ── */}
-                      {!isImage && !isPdf && (
-                        <div
-                          style={{
-                            padding: ".75rem 1rem",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: ".75rem",
-                          }}
-                        >
-                          <div style={{ color: "#7c3aed", flexShrink: 0 }}>
-                            <IC.File />
-                          </div>
-                          <span
-                            style={{
-                              fontSize: ".8rem",
-                              color: "#374151",
-                              flex: 1,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {getFileName(url)}
-                          </span>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: ".5rem",
-                              flexShrink: 0,
-                            }}
-                          >
-                            <a
-                              href={url}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{
-                                fontSize: ".72rem",
-                                color: "#7c3aed",
-                                fontWeight: 600,
-                                textDecoration: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 4,
-                              }}
-                            >
-                              <IC.Eye /> View
-                            </a>
-                            <button
-                              onClick={() =>
-                                handleDownload(url, getFileName(url))
-                              }
-                              style={{
-                                fontSize: ".72rem",
-                                color: "#16a34a",
-                                fontWeight: 600,
-                                border: "none",
-                                background: "none",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 4,
-                                fontFamily: "inherit",
-                                padding: 0,
-                              }}
-                            >
-                              <IC.Download /> Download
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -1309,6 +1663,50 @@ function CancelledBadge() {
   );
 }
 
+// ── GCash payment badge (used in tables) ─────────────────────────
+function PaymentBadge({ method }: { method?: string }) {
+  if (isGcash(method)) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 3,
+          background: "#f5f3ff",
+          color: "#7c3aed",
+          border: "1.5px solid #ddd6fe",
+          padding: "2px 8px",
+          borderRadius: 99,
+          fontSize: ".65rem",
+          fontWeight: 700,
+          whiteSpace: "nowrap",
+        }}
+      >
+        <IC.GCash /> GCash
+      </span>
+    );
+  }
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 3,
+        background: "#f0fdf4",
+        color: "#16a34a",
+        border: "1.5px solid #bbf7d0",
+        padding: "2px 8px",
+        borderRadius: 99,
+        fontSize: ".65rem",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+    >
+      💵 Cash
+    </span>
+  );
+}
+
 const POLL_INTERVAL = 15000;
 
 export default function AdminDashboardPage() {
@@ -1345,6 +1743,9 @@ export default function AdminDashboardPage() {
   const [pricingSaving, setPricingSaving] = useState(false);
   const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
   const [filesOrder, setFilesOrder] = useState<Order | null>(null);
+  const [gcashReceiptOrder, setGcashReceiptOrder] = useState<Order | null>(
+    null,
+  );
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifSeen, setNotifSeen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -1471,7 +1872,7 @@ export default function AdminDashboardPage() {
     const interval = setInterval(() => {
       fetchStats();
       if (section === "dashboard") fetchOrders("");
-      if (section === "orders") fetchOrders(orderFilter);
+      if (section === "orders") fetchOrders(orderFilter, true);
       if (section === "customers") fetchCustomers();
       if (section === "deleted") fetchDeletedOrders();
     }, POLL_INTERVAL);
@@ -1543,7 +1944,6 @@ export default function AdminDashboardPage() {
       showToast("Invalid order ID", "error");
       return;
     }
-    // ✅ Optimistic update — update UI immediately without loading flash
     setOrders((prev) =>
       prev.map((o) =>
         getOrderId(o) === orderId
@@ -1560,10 +1960,8 @@ export default function AdminDashboardPage() {
       if (d.success) {
         showToast("Status updated!");
         fetchStats();
-        // ✅ Only refetch if filtered — so the order correctly disappears from filtered view
         if (orderFilter) fetchOrders(orderFilter);
       } else {
-        // ✅ Revert optimistic update on failure
         showToast(d.message || "Update failed", "error");
         fetchOrders(orderFilter);
       }
@@ -1720,6 +2118,11 @@ export default function AdminDashboardPage() {
     },
   ];
 
+  // Count GCash orders among pending (for notification highlight)
+  const gcashPendingCount = orders.filter(
+    (o) => o.status === "pending" && isGcash(o.payment_method),
+  ).length;
+
   return (
     <>
       <style>{`
@@ -1751,11 +2154,11 @@ export default function AdminDashboardPage() {
         .notif-btn{position:relative;background:rgba(255,255,255,.15);border:none;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;transition:background .15s;-webkit-tap-highlight-color:transparent}
         .notif-btn:hover{background:rgba(255,255,255,.25)}
         .notif-badge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:.58rem;font-weight:700;min-width:16px;height:16px;border-radius:99px;display:flex;align-items:center;justify-content:center;padding:0 3px;animation:badgePop .25s ease}
-        .notif-dropdown{position:absolute;top:calc(100% + 10px);right:0;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.13);width:310px;z-index:999;overflow:hidden;animation:fadeIn .18s ease}
+        .notif-dropdown{position:absolute;top:calc(100% + 10px);right:0;background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.13);width:320px;z-index:999;overflow:hidden;animation:fadeIn .18s ease}
         .notif-dropdown-head{padding:.65rem 1rem;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
         .notif-dropdown-title{font-weight:700;font-size:.84rem;color:#111827}
         .notif-count-badge{background:#fef9c3;color:#92400e;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:99px}
-        .notif-list{max-height:280px;overflow-y:auto}
+        .notif-list{max-height:300px;overflow-y:auto}
         .notif-item{padding:.6rem 1rem;border-bottom:1px solid #f3f4f6;cursor:pointer;transition:background .15s;display:flex;justify-content:space-between;align-items:center;gap:.5rem}
         .notif-item:hover{background:#f9fafb}
         .notif-item:last-child{border-bottom:none}
@@ -1796,6 +2199,8 @@ export default function AdminDashboardPage() {
         .action-btn-details:hover{background:#dbeafe}
         .action-btn-files{background:#f5f3ff;color:#7c3aed;border-color:#ddd6fe}
         .action-btn-files:hover{background:#ede9fe}
+        .action-btn-gcash{background:#faf5ff;color:#7c3aed;border-color:#ddd6fe}
+        .action-btn-gcash:hover{background:#ede9fe}
         .action-btns{display:flex;gap:.35rem;flex-wrap:wrap}
         .m-card{padding:.65rem .9rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;transition:background .15s}
         .m-card:last-child{border-bottom:none}
@@ -1849,11 +2254,12 @@ export default function AdminDashboardPage() {
         .sb-overlay.on{display:block}
         .empty-state{padding:2.5rem;text-align:center;color:var(--muted);font-size:.84rem}
         .pulse-dot{width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block;animation:pulse 2s infinite}
+        .gcash-row{background:#faf5ff;border-left:3px solid #7c3aed}
         @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
         @media(min-width:1025px){.hamburger{display:none}.welcome{display:block}}
         @media(max-width:1024px){.sidebar{position:fixed;top:0;left:0;height:100%;transform:translateX(-100%)}.sidebar.open{transform:translateX(0);box-shadow:4px 0 30px rgba(0,0,0,.25)}.hamburger{display:flex}}
         @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:repeat(2,1fr)}.rpt-stat-grid{grid-template-columns:repeat(2,1fr)}}
-        @media(max-width:768px){.welcome{display:none}.notif-dropdown{width:280px;right:-8px}}
+        @media(max-width:768px){.welcome{display:none}.notif-dropdown{width:290px;right:-8px}}
         @media(max-width:600px){.content{padding:.65rem}.desktop-tbl{display:none}.mobile-cards{display:block}.stats-wrap{padding:.6rem .7rem .8rem}.rpt-stat-grid{grid-template-columns:repeat(2,1fr)}.rpt-controls{gap:.4rem}}
         @media(min-width:601px){.mobile-cards{display:none}.desktop-tbl{display:block}}
         @media(max-width:400px){.stats-grid{grid-template-columns:repeat(2,1fr);gap:.4rem}.form-grid{grid-template-columns:1fr}.stat-val{font-size:1.1rem}.rpt-stat-grid{grid-template-columns:1fr 1fr}}
@@ -1870,6 +2276,12 @@ export default function AdminDashboardPage() {
       )}
       {filesOrder && (
         <FilesModal order={filesOrder} onClose={() => setFilesOrder(null)} />
+      )}
+      {gcashReceiptOrder && (
+        <GcashReceiptModal
+          order={gcashReceiptOrder}
+          onClose={() => setGcashReceiptOrder(null)}
+        />
       )}
 
       <div className="shell">
@@ -1964,9 +2376,32 @@ export default function AdminDashboardPage() {
                       <span className="notif-dropdown-title">
                         Pending Orders
                       </span>
-                      <span className="notif-count-badge">
-                        {notifCount} pending
-                      </span>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        <span className="notif-count-badge">
+                          {notifCount} pending
+                        </span>
+                        {gcashPendingCount > 0 && (
+                          <span
+                            style={{
+                              background: "#f5f3ff",
+                              color: "#7c3aed",
+                              fontSize: ".62rem",
+                              fontWeight: 700,
+                              padding: "2px 7px",
+                              borderRadius: 99,
+                              border: "1px solid #ddd6fe",
+                            }}
+                          >
+                            {gcashPendingCount} GCash
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="notif-list">
                       {orders.filter((o) => o.status === "pending").length ===
@@ -1986,8 +2421,30 @@ export default function AdminDashboardPage() {
                               }}
                             >
                               <div>
-                                <div className="notif-item-id">
+                                <div
+                                  className="notif-item-id"
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 5,
+                                  }}
+                                >
                                   #{getOrderDisplay(o)}
+                                  {isGcash(o.payment_method) && (
+                                    <span
+                                      style={{
+                                        background: "#f5f3ff",
+                                        color: "#7c3aed",
+                                        fontSize: ".6rem",
+                                        fontWeight: 700,
+                                        padding: "1px 5px",
+                                        borderRadius: 99,
+                                        border: "1px solid #ddd6fe",
+                                      }}
+                                    >
+                                      GCash
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="notif-item-meta">
                                   {o.user_name} · {o.service}
@@ -2081,6 +2538,8 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
               </div>
+
+              {/* Orders overview donut */}
               <div className="chart-card">
                 <div className="chart-title">Orders Overview</div>
                 {(() => {
@@ -2225,6 +2684,8 @@ export default function AdminDashboardPage() {
                   );
                 })()}
               </div>
+
+              {/* Recent orders */}
               <div className="card">
                 <div className="card-head">
                   <div className="card-head-title">Recent Orders</div>
@@ -2244,6 +2705,7 @@ export default function AdminDashboardPage() {
                           <th>Customer</th>
                           <th>Service</th>
                           <th>Pickup Time</th>
+                          <th>Payment</th>
                           <th>Status</th>
                           <th>Amount</th>
                           <th>Date</th>
@@ -2252,13 +2714,18 @@ export default function AdminDashboardPage() {
                       <tbody>
                         {orders.slice(0, 5).length === 0 ? (
                           <tr>
-                            <td colSpan={7} className="empty-state">
+                            <td colSpan={8} className="empty-state">
                               No orders yet
                             </td>
                           </tr>
                         ) : (
                           orders.slice(0, 5).map((o) => (
-                            <tr key={o._id || o.order_id}>
+                            <tr
+                              key={o._id || o.order_id}
+                              className={
+                                isGcash(o.payment_method) ? "gcash-row" : ""
+                              }
+                            >
                               <td style={{ fontWeight: 600 }}>
                                 #{getOrderDisplay(o)}
                               </td>
@@ -2295,6 +2762,9 @@ export default function AdminDashboardPage() {
                                 )}
                               </td>
                               <td>
+                                <PaymentBadge method={o.payment_method} />
+                              </td>
+                              <td>
                                 <span
                                   className="badge"
                                   style={{
@@ -2322,7 +2792,17 @@ export default function AdminDashboardPage() {
                   {orders.slice(0, 5).map((o) => (
                     <div key={o._id || o.order_id} className="m-card">
                       <div className="m-card-main">
-                        <div className="m-id">#{getOrderDisplay(o)}</div>
+                        <div
+                          className="m-id"
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 5,
+                          }}
+                        >
+                          #{getOrderDisplay(o)}{" "}
+                          <PaymentBadge method={o.payment_method} />
+                        </div>
                         <div className="m-name">{o.user_name}</div>
                         <div className="m-meta">
                           {o.service} ·{" "}
@@ -2391,6 +2871,7 @@ export default function AdminDashboardPage() {
                               <th>Delivery</th>
                               <th>Pickup Time</th>
                               <th>Amount</th>
+                              <th>Payment</th>
                               <th>Details</th>
                               <th>Files</th>
                               <th>Status</th>
@@ -2400,7 +2881,12 @@ export default function AdminDashboardPage() {
                           </thead>
                           <tbody>
                             {orders.map((o, i) => (
-                              <tr key={o._id || o.order_id || i}>
+                              <tr
+                                key={o._id || o.order_id || i}
+                                className={
+                                  isGcash(o.payment_method) ? "gcash-row" : ""
+                                }
+                              >
                                 <td style={{ fontWeight: 600 }}>
                                   #{getOrderDisplay(o)}
                                 </td>
@@ -2444,6 +2930,29 @@ export default function AdminDashboardPage() {
                                   ₱{Number(o.total_amount).toFixed(2)}
                                 </td>
                                 <td>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 3,
+                                    }}
+                                  >
+                                    <PaymentBadge method={o.payment_method} />
+                                    {isGcash(o.payment_method) &&
+                                      o.gcash_ref_num && (
+                                        <span
+                                          style={{
+                                            fontSize: ".62rem",
+                                            color: "#6b7280",
+                                          }}
+                                        >
+                                          Ref:{" "}
+                                          <strong>{o.gcash_ref_num}</strong>
+                                        </span>
+                                      )}
+                                  </div>
+                                </td>
+                                <td>
                                   <button
                                     className="action-btn action-btn-details"
                                     onClick={() => setDetailsOrder(o)}
@@ -2452,15 +2961,31 @@ export default function AdminDashboardPage() {
                                   </button>
                                 </td>
                                 <td>
-                                  <button
-                                    className="action-btn action-btn-files"
-                                    onClick={() => setFilesOrder(o)}
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 3,
+                                    }}
                                   >
-                                    <IC.File />
-                                    {o.files && o.files.length > 0
-                                      ? `View (${o.files.length})`
-                                      : "View"}
-                                  </button>
+                                    <button
+                                      className="action-btn action-btn-files"
+                                      onClick={() => setFilesOrder(o)}
+                                    >
+                                      <IC.File />
+                                      {o.files && o.files.length > 0
+                                        ? `View (${o.files.length})`
+                                        : "View"}
+                                    </button>
+                                    {isGcash(o.payment_method) && (
+                                      <button
+                                        className="action-btn action-btn-gcash"
+                                        onClick={() => setGcashReceiptOrder(o)}
+                                      >
+                                        <IC.GCash /> GCash Receipt
+                                      </button>
+                                    )}
+                                  </div>
                                 </td>
                                 <td>
                                   <StatusCell o={o} />
@@ -2495,18 +3020,33 @@ export default function AdminDashboardPage() {
                       {orders.map((o, i) => (
                         <div key={o._id || o.order_id || i} className="m-card">
                           <div className="m-card-main">
-                            <div className="m-id">
+                            <div
+                              className="m-id"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 5,
+                              }}
+                            >
                               #{getOrderDisplay(o)} — {o.service}
                             </div>
                             <div className="m-name">{o.user_name}</div>
-                            <div className="m-meta">
+                            <div
+                              className="m-meta"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                flexWrap: "wrap",
+                              }}
+                            >
                               Qty: {o.quantity} · {o.delivery_option} ·{" "}
                               {new Date(o.created_at).toLocaleDateString()}
+                              <PaymentBadge method={o.payment_method} />
                               {o.delivery_option === "pickup" &&
                                 o.pickup_time && (
                                   <span
                                     style={{
-                                      marginLeft: 4,
                                       color: "#7c3aed",
                                       fontWeight: 600,
                                     }}
@@ -2515,6 +3055,11 @@ export default function AdminDashboardPage() {
                                   </span>
                                 )}
                             </div>
+                            {isGcash(o.payment_method) && o.gcash_ref_num && (
+                              <div className="m-meta">
+                                Ref: <strong>{o.gcash_ref_num}</strong>
+                              </div>
+                            )}
                             <div
                               className="action-btns"
                               style={{ marginTop: ".45rem" }}
@@ -2534,6 +3079,14 @@ export default function AdminDashboardPage() {
                                   ? ` (${o.files.length})`
                                   : ""}
                               </button>
+                              {isGcash(o.payment_method) && (
+                                <button
+                                  className="action-btn action-btn-gcash"
+                                  onClick={() => setGcashReceiptOrder(o)}
+                                >
+                                  <IC.GCash /> Receipt
+                                </button>
+                              )}
                             </div>
                             <div style={{ marginTop: ".4rem" }}>
                               <StatusCell o={o} />
@@ -2677,11 +3230,7 @@ export default function AdminDashboardPage() {
                   <select
                     className="rpt-select"
                     value={reportPeriod}
-                    onChange={(e) =>
-                      setReportPeriod(
-                        e.target.value as "daily" | "weekly" | "monthly",
-                      )
-                    }
+                    onChange={(e) => setReportPeriod(e.target.value as any)}
                   >
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
@@ -2698,7 +3247,7 @@ export default function AdminDashboardPage() {
                     onClick={generateReport}
                     disabled={reportLoading}
                   >
-                    <IC.BarChart />
+                    <IC.BarChart />{" "}
                     {reportLoading ? "Loading…" : "Generate Report"}
                   </button>
                 </div>
@@ -2930,6 +3479,7 @@ export default function AdminDashboardPage() {
                               <th>Qty</th>
                               <th>Pickup Time</th>
                               <th>Amount</th>
+                              <th>Payment</th>
                               <th>Last Status</th>
                               <th>Order Date</th>
                               <th>Deleted</th>
@@ -2978,6 +3528,9 @@ export default function AdminDashboardPage() {
                                   ₱{Number(o.total_amount).toFixed(2)}
                                 </td>
                                 <td>
+                                  <PaymentBadge method={o.payment_method} />
+                                </td>
+                                <td>
                                   <span
                                     className="badge"
                                     style={{
@@ -3022,9 +3575,18 @@ export default function AdminDashboardPage() {
                               #{getOrderDisplay(o)} — {o.service}
                             </div>
                             <div className="m-name">{o.user_name}</div>
-                            <div className="m-meta">
+                            <div
+                              className="m-meta"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                flexWrap: "wrap",
+                              }}
+                            >
                               Qty: {o.quantity} ·{" "}
                               {new Date(o.created_at).toLocaleDateString()}
+                              <PaymentBadge method={o.payment_method} />
                             </div>
                             <div
                               className="m-meta"
