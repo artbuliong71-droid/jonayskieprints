@@ -3708,55 +3708,67 @@ function DashboardPageInner() {
                                     gap: ".5rem",
                                   }}
                                 >
-                                  <img
-                                    src="/gcash-qr.jpg"
-                                    alt="GCash QR Code"
-                                    style={{
-                                      width: 160,
-                                      height: 160,
-                                      imageRendering: "pixelated",
-                                      border: "1px solid #e5e7eb",
-                                      borderRadius: 8,
-                                    }}
-                                    onError={(e) => {
-                                      (
-                                        e.target as HTMLImageElement
-                                      ).style.display = "none";
-                                      (
-                                        e.target as HTMLImageElement
-                                      ).nextElementSibling?.removeAttribute(
-                                        "style",
-                                      );
-                                    }}
-                                  />
                                   <div
                                     style={{
-                                      width: 160,
-                                      height: 160,
-                                      background: "#f3f4f6",
-                                      border: "2px dashed #d1d5db",
-                                      borderRadius: 8,
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      flexDirection: "column",
-                                      gap: 4,
-                                      visibility: "hidden",
-                                      position: "absolute",
+                                      position: "relative",
+                                      width: 200,
+                                      height: 200,
                                     }}
                                   >
-                                    <IcoGCash size={32} color="#9ca3af" />
-                                    <span
+                                    <img
+                                      src="/gcash-qr.jpg"
+                                      alt="GCash QR Code"
                                       style={{
-                                        fontSize: ".65rem",
-                                        color: "#9ca3af",
-                                        textAlign: "center",
+                                        width: 200,
+                                        height: 200,
+                                        objectFit: "contain",
+                                        border: "1px solid #e5e7eb",
+                                        borderRadius: 8,
+                                        display: "block",
+                                      }}
+                                      onError={(e) => {
+                                        (
+                                          e.target as HTMLImageElement
+                                        ).style.display = "none";
+                                        const fallback =
+                                          document.getElementById(
+                                            "gcash-qr-fallback",
+                                          );
+                                        if (fallback)
+                                          fallback.style.display = "flex";
+                                      }}
+                                    />
+                                    <div
+                                      id="gcash-qr-fallback"
+                                      style={{
+                                        width: 200,
+                                        height: 200,
+                                        background: "#f3f4f6",
+                                        border: "2px dashed #d1d5db",
+                                        borderRadius: 8,
+                                        display: "none",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        flexDirection: "column",
+                                        gap: 4,
+                                        position: "absolute",
+                                        top: 0,
+                                        left: 0,
                                       }}
                                     >
-                                      Place gcash-qr.jpg in
-                                      <br />
-                                      your /public folder
-                                    </span>
+                                      <IcoGCash size={32} color="#9ca3af" />
+                                      <span
+                                        style={{
+                                          fontSize: ".65rem",
+                                          color: "#9ca3af",
+                                          textAlign: "center",
+                                        }}
+                                      >
+                                        Place gcash-qr.jpg in
+                                        <br />
+                                        your /public folder
+                                      </span>
+                                    </div>
                                   </div>
                                   <div
                                     style={{
