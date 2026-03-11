@@ -187,8 +187,127 @@ function calcTotal(
   return total;
 }
 
-// ── ADDITION 1: TOS key constant ─────────────────────────────────
 const TOS_ACCEPTED_KEY = "jonayskie_tos_accepted";
+
+// ── SVG Icon helpers ──────────────────────────────────────────────
+const IcoFullPayment = () => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const IcoDownpayment = () => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+  >
+    <line x1="12" y1="5" x2="12" y2="19" />
+    <polyline points="19 12 12 19 5 12" />
+  </svg>
+);
+
+const IcoGCash = ({
+  size = 13,
+  color = "currentColor",
+}: {
+  size?: number;
+  color?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+  >
+    <rect x="1" y="4" width="22" height="16" rx="2" />
+    <line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+);
+
+const IcoCash = ({
+  size = 13,
+  color = "currentColor",
+}: {
+  size?: number;
+  color?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+  >
+    <rect x="2" y="6" width="20" height="12" rx="2" />
+    <circle cx="12" cy="12" r="3" />
+    <path d="M6 12h.01M18 12h.01" />
+  </svg>
+);
+
+const IcoWarning = ({ color = "#92400e" }: { color?: string }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2"
+    strokeLinecap="round"
+  >
+    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+    <line x1="12" y1="9" x2="12" y2="13" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+);
+
+const IcoPeso = ({
+  size = 14,
+  color = "#fff",
+}: {
+  size?: number;
+  color?: string;
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke={color}
+    strokeWidth="2.5"
+    strokeLinecap="round"
+  >
+    <text
+      x="4"
+      y="18"
+      fontFamily="sans-serif"
+      fontSize="16"
+      fontWeight="bold"
+      fill={color}
+      stroke="none"
+    >
+      ₱
+    </text>
+  </svg>
+);
 
 const IC = {
   Menu: () => (
@@ -555,7 +674,6 @@ const IC = {
   ),
 };
 
-// ── ADDITION 2a: TosSection component ────────────────────────────
 function TosSection({
   num,
   title,
@@ -617,7 +735,6 @@ function TosSection({
   );
 }
 
-// ── ADDITION 2b: FirstLoginTosModal component ─────────────────────
 function FirstLoginTosModal({
   onAccept,
   onDecline,
@@ -840,11 +957,10 @@ function FirstLoginTosModal({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: "1.1rem",
                       flexShrink: 0,
                     }}
                   >
-                    💜
+                    <IcoGCash size={18} color="#fff" />
                   </div>
                   <div>
                     <p
@@ -931,12 +1047,10 @@ function FirstLoginTosModal({
                       alignItems: "center",
                       justifyContent: "center",
                       color: "#fff",
-                      fontSize: "1rem",
-                      fontWeight: 700,
                       flexShrink: 0,
                     }}
                   >
-                    ₱
+                    <IcoCash size={18} color="#fff" />
                   </div>
                   <div>
                     <p
@@ -1066,7 +1180,19 @@ function FirstLoginTosModal({
                     flexShrink: 0,
                   }}
                 >
-                  👤
+                  {/* User icon instead of emoji */}
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#fff"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  >
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                  </svg>
                 </div>
                 <div>
                   <p
@@ -1634,7 +1760,6 @@ function DashboardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // ── ADDITION 3: TOS modal state ───────────────────────────────
   const [showTosModal, setShowTosModal] = useState(false);
 
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
@@ -1734,7 +1859,6 @@ function DashboardPageInner() {
     [],
   );
 
-  // ── ADDITION 3b: TOS check useEffect (BEFORE fetchPrices useEffect) ──
   useEffect(() => {
     const accepted = localStorage.getItem(TOS_ACCEPTED_KEY);
     if (!accepted) setShowTosModal(true);
@@ -2085,7 +2209,7 @@ function DashboardPageInner() {
           gfd.append("gcash_ref_num", noGcashRefNum);
           await fetch("/api/gcash-receipt", { method: "POST", body: gfd });
         } catch {
-          // non-fatal — order still placed
+          // non-fatal
         }
       }
 
@@ -2620,7 +2744,6 @@ function DashboardPageInner() {
 
       <ToastNotification toast={toast} />
 
-      {/* ── ADDITION 4: TOS Modal ─────────────────────────────────── */}
       {showTosModal && (
         <FirstLoginTosModal
           onAccept={handleTosAccept}
@@ -3205,6 +3328,7 @@ function DashboardPageInner() {
                         </div>
                       )}
                     </div>
+
                     {/* ── PAYMENT METHOD ── */}
                     <div style={{ marginBottom: "1rem" }}>
                       <div
@@ -3257,42 +3381,26 @@ function DashboardPageInner() {
                           >
                             {pm === "cash" ? (
                               <>
-                                <svg
-                                  width="15"
-                                  height="15"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                >
-                                  <rect
-                                    x="1"
-                                    y="4"
-                                    width="22"
-                                    height="16"
-                                    rx="2"
-                                  />
-                                  <line x1="1" y1="10" x2="23" y2="10" />
-                                </svg>{" "}
+                                <IcoCash
+                                  size={15}
+                                  color={
+                                    noPaymentMethod === "cash"
+                                      ? "#16a34a"
+                                      : "#6b7280"
+                                  }
+                                />
                                 Cash on Pickup
                               </>
                             ) : (
                               <>
-                                <svg
-                                  width="15"
-                                  height="15"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                >
-                                  <rect x="3" y="3" width="7" height="7" />
-                                  <rect x="14" y="3" width="7" height="7" />
-                                  <rect x="3" y="14" width="7" height="7" />
-                                  <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M14 14v4h4v-4h-4z" />
-                                </svg>{" "}
+                                <IcoGCash
+                                  size={15}
+                                  color={
+                                    noPaymentMethod === "gcash"
+                                      ? "#7c3aed"
+                                      : "#6b7280"
+                                  }
+                                />
                                 Pay via GCash
                               </>
                             )}
@@ -3351,20 +3459,7 @@ function DashboardPageInner() {
                               gap: ".5rem",
                             }}
                           >
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="#fff"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                            >
-                              <rect x="3" y="3" width="7" height="7" />
-                              <rect x="14" y="3" width="7" height="7" />
-                              <rect x="3" y="14" width="7" height="7" />
-                              <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M14 14v4h4v-4h-4z" />
-                            </svg>
+                            <IcoGCash size={16} color="#fff" />
                             <span
                               style={{
                                 color: "#fff",
@@ -3410,7 +3505,7 @@ function DashboardPageInner() {
                                     val: "full" as const,
                                     label: "Full Payment",
                                     sub: `₱${summaryTotal.toFixed(2)}`,
-                                    icon: "💯",
+                                    icon: <IcoFullPayment />,
                                     disabled: false as const,
                                   },
                                   {
@@ -3420,7 +3515,7 @@ function DashboardPageInner() {
                                       summaryTotal >= 500
                                         ? `₱${(summaryTotal * 0.5).toFixed(2)}`
                                         : "Only for ₱500+",
-                                    icon: "⬇️",
+                                    icon: <IcoDownpayment />,
                                     disabled: summaryTotal < 500,
                                   },
                                 ].map(({ val, label, sub, icon, disabled }) => (
@@ -3452,8 +3547,14 @@ function DashboardPageInner() {
                                   >
                                     <div
                                       style={{
-                                        fontSize: "1rem",
-                                        marginBottom: 2,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        marginBottom: 4,
+                                        color:
+                                          noGcashPayType === val && !disabled
+                                            ? "#7c3aed"
+                                            : "#9ca3af",
                                       }}
                                     >
                                       {icon}
@@ -3502,7 +3603,16 @@ function DashboardPageInner() {
                                       gap: ".4rem",
                                     }}
                                   >
-                                    <span>⚠️</span> Balance of{" "}
+                                    <span
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      <IcoWarning />
+                                    </span>
+                                    Balance of{" "}
                                     <strong>
                                       ₱{(summaryTotal * 0.5).toFixed(2)}
                                     </strong>{" "}
@@ -3635,20 +3745,7 @@ function DashboardPageInner() {
                                       position: "absolute",
                                     }}
                                   >
-                                    <svg
-                                      width="32"
-                                      height="32"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="#9ca3af"
-                                      strokeWidth="1.5"
-                                      strokeLinecap="round"
-                                    >
-                                      <rect x="3" y="3" width="7" height="7" />
-                                      <rect x="14" y="3" width="7" height="7" />
-                                      <rect x="3" y="14" width="7" height="7" />
-                                      <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M14 14v4h4v-4h-4z" />
-                                    </svg>
+                                    <IcoGCash size={32} color="#9ca3af" />
                                     <span
                                       style={{
                                         fontSize: ".65rem",
@@ -3874,6 +3971,8 @@ function DashboardPageInner() {
                         </div>
                       )}
                     </div>
+
+                    {/* ── ORDER SUMMARY ── */}
                     <div className="sum-box">
                       <div
                         style={{
@@ -3903,7 +4002,6 @@ function DashboardPageInner() {
                         Order Summary
                       </div>
 
-                      {/* Service & Delivery Info */}
                       <div
                         style={{
                           background: "#f5f3ff",
@@ -3960,7 +4058,6 @@ function DashboardPageInner() {
                         )}
                       </div>
 
-                      {/* Price Breakdown */}
                       <div
                         style={{
                           borderTop: "1px dashed #e5e7eb",
@@ -3981,7 +4078,6 @@ function DashboardPageInner() {
                           Price Breakdown
                         </div>
 
-                        {/* Base service price line */}
                         {noService &&
                           effectiveQuantity >= 1 &&
                           (() => {
@@ -4070,7 +4166,6 @@ function DashboardPageInner() {
                             );
                           })()}
 
-                        {/* Lamination add-on line */}
                         {noLamination &&
                           noService.toLowerCase() !== "laminating" &&
                           effectiveQuantity >= 1 && (
@@ -4164,7 +4259,7 @@ function DashboardPageInner() {
                         >
                           {noPaymentMethod === "gcash" ? (
                             <>
-                              💜 GCash{" "}
+                              <IcoGCash size={13} color="#7c3aed" /> GCash{" "}
                               {noGcashPayType === "downpayment" &&
                               summaryTotal >= 500 ? (
                                 <span
@@ -4181,7 +4276,10 @@ function DashboardPageInner() {
                               )}
                             </>
                           ) : (
-                            "💵 Cash on Pickup"
+                            <>
+                              <IcoCash size={13} color="#16a34a" /> Cash on
+                              Pickup
+                            </>
                           )}
                         </span>
                       </div>
@@ -4240,8 +4338,15 @@ function DashboardPageInner() {
                               lineHeight: 1.5,
                             }}
                           >
-                            <span style={{ fontSize: "1rem", flexShrink: 0 }}>
-                              ⚠️
+                            <span
+                              style={{
+                                flexShrink: 0,
+                                display: "flex",
+                                alignItems: "center",
+                                paddingTop: 1,
+                              }}
+                            >
+                              <IcoWarning />
                             </span>
                             <span>
                               Balance of{" "}
@@ -4270,8 +4375,15 @@ function DashboardPageInner() {
                             lineHeight: 1.5,
                           }}
                         >
-                          <span style={{ fontSize: "1rem", flexShrink: 0 }}>
-                            ⚠️
+                          <span
+                            style={{
+                              flexShrink: 0,
+                              display: "flex",
+                              alignItems: "center",
+                              paddingTop: 1,
+                            }}
+                          >
+                            <IcoWarning />
                           </span>
                           <span>
                             Your order exceeds <strong>₱500.00</strong>. A{" "}
@@ -4994,7 +5106,6 @@ function DashboardPageInner() {
               </button>
             </div>
 
-            {/* Status Banner */}
             <div
               style={{
                 background:
@@ -5038,7 +5149,6 @@ function DashboardPageInner() {
               </span>
             </div>
 
-            {/* Service & Delivery */}
             <div style={{ marginBottom: "1rem" }}>
               <div
                 style={{
@@ -5114,7 +5224,6 @@ function DashboardPageInner() {
               </div>
             </div>
 
-            {/* Specifications */}
             <div style={{ marginBottom: "1rem" }}>
               <div
                 style={{
@@ -5146,7 +5255,6 @@ function DashboardPageInner() {
               </div>
             </div>
 
-            {/* Price Breakdown */}
             <div style={{ marginBottom: "1rem" }}>
               <div
                 style={{
@@ -5300,7 +5408,6 @@ function DashboardPageInner() {
               </div>
             </div>
 
-            {/* Payment */}
             <div
               style={{
                 display: "flex",
@@ -5333,17 +5440,26 @@ function DashboardPageInner() {
                     .includes("gcash")
                     ? "#7c3aed"
                     : "#111827",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
                 }}
               >
                 {(viewDetailsOrder.payment_method || "")
                   .toLowerCase()
-                  .includes("gcash")
-                  ? "💜 GCash"
-                  : "💵 " + (viewDetailsOrder.payment_method || "Cash")}
+                  .includes("gcash") ? (
+                  <>
+                    <IcoGCash size={14} color="#7c3aed" /> GCash
+                  </>
+                ) : (
+                  <>
+                    <IcoCash size={14} color="#374151" />{" "}
+                    {viewDetailsOrder.payment_method || "Cash"}
+                  </>
+                )}
               </span>
             </div>
 
-            {/* Actions */}
             {viewDetailsOrder.status === "pending" && (
               <div style={{ display: "flex", gap: ".6rem" }}>
                 <button
