@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -193,6 +193,335 @@ const IconNotifyError = () => (
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+const IconClose = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+const IconScroll = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
+  </svg>
+);
+
+// ── TERMS OF SERVICE MODAL ──
+function TermsModal({
+  onClose,
+  onAccept,
+}: {
+  onClose: () => void;
+  onAccept: () => void;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [hasScrolled, setHasScrolled] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
+    if (atBottom) setHasScrolled(true);
+  };
+
+  return (
+    <div className="tos-backdrop" onClick={onClose}>
+      <div className="tos-modal" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="tos-header">
+          <div className="tos-header-left">
+            <div className="tos-icon-wrap">
+              <IconScroll />
+            </div>
+            <div>
+              <h2 className="tos-title">Terms of Service</h2>
+              <p className="tos-subtitle">
+                Jonayskie Prints — Effective January 1, 2026
+              </p>
+            </div>
+          </div>
+          <button
+            className="tos-close-btn"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <IconClose />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="tos-body" ref={scrollRef} onScroll={handleScroll}>
+          <div className="tos-intro">
+            By registering and using Jonayskie Prints, you acknowledge that you
+            have read, understood, and agree to be bound by the following Terms
+            of Service. These terms protect both you as a customer and Jonayskie
+            Prints as a service provider.
+          </div>
+
+          <div className="tos-section">
+            <div className="tos-section-badge">01</div>
+            <h3 className="tos-section-title">Acceptance of Terms</h3>
+            <p>
+              By creating an account, placing an order, or using any of our
+              services, you confirm that you are at least 18 years of age and
+              have the legal capacity to enter into a binding agreement. Use of
+              this platform constitutes full acceptance of these terms.
+            </p>
+          </div>
+
+          <div className="tos-section">
+            <div className="tos-section-badge">02</div>
+            <h3 className="tos-section-title">Services Offered</h3>
+            <p>
+              Jonayskie Prints provides professional printing services
+              including, but not limited to: document printing, photocopying
+              (Xerox), scanning, photo development, and laminating. All services
+              are subject to availability and may vary based on current
+              equipment and supplies.
+            </p>
+          </div>
+
+          <div className="tos-section highlight-section">
+            <div className="tos-section-badge accent">03</div>
+            <h3 className="tos-section-title">
+              Large Orders & Downpayment Policy
+            </h3>
+            <div className="tos-highlight-box">
+              <div className="highlight-icon">₱</div>
+              <div>
+                <p>
+                  <strong>Orders exceeding ₱500.00</strong> are classified as
+                  large transactions and are subject to the following
+                  requirements:
+                </p>
+                <ul className="tos-list">
+                  <li>
+                    A <strong>downpayment of 50%</strong> of the total order
+                    amount must be settled online prior to processing.
+                  </li>
+                  <li>
+                    Downpayment may be made via GCash, Maya, or bank transfer to
+                    our registered account.
+                  </li>
+                  <li>
+                    The remaining balance is due upon pickup or delivery of the
+                    completed order.
+                  </li>
+                  <li>
+                    Orders will <strong>not be processed</strong> until the
+                    downpayment has been confirmed.
+                  </li>
+                  <li>
+                    In the event of order cancellation after processing has
+                    begun, the downpayment is <strong>non-refundable</strong>.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="tos-section highlight-section">
+            <div className="tos-section-badge accent">04</div>
+            <h3 className="tos-section-title">
+              Personal Information Requirements
+            </h3>
+            <div className="tos-highlight-box">
+              <div className="highlight-icon">👤</div>
+              <div>
+                <p>
+                  For large transactions and order verification purposes,
+                  Jonayskie Prints requires customers to provide complete and
+                  accurate personal information, including:
+                </p>
+                <ul className="tos-list">
+                  <li>
+                    <strong>Full legal name</strong> (first and last name)
+                  </li>
+                  <li>
+                    <strong>Valid contact number</strong> (active mobile number)
+                  </li>
+                  <li>
+                    <strong>Email address</strong> for order confirmations and
+                    receipts
+                  </li>
+                  <li>
+                    <strong>Complete delivery address</strong> (if delivery
+                    service is requested)
+                  </li>
+                  <li>
+                    A <strong>valid government-issued ID</strong> may be
+                    requested for orders above ₱1,000.00 for identity
+                    verification
+                  </li>
+                </ul>
+                <p style={{ marginTop: "0.75rem" }}>
+                  Providing false, incomplete, or misleading information may
+                  result in order cancellation and account suspension without
+                  refund.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="tos-section">
+            <div className="tos-section-badge">05</div>
+            <h3 className="tos-section-title">Order Processing & Turnaround</h3>
+            <p>
+              Standard orders are processed within 1–2 business days. Urgent
+              requests may be accommodated based on availability and may incur
+              additional rush fees. Jonayskie Prints is not liable for delays
+              caused by incomplete file submissions, unclear instructions, or
+              force majeure events.
+            </p>
+          </div>
+
+          <div className="tos-section">
+            <div className="tos-section-badge">06</div>
+            <h3 className="tos-section-title">File Submission & Quality</h3>
+            <p>
+              Customers are responsible for submitting print-ready files in
+              accepted formats (PDF, JPG, PNG, DOCX). Jonayskie Prints will
+              print files as submitted. We are not responsible for pixelation,
+              incorrect margins, spelling errors, or layout issues present in
+              the original file. A digital proof may be requested before final
+              printing.
+            </p>
+          </div>
+
+          <div className="tos-section">
+            <div className="tos-section-badge">07</div>
+            <h3 className="tos-section-title">Payments & Pricing</h3>
+            <p>
+              All prices are in Philippine Peso (PHP). Final pricing is
+              calculated based on paper size, color, quantity, and finishing
+              options. Quoted prices are valid for 48 hours. Jonayskie Prints
+              reserves the right to adjust pricing with reasonable notice.
+              Payment methods accepted include cash on pickup and online payment
+              for downpayments.
+            </p>
+          </div>
+
+          <div className="tos-section">
+            <div className="tos-section-badge">08</div>
+            <h3 className="tos-section-title">Cancellations & Refunds</h3>
+            <p>
+              Orders may be cancelled without charge prior to processing. Once
+              production has commenced, cancellations are not accepted and
+              downpayments are forfeited. In cases where Jonayskie Prints is
+              unable to fulfill an order, a full refund will be issued within
+              3–5 business days.
+            </p>
+          </div>
+
+          <div className="tos-section">
+            <div className="tos-section-badge">09</div>
+            <h3 className="tos-section-title">Privacy & Data Protection</h3>
+            <p>
+              Your personal information is collected solely for order processing
+              and service delivery purposes. We do not sell, rent, or share your
+              data with third parties. All submitted files are deleted from our
+              systems within 30 days of order completion unless you request
+              otherwise.
+            </p>
+          </div>
+
+          <div className="tos-section">
+            <div className="tos-section-badge">10</div>
+            <h3 className="tos-section-title">Prohibited Content</h3>
+            <p>
+              Jonayskie Prints reserves the right to refuse printing of any
+              content that is deemed illegal, defamatory, obscene, or in
+              violation of intellectual property rights. Customers are solely
+              responsible for ensuring their submitted content complies with
+              applicable laws and does not infringe on third-party rights.
+            </p>
+          </div>
+
+          <div className="tos-section">
+            <div className="tos-section-badge">11</div>
+            <h3 className="tos-section-title">Limitation of Liability</h3>
+            <p>
+              Jonayskie Prints' maximum liability for any claim arising from our
+              services shall not exceed the amount paid for the specific order
+              in question. We are not liable for indirect, incidental, or
+              consequential damages including lost profits, business
+              interruption, or data loss.
+            </p>
+          </div>
+
+          <div className="tos-section">
+            <div className="tos-section-badge">12</div>
+            <h3 className="tos-section-title">Amendments</h3>
+            <p>
+              Jonayskie Prints reserves the right to update these Terms of
+              Service at any time. Continued use of the platform after changes
+              are published constitutes acceptance of the updated terms.
+              Material changes will be communicated via email or platform
+              notification.
+            </p>
+          </div>
+
+          <div className="tos-contact-box">
+            <strong>Questions?</strong> Contact us at{" "}
+            <span>jonalynpascual2704@gmail.com</span> or call{" "}
+            <span>+63 935 033 6938</span> — Mon–Sat, 8:00 AM – 6:00 PM.
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="tos-footer">
+          {!hasScrolled && (
+            <p className="tos-scroll-hint">
+              ↓ Scroll to read all terms before accepting
+            </p>
+          )}
+          <div className="tos-footer-btns">
+            <button className="tos-btn-decline" onClick={onClose}>
+              Decline
+            </button>
+            <button
+              className={`tos-btn-accept ${hasScrolled ? "ready" : ""}`}
+              onClick={() => {
+                onAccept();
+                onClose();
+              }}
+            >
+              {hasScrolled ? "I Accept These Terms" : "Read All Terms First"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -209,6 +538,7 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [showTos, setShowTos] = useState(false);
   const [notification, setNotification] = useState<NotificationState>({
     message: "",
     type: "error",
@@ -286,7 +616,7 @@ export default function RegisterPage() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Playfair+Display:wght@700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { height: 100%; }
         body { font-family: 'DM Sans', sans-serif; min-height: 100vh; min-height: 100dvh; }
@@ -318,17 +648,8 @@ export default function RegisterPage() {
         }
 
         .card-header { text-align: center; margin-bottom: clamp(0.75rem, 2vw, 1rem); }
-
-        .brand-logo-wrap {
-          width: 100px; height: 100px;
-          overflow: visible; margin: 0 auto 0.25rem;
-          display: flex; align-items: center; justify-content: center;
-        }
-        .brand-logo {
-          width: 100px; height: 100px;
-          object-fit: contain; transform: none; display: block;
-        }
-
+        .brand-logo-wrap { width: 100px; height: 100px; overflow: visible; margin: 0 auto 0.25rem; display: flex; align-items: center; justify-content: center; }
+        .brand-logo { width: 100px; height: 100px; object-fit: contain; transform: none; display: block; }
         .card-title { font-size: clamp(1.25rem, 4.5vw, 1.6rem); font-weight: 700; color: #0f0e11; margin-bottom: 0.2rem; letter-spacing: -0.02em; }
         .card-subtitle { font-size: clamp(0.78rem, 2.3vw, 0.88rem); color: #6b7280; }
 
@@ -372,18 +693,24 @@ export default function RegisterPage() {
         .strength-label.medium { color: #d97706; }
         .strength-label.strong { color: #2d9b5a; }
 
-        .terms-row { display: flex; align-items: flex-start; gap: 0.55rem; margin-bottom: clamp(1rem, 3vw, 1.35rem); cursor: pointer; padding: 4px 0; }
+        .terms-row { display: flex; align-items: flex-start; gap: 0.55rem; margin-bottom: clamp(1rem, 3vw, 1.35rem); padding: 4px 0; }
         .custom-checkbox {
           width: clamp(16px, 3.5vw, 19px); height: clamp(16px, 3.5vw, 19px);
           border: 1.5px solid #d1d5db; border-radius: 4px; background: #fff;
           display: flex; align-items: center; justify-content: center;
-          transition: all 0.18s; flex-shrink: 0; margin-top: 2px;
+          transition: all 0.18s; flex-shrink: 0; margin-top: 2px; cursor: pointer;
         }
         .custom-checkbox.checked { background: #7c3aed; border-color: #7c3aed; }
         .custom-checkbox.err { border-color: #e63329; background: #fff8f8; }
         .terms-text { font-size: clamp(0.8rem, 2.3vw, 0.87rem); color: #374151; line-height: 1.5; user-select: none; }
-        .terms-text a { color: #7c3aed; font-weight: 600; text-decoration: none; }
-        .terms-text a:hover { opacity: 0.75; }
+        .terms-link {
+          color: #7c3aed; font-weight: 600; text-decoration: underline;
+          text-decoration-style: dotted; cursor: pointer;
+          background: none; border: none; font-family: 'DM Sans', sans-serif;
+          font-size: inherit; padding: 0; transition: opacity 0.2s;
+          display: inline;
+        }
+        .terms-link:hover { opacity: 0.75; }
 
         .btn-primary {
           width: 100%; padding: clamp(0.75rem, 3vw, 0.9rem);
@@ -412,7 +739,6 @@ export default function RegisterPage() {
           -webkit-tap-highlight-color: transparent;
         }
         .btn-google:hover { border-color: #d1d5db; background: #f9fafb; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .btn-google:active { background: #f3f4f6; }
 
         .divider {
           display: flex; align-items: center; gap: 0.75rem;
@@ -430,7 +756,6 @@ export default function RegisterPage() {
           transition: all 0.2s; -webkit-tap-highlight-color: transparent;
         }
         .btn-outline:hover { border-color: #7c3aed; background: #faf5ff; }
-        .btn-outline:active { background: #f3e8ff; }
 
         .spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite; flex-shrink: 0; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -449,10 +774,175 @@ export default function RegisterPage() {
         .notification.success { background: #2d9b5a; }
         .notification.error { background: #e63329; }
 
+        /* ═══════════════════════════════
+           TERMS OF SERVICE MODAL
+        ═══════════════════════════════ */
+        .tos-backdrop {
+          position: fixed; inset: 0; z-index: 1000;
+          background: rgba(10, 8, 20, 0.65);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          display: flex; align-items: center; justify-content: center;
+          padding: 1rem;
+          animation: backdropIn 0.25s ease;
+        }
+        @keyframes backdropIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .tos-modal {
+          background: #fff;
+          border-radius: 20px;
+          width: 100%; max-width: 580px;
+          max-height: 88vh;
+          display: flex; flex-direction: column;
+          box-shadow: 0 32px 80px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.15);
+          animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          overflow: hidden;
+        }
+        @keyframes modalIn {
+          from { opacity: 0; transform: scale(0.88) translateY(20px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .tos-header {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 1.4rem 1.6rem 1.1rem;
+          border-bottom: 1.5px solid #f0eef9;
+          flex-shrink: 0;
+        }
+        .tos-header-left { display: flex; align-items: center; gap: 0.85rem; }
+        .tos-icon-wrap {
+          width: 42px; height: 42px;
+          background: linear-gradient(135deg, #5b6dee, #7c3aed);
+          border-radius: 11px;
+          display: flex; align-items: center; justify-content: center;
+          color: #fff; flex-shrink: 0;
+        }
+        .tos-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: #0f0e11; letter-spacing: -0.02em; }
+        .tos-subtitle { font-size: 0.72rem; color: #9ca3af; font-weight: 400; margin-top: 1px; }
+        .tos-close-btn {
+          width: 36px; height: 36px; border-radius: 8px;
+          background: #f5f4f8; border: none; cursor: pointer; color: #6b7280;
+          display: flex; align-items: center; justify-content: center;
+          transition: background 0.18s, color 0.18s; flex-shrink: 0;
+        }
+        .tos-close-btn:hover { background: #ede9fb; color: #7c3aed; }
+
+        .tos-body {
+          flex: 1; overflow-y: auto; padding: 1.4rem 1.6rem;
+          scroll-behavior: smooth;
+        }
+        .tos-body::-webkit-scrollbar { width: 5px; }
+        .tos-body::-webkit-scrollbar-track { background: #f5f4f8; border-radius: 99px; }
+        .tos-body::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 99px; }
+
+        .tos-intro {
+          font-size: 0.87rem; color: #4b5563; line-height: 1.75;
+          background: #faf9ff; border-left: 3px solid #7c3aed;
+          padding: 0.9rem 1rem; border-radius: 0 8px 8px 0;
+          margin-bottom: 1.5rem; font-weight: 400;
+        }
+
+        .tos-section { margin-bottom: 1.5rem; }
+        .tos-section-badge {
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 28px; height: 28px; border-radius: 7px;
+          background: #f0eef9; color: #7c3aed;
+          font-size: 0.68rem; font-weight: 700; letter-spacing: 0.02em;
+          margin-bottom: 0.6rem;
+        }
+        .tos-section-badge.accent { background: linear-gradient(135deg, #5b6dee, #7c3aed); color: #fff; }
+        .tos-section-title {
+          font-family: 'Playfair Display', serif;
+          font-size: 1rem; color: #0f0e11;
+          margin-bottom: 0.5rem; letter-spacing: -0.01em;
+        }
+        .tos-section p { font-size: 0.855rem; color: #4b5563; line-height: 1.75; font-weight: 400; }
+
+        /* Highlighted policy boxes */
+        .highlight-section .tos-section-title { color: #1d4ed8; }
+        .tos-highlight-box {
+          background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
+          border: 1.5px solid #c7d2fe;
+          border-radius: 12px;
+          padding: 1rem 1.1rem;
+          display: flex; gap: 0.85rem; align-items: flex-start;
+        }
+        .highlight-icon {
+          width: 36px; height: 36px; border-radius: 10px;
+          background: linear-gradient(135deg, #2563eb, #7c3aed);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 1rem; flex-shrink: 0;
+          box-shadow: 0 3px 10px rgba(37,99,235,0.25);
+        }
+        .tos-list {
+          list-style: none; margin: 0.6rem 0 0; padding: 0;
+          display: flex; flex-direction: column; gap: 0.45rem;
+        }
+        .tos-list li {
+          font-size: 0.845rem; color: #374151; line-height: 1.65;
+          padding-left: 1.1rem; position: relative;
+        }
+        .tos-list li::before {
+          content: '›'; position: absolute; left: 0;
+          color: #7c3aed; font-weight: 700;
+        }
+
+        .tos-contact-box {
+          background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 10px;
+          padding: 1rem 1.1rem; font-size: 0.83rem; color: #4b5563; line-height: 1.6;
+          margin-top: 0.5rem;
+        }
+        .tos-contact-box span { color: #7c3aed; font-weight: 600; }
+
+        .tos-footer {
+          padding: 1rem 1.6rem 1.3rem;
+          border-top: 1.5px solid #f0eef9;
+          flex-shrink: 0;
+        }
+        .tos-scroll-hint {
+          text-align: center; font-size: 0.75rem; color: #9ca3af;
+          margin-bottom: 0.75rem; animation: bounceHint 1.8s ease infinite;
+        }
+        @keyframes bounceHint {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(3px); }
+        }
+        .tos-footer-btns { display: flex; gap: 0.75rem; }
+        .tos-btn-decline {
+          flex: 1; padding: 0.72rem;
+          background: transparent; color: #6b7280;
+          border: 1.5px solid #e5e7eb; border-radius: 10px;
+          font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
+          cursor: pointer; transition: all 0.2s;
+        }
+        .tos-btn-decline:hover { border-color: #d1d5db; background: #f9fafb; }
+
+        .tos-btn-accept {
+          flex: 2; padding: 0.72rem;
+          background: #e5e7eb; color: #9ca3af;
+          border: none; border-radius: 10px;
+          font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
+          cursor: not-allowed; transition: all 0.3s;
+        }
+        .tos-btn-accept.ready {
+          background: linear-gradient(135deg, #5b6dee, #7c3aed); color: #fff;
+          cursor: pointer; box-shadow: 0 4px 14px rgba(124,58,237,0.35);
+        }
+        .tos-btn-accept.ready:hover { opacity: 0.9; transform: translateY(-1px); }
+
         @media (max-width: 359px) { .card { padding: 1.35rem 1rem; } .name-grid { grid-template-columns: 1fr; gap: 0; } }
         @media (min-width: 540px) { .notification { top: 1.5rem; right: 1.5rem; left: auto; max-width: 340px; } }
         @media (min-width: 768px) { .card { padding: 2rem 2.5rem 2.75rem; } .page { align-items: center; } }
+        @media (max-width: 480px) { .tos-modal { max-height: 94vh; border-radius: 16px; } .tos-header { padding: 1.1rem 1.2rem 0.9rem; } .tos-body { padding: 1.1rem 1.2rem; } .tos-footer { padding: 0.9rem 1.2rem 1.1rem; } }
       `}</style>
+
+      {/* Terms of Service Modal */}
+      {showTos && (
+        <TermsModal
+          onClose={() => setShowTos(false)}
+          onAccept={() => setField("terms", true)}
+        />
+      )}
 
       <div className="page">
         <div className="card">
@@ -683,20 +1173,23 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div
-              className="terms-row"
-              onClick={() => setField("terms", !formData.terms)}
-            >
+            {/* Terms row */}
+            <div className="terms-row">
               <div
                 className={`custom-checkbox ${formData.terms ? "checked" : ""} ${errors.terms ? "err" : ""}`}
+                onClick={() => setField("terms", !formData.terms)}
               >
                 {formData.terms && <IconCheck />}
               </div>
               <span className="terms-text">
-                I agree to the{" "}
-                <a href="#" onClick={(e) => e.stopPropagation()}>
+                I have read and agree to the{" "}
+                <button
+                  type="button"
+                  className="terms-link"
+                  onClick={() => setShowTos(true)}
+                >
                   Terms of Service
-                </a>
+                </button>
               </span>
             </div>
             {errors.terms && (
