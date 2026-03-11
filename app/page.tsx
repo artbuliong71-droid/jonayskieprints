@@ -239,6 +239,21 @@ const IcoPrinterNav = () => (
     <rect x="6" y="14" width="12" height="8" />
   </svg>
 );
+const IcoArrowRight = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="5" y1="12" x2="19" y2="12" />
+    <polyline points="12 5 19 12 12 19" />
+  </svg>
+);
 
 const SERVICES: ServiceCard[] = [
   {
@@ -328,6 +343,102 @@ function useInView(threshold = 0.15) {
   return { ref, inView };
 }
 
+// Individual service card with hover/tap inquire overlay
+function ServiceCardItem({
+  service,
+  index,
+  inView,
+}: {
+  service: ServiceCard;
+  index: number;
+  inView: boolean;
+}) {
+  const [active, setActive] = useState(false);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsTouchDevice(window.matchMedia("(hover: none)").matches);
+  }, []);
+
+  // Close overlay when clicking outside on mobile
+  useEffect(() => {
+    if (!isTouchDevice || !active) return;
+    const handler = (e: MouseEvent) => {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+        setActive(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [isTouchDevice, active]);
+
+  const showOverlay = active;
+
+  const handleCardClick = () => {
+    if (isTouchDevice) {
+      setActive((v) => !v);
+    }
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      className={`service-card reveal ${inView ? "in" : ""} reveal-delay-${index + 1}`}
+      onMouseEnter={() => {
+        if (!isTouchDevice) setActive(true);
+      }}
+      onMouseLeave={() => {
+        if (!isTouchDevice) setActive(false);
+      }}
+      onClick={handleCardClick}
+      style={{ cursor: isTouchDevice ? "pointer" : "default" }}
+    >
+      {/* Normal card content */}
+      <div
+        className="service-card-content"
+        style={{
+          opacity: showOverlay ? 0 : 1,
+          transform: showOverlay
+            ? "scale(0.9) translateY(8px)"
+            : "scale(1) translateY(0)",
+          transition:
+            "opacity 0.32s cubic-bezier(.4,0,.2,1), transform 0.32s cubic-bezier(.4,0,.2,1)",
+        }}
+      >
+        <div className="service-icon-wrap">{service.icon}</div>
+        <div className="service-title">{service.title}</div>
+        <div className="service-desc">{service.description}</div>
+      </div>
+
+      {/* White aesthetic overlay */}
+      <div
+        className="service-inquire-overlay"
+        style={{
+          opacity: showOverlay ? 1 : 0,
+          transform: showOverlay ? "translateY(0)" : "translateY(14px)",
+          transition:
+            "opacity 0.32s cubic-bezier(.4,0,.2,1), transform 0.32s cubic-bezier(.4,0,.2,1)",
+          pointerEvents: showOverlay ? "all" : "none",
+        }}
+      >
+        {/* Soft shimmer ring behind icon */}
+        <div className="inquire-glow-ring" />
+        <div className="inquire-icon-wrap">{service.icon}</div>
+        <div className="inquire-title">{service.title}</div>
+        <div className="inquire-tagline">Tap to get started</div>
+        <Link
+          href="/login"
+          className="inquire-btn"
+          onClick={(e) => e.stopPropagation()}
+        >
+          Inquire Now <IcoArrowRight />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [activeNav, setActiveNav] = useState<NavSection>("home");
   const [hoveredNav, setHoveredNav] = useState<NavSection | null>(null);
@@ -414,93 +525,58 @@ export default function HomePage() {
         }
         .nav-bar.scrolled { padding: 8px 1.5rem; }
 
-        /* ── NAV INNER — white boxed pill ── */
         .nav-inner {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 0 1.5rem;
-          height: var(--nav-h);
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 1.5rem;
-          background: #ffffff;
-          border: 1.5px solid var(--border);
-          border-radius: 16px;
-          box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-          transition: box-shadow 0.25s;
-          overflow: visible;
+          max-width: 1100px; margin: 0 auto; padding: 0 1.5rem;
+          height: var(--nav-h); display: flex; align-items: center;
+          justify-content: space-between; gap: 1.5rem;
+          background: #ffffff; border: 1.5px solid var(--border);
+          border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+          transition: box-shadow 0.25s; overflow: visible;
         }
         .nav-bar.scrolled .nav-inner { box-shadow: 0 4px 24px rgba(0,0,0,0.11); }
 
-        /* ── LOGO — fixed size, independent of nav height ── */
         .nav-logo {
-          display: flex; align-items: center;
-          cursor: pointer; flex-shrink: 0;
-          transition: opacity 0.2s, transform 0.18s;
-          outline: none; border-radius: 8px;
+          display: flex; align-items: center; cursor: pointer; flex-shrink: 0;
+          transition: opacity 0.2s, transform 0.18s; outline: none; border-radius: 8px;
         }
         .nav-logo:hover { opacity: 0.72; transform: scale(1.05); }
         .nav-logo:active { transform: scale(0.95); opacity: 0.5; }
-        .nav-logo img {
-          height: var(--logo-h);
-          width: auto;
-          max-width: 200px;
-          object-fit: contain;
-          display: block;
-        }
+        .nav-logo img { height: var(--logo-h); width: auto; max-width: 200px; object-fit: contain; display: block; }
 
-        /* ── NAV LINKS ── */
-        .nav-links {
-          display: flex; align-items: center; gap: 0.1rem;
-          list-style: none; flex: 1; justify-content: center;
-        }
+        .nav-links { display: flex; align-items: center; gap: 0.1rem; list-style: none; flex: 1; justify-content: center; }
         .nav-link-btn {
           background: none; border: none; cursor: pointer;
           padding: 0.45rem 0.9rem; border-radius: 7px;
-          font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
-          font-weight: 500; color: var(--ink);
-          transition: color 0.15s, opacity 0.15s;
-          white-space: nowrap;
+          font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; color: var(--ink);
+          transition: color 0.15s, opacity 0.15s; white-space: nowrap;
         }
         .nav-link-btn.active { color: var(--accent); font-weight: 600; }
         .nav-link-btn.hovered { color: var(--accent); font-weight: 600; opacity: 1; }
         .nav-link-btn.dimmed { color: var(--muted); opacity: 0.45; }
 
-        /* ── RIGHT ACTIONS ── */
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
         .btn-login {
           padding: 0.45rem 1.2rem; background: var(--accent); color: #fff;
-          border: none; border-radius: 99px;
-          font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
-          cursor: pointer; text-decoration: none; transition: background 0.2s, transform 0.15s;
-          display: inline-flex; align-items: center;
+          border: none; border-radius: 99px; font-family: 'DM Sans', sans-serif;
+          font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none;
+          transition: background 0.2s, transform 0.15s; display: inline-flex; align-items: center;
         }
         .btn-login:hover { background: var(--accent-dark); transform: translateY(-1px); }
         .btn-register {
           padding: 0.45rem 1.2rem; background: transparent; color: var(--accent);
           border: 1.5px solid var(--accent); border-radius: 99px;
           font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
-          cursor: pointer; text-decoration: none; transition: all 0.2s;
-          display: inline-flex; align-items: center;
+          cursor: pointer; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center;
         }
         .btn-register:hover { background: rgba(37,99,235,0.06); }
 
-        .hamburger {
-          display: none; background: none; border: none;
-          cursor: pointer; color: var(--ink); padding: 4px; flex-shrink: 0;
-        }
+        .hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--ink); padding: 4px; flex-shrink: 0; }
 
-        /* ── MOBILE MENU ── */
         .mobile-menu {
-          position: fixed;
-          top: calc(var(--nav-h) + var(--nav-pad) * 2 + 8px);
-          left: 1.5rem; right: 1.5rem;
-          background: #fff;
-          border: 1.5px solid var(--border);
-          border-radius: 14px;
-          padding: 1rem 1.25rem 1.25rem;
-          z-index: 190;
+          position: fixed; top: calc(var(--nav-h) + var(--nav-pad) * 2 + 8px);
+          left: 1.5rem; right: 1.5rem; background: #fff;
+          border: 1.5px solid var(--border); border-radius: 14px;
+          padding: 1rem 1.25rem 1.25rem; z-index: 190;
           transform: translateY(-20px); opacity: 0; pointer-events: none;
           transition: transform 0.25s, opacity 0.25s;
           box-shadow: 0 8px 32px rgba(0,0,0,0.1);
@@ -516,8 +592,7 @@ export default function HomePage() {
         .mobile-nav-btn:hover { background: rgba(0,0,0,0.04); }
         .mobile-nav-btn.active { color: var(--accent); font-weight: 600; }
         .mobile-actions { display: flex; gap: 0.75rem; }
-        .mobile-actions .btn-login,
-        .mobile-actions .btn-register { flex: 1; justify-content: center; }
+        .mobile-actions .btn-login, .mobile-actions .btn-register { flex: 1; justify-content: center; }
 
         /* ── HERO ── */
         .hero {
@@ -630,11 +705,98 @@ export default function HomePage() {
         /* ── SERVICES ── */
         .services-section { background: #fff; min-height: 100vh; display: flex; align-items: center; }
         .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+
+        /* ── SERVICE CARD with hover overlay ── */
         .service-card {
           background: var(--paper); border: 1.5px solid var(--border); border-radius: 14px;
-          padding: 2rem 1.5rem; text-align: center; transition: box-shadow 0.2s;
+          padding: 2rem 1.5rem; text-align: center;
+          transition: box-shadow 0.3s, border-color 0.3s, transform 0.3s;
+          position: relative; overflow: hidden;
+          min-height: 180px; display: flex; align-items: center; justify-content: center;
         }
-        .service-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
+        .service-card:hover {
+          box-shadow: 0 8px 36px rgba(0,0,0,0.10);
+          border-color: #d0cdc8;
+          transform: translateY(-3px);
+        }
+
+        .service-card-content {
+          display: flex; flex-direction: column; align-items: center;
+          width: 100%;
+        }
+
+        /* ── WHITE AESTHETIC OVERLAY ── */
+        .service-inquire-overlay {
+          position: absolute; inset: 0;
+          background: rgba(255, 255, 255, 0.97);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-radius: 13px;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          gap: 0.45rem; padding: 1.5rem;
+          z-index: 10;
+        }
+
+        /* Soft glow ring behind icon */
+        .inquire-glow-ring {
+          position: absolute;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -62%);
+          width: 90px; height: 90px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(37,99,235,0.10) 0%, transparent 70%);
+          pointer-events: none;
+          animation: glowPulse 2.2s ease-in-out infinite;
+        }
+        @keyframes glowPulse {
+          0%, 100% { transform: translate(-50%, -62%) scale(1); opacity: 0.7; }
+          50% { transform: translate(-50%, -62%) scale(1.18); opacity: 1; }
+        }
+
+        .inquire-icon-wrap {
+          width: 52px; height: 52px;
+          background: #fff;
+          border: 1.5px solid var(--border);
+          border-radius: 14px;
+          display: flex; align-items: center; justify-content: center;
+          color: var(--accent);
+          box-shadow: 0 2px 12px rgba(37,99,235,0.10);
+          position: relative; z-index: 1;
+          margin-bottom: 0.15rem;
+        }
+
+        .inquire-title {
+          font-family: 'Playfair Display', serif;
+          font-size: 1rem; color: var(--ink); font-weight: 700;
+          text-align: center; line-height: 1.3;
+          position: relative; z-index: 1;
+        }
+
+        .inquire-tagline {
+          font-size: 0.75rem; color: var(--muted);
+          font-weight: 400; letter-spacing: 0.02em;
+          position: relative; z-index: 1;
+        }
+
+        .inquire-btn {
+          margin-top: 0.55rem;
+          padding: 0.55rem 1.4rem;
+          background: var(--ink); color: #fff;
+          border: none; border-radius: 99px;
+          font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 600;
+          cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;
+          text-decoration: none;
+          transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
+          box-shadow: 0 4px 14px rgba(15,14,17,0.18);
+          letter-spacing: 0.01em;
+          position: relative; z-index: 1;
+        }
+        .inquire-btn:hover {
+          background: var(--accent); transform: translateY(-1px);
+          box-shadow: 0 6px 20px rgba(37,99,235,0.28);
+        }
+        .inquire-btn:active { transform: translateY(0); }
+
         .service-icon-wrap {
           width: 56px; height: 56px; background: var(--accent); border-radius: 14px;
           display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: #fff;
@@ -684,6 +846,21 @@ export default function HomePage() {
         .footer-link-btn:hover { color: rgba(255,255,255,0.85); }
         .footer-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: rgba(255,255,255,0.25); flex-wrap: wrap; gap: 0.5rem; }
 
+        /* ── SERVICES HINT TEXT ── */
+        .services-hint {
+          font-size: 0.8rem; color: var(--muted); font-weight: 400;
+          display: flex; align-items: center; gap: 0.4rem; margin-bottom: 2rem;
+          opacity: 0.75;
+        }
+        .services-hint-dot {
+          width: 6px; height: 6px; background: var(--accent);
+          border-radius: 50%; animation: pulse 2s ease infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.5; transform: scale(0.7); }
+        }
+
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(24px); }
           to { opacity: 1; transform: translateY(0); }
@@ -707,6 +884,8 @@ export default function HomePage() {
           .section-inner { padding: 3.5rem 1.25rem; }
           :root { --nav-h: 58px; --nav-pad: 10px; --logo-h: 64px; }
         }
+
+
       `}</style>
 
       {/* ── NAV ── */}
@@ -856,16 +1035,19 @@ export default function HomePage() {
             From everyday document printing to specialized photo development, we
             cover all your printing needs under one roof.
           </p>
+          {/* Hover hint */}
+          <div className="services-hint">
+            <span className="services-hint-dot" />
+            Hover over any service to inquire
+          </div>
           <div className="services-grid">
             {SERVICES.map((s, i) => (
-              <div
+              <ServiceCardItem
                 key={s.title}
-                className={`service-card reveal ${servicesReveal.inView ? "in" : ""} reveal-delay-${i + 1}`}
-              >
-                <div className="service-icon-wrap">{s.icon}</div>
-                <div className="service-title">{s.title}</div>
-                <div className="service-desc">{s.description}</div>
-              </div>
+                service={s}
+                index={i}
+                inView={servicesReveal.inView}
+              />
             ))}
           </div>
         </div>
