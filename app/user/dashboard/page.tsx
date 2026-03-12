@@ -89,6 +89,35 @@ async function getPdfPageCount(file: File): Promise<number> {
   }
 }
 
+async function getDocxPageCount(file: File): Promise<number> {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    // DOCX files are ZIP archives. app.xml contains <Pages>N</Pages>.
+    // We decode the raw bytes as UTF-8 and search for the Pages tag.
+    const text = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    const match = text.match(/<Pages>(\d+)<\/Pages>/);
+    return match ? parseInt(match[1], 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function countPagesFromFiles(files: FileList): Promise<number> {
+  let total = 0;
+  for (const f of Array.from(files)) {
+    const name = f.name.toLowerCase();
+    if (name.endsWith(".pdf")) {
+      const n = await getPdfPageCount(f);
+      total += n;
+    } else if (name.endsWith(".docx")) {
+      const n = await getDocxPageCount(f);
+      total += n;
+    }
+  }
+  return total;
+}
+
 function formatPickupTime(time24: string): string {
   try {
     const [h, m] = time24.split(":");
@@ -937,7 +966,6 @@ function FirstLoginTosModal({
                   gap: ".65rem",
                 }}
               >
-                {/* GCash-only rule */}
                 <div
                   style={{
                     background: "linear-gradient(135deg,#f5f3ff,#faf5ff)",
@@ -1026,7 +1054,6 @@ function FirstLoginTosModal({
                     </ul>
                   </div>
                 </div>
-                {/* Cash + downpayment rule */}
                 <div
                   style={{
                     background: "linear-gradient(135deg,#eff6ff,#f5f3ff)",
@@ -1180,7 +1207,6 @@ function FirstLoginTosModal({
                     flexShrink: 0,
                   }}
                 >
-                  {/* User icon instead of emoji */}
                   <svg
                     width="18"
                     height="18"
@@ -2037,47 +2063,58 @@ function DashboardPageInner() {
         )
       : 0;
 
+  // ── NEW: unified multi-file handler for new order ──
   async function handleFileChange(files: FileList | null) {
+    if (!files || files.length === 0) return;
     setNoFiles(files);
     setNoPdfPages(0);
-    if (!files || files.length === 0) return;
+    setNoQuantity("");
     if (noService === "Print" || noService === "Photocopy") {
-      const pdfFile = Array.from(files).find((f) =>
-        f.name.toLowerCase().endsWith(".pdf"),
-      );
-      if (pdfFile) {
-        const pages = await getPdfPageCount(pdfFile);
-        if (pages > 0) {
-          setNoPdfPages(pages);
-          const copies = Number(noCopies) || 1;
-          setNoQuantity(pages * copies);
-          showToast(
-            `PDF: ${pages} pages × ${copies} copies = ${pages * copies} total`,
-            "success",
-          );
-        }
+      const totalPages = await countPagesFromFiles(files);
+      if (totalPages > 0) {
+        setNoPdfPages(totalPages);
+        const copies = Number(noCopies) || 1;
+        setNoQuantity(totalPages * copies);
+        const fileCount = Array.from(files).filter((f) => {
+          const n = f.name.toLowerCase();
+          return n.endsWith(".pdf") || n.endsWith(".docx");
+        }).length;
+        showToast(
+          `${fileCount} file${fileCount > 1 ? "s" : ""} — ${totalPages} total page${totalPages > 1 ? "s" : ""} × ${copies} copies = ${totalPages * copies} total`,
+          "success",
+        );
+      } else {
+        setNoQuantity("");
+        setNoPdfPages(0);
       }
     }
   }
 
+  // ── NEW: unified multi-file handler for edit order ──
   async function handleEditFileChange(files: FileList | null) {
+    if (!files || files.length === 0) {
+      setEoPdfPages(0);
+      setEoQuantity("");
+      return;
+    }
     setEoPdfPages(0);
-    if (!files || files.length === 0) return;
     if (eoService === "Print" || eoService === "Photocopy") {
-      const pdfFile = Array.from(files).find((f) =>
-        f.name.toLowerCase().endsWith(".pdf"),
-      );
-      if (pdfFile) {
-        const pages = await getPdfPageCount(pdfFile);
-        if (pages > 0) {
-          setEoPdfPages(pages);
-          const copies = Number(eoCopies) || 1;
-          setEoQuantity(pages * copies);
-          showToast(
-            `PDF: ${pages} pages × ${copies} copies = ${pages * copies} total`,
-            "success",
-          );
-        }
+      const totalPages = await countPagesFromFiles(files);
+      if (totalPages > 0) {
+        setEoPdfPages(totalPages);
+        const copies = Number(eoCopies) || 1;
+        setEoQuantity(totalPages * copies);
+        const fileCount = Array.from(files).filter((f) => {
+          const n = f.name.toLowerCase();
+          return n.endsWith(".pdf") || n.endsWith(".docx");
+        }).length;
+        showToast(
+          `${fileCount} file${fileCount > 1 ? "s" : ""} — ${totalPages} total page${totalPages > 1 ? "s" : ""} × ${copies} copies = ${totalPages * copies} total`,
+          "success",
+        );
+      } else {
+        setEoQuantity("");
+        setEoPdfPages(0);
       }
     }
   }
@@ -2730,6 +2767,9 @@ function DashboardPageInner() {
         .np-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:np-spin .65s linear infinite}
         @keyframes np-fadeup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
         .np-fadein{animation:np-fadeup .24s ease both}
+        .file-list{margin-top:.4rem;display:flex;flex-direction:column;gap:3px}
+        .file-item{display:flex;align-items:center;gap:.35rem;font-size:.7rem;color:var(--muted);background:#f9fafb;border:1px solid var(--border);border-radius:6px;padding:.28rem .55rem}
+        .file-item-badge{font-size:.58rem;font-weight:700;padding:1px 5px;border-radius:4px;background:#ede9fe;color:#7c3aed;flex-shrink:0}
         @media(max-width:359px){.p-grid{grid-template-columns:repeat(2,1fr);gap:.4rem}.stats-grid{grid-template-columns:1fr 1fr}.btn-row{flex-direction:column-reverse}.btn-row.between{flex-direction:row}.form-row-2{grid-template-columns:1fr}}
         @media(min-width:360px) and (max-width:479px){.p-grid{grid-template-columns:repeat(2,1fr);gap:.5rem}.form-row-2{grid-template-columns:1fr}}
         @media(min-width:480px) and (max-width:639px){.p-grid{grid-template-columns:repeat(3,1fr);gap:.5rem}.stats-grid{grid-template-columns:repeat(2,1fr)}}
@@ -2894,7 +2934,34 @@ function DashboardPageInner() {
                 </div>
               </div>
               <div className="card" style={{ overflow: "hidden" }}>
-                <div className="card-head">Recent Orders</div>
+                <div
+                  className="card-head"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <span>Recent Orders</span>
+                  <button
+                    onClick={() => setActiveSection("orders")}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "#7c3aed",
+                      fontSize: ".75rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: ".25rem",
+                      padding: "2px 0",
+                      fontFamily: "'Inter',sans-serif",
+                    }}
+                  >
+                    View All →
+                  </button>
+                </div>
                 {recentOrders.length === 0 ? (
                   <div className="ro-empty">No orders yet</div>
                 ) : (
@@ -2913,6 +2980,9 @@ function DashboardPageInner() {
                         <tr
                           key={`recent-${o.order_id ?? idx}`}
                           className="ro-row"
+                          onClick={() => setActiveSection("orders")}
+                          style={{ cursor: "pointer" }}
+                          title="View in My Orders"
                         >
                           <td className="ro-id">#{displayId(o.order_id)}</td>
                           <td className="ro-svc">{o.service}</td>
@@ -3030,7 +3100,8 @@ function DashboardPageInner() {
                             }}
                           />
                           <div className="hint-text">
-                            Upload PDF in Step 3 — pages will be auto-counted
+                            Upload PDF/DOCX in Step 3 — pages will be
+                            auto-counted
                           </div>
                           {noPdfPages > 0 && Number(noCopies) > 0 && (
                             <div className="copies-info">
@@ -3295,7 +3366,7 @@ function DashboardPageInner() {
                             marginLeft: 5,
                           }}
                         >
-                          (Optional for Scanning/Laminating)
+                          (PDF, JPG, PNG, DOCX — multiple files allowed)
                         </span>
                       </label>
                       <input
@@ -3303,22 +3374,55 @@ function DashboardPageInner() {
                         type="file"
                         multiple
                         ref={fileInputRef}
-                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                        onChange={(e) => handleFileChange(e.target.files)}
+                        accept=".pdf,.jpg,.jpeg,.png,.docx"
+                        onChange={(e) => {
+                          if (e.target.files && e.target.files.length > 0) {
+                            handleFileChange(e.target.files);
+                          }
+                          // if e.target.files is empty (user cancelled), do nothing — keep previous noFiles
+                        }}
                       />
-                      {noFiles &&
-                        Array.from(noFiles).map((f, fi) => (
-                          <div
-                            key={`${fi}-${f.name}`}
-                            style={{
-                              fontSize: ".7rem",
-                              color: "var(--muted)",
-                              marginTop: 3,
-                            }}
-                          >
-                            📎 {f.name}
-                          </div>
-                        ))}
+                      {/* File list display */}
+                      {noFiles && noFiles.length > 0 && (
+                        <div className="file-list">
+                          {Array.from(noFiles).map((f, fi) => {
+                            const ext =
+                              f.name.split(".").pop()?.toLowerCase() ?? "";
+                            const isPaged = ext === "pdf" || ext === "docx";
+                            return (
+                              <div
+                                key={`${fi}-${f.name}`}
+                                className="file-item"
+                              >
+                                <IC.PDF />
+                                <span
+                                  style={{
+                                    flex: 1,
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {f.name}
+                                </span>
+                                <span
+                                  className="file-item-badge"
+                                  style={
+                                    isPaged
+                                      ? {}
+                                      : {
+                                          background: "#f3f4f6",
+                                          color: "#6b7280",
+                                        }
+                                  }
+                                >
+                                  {ext.toUpperCase()}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                       {noPdfPages > 0 && (
                         <div className="pdf-info">
                           <IC.PDF />
@@ -3338,7 +3442,6 @@ function DashboardPageInner() {
                         Payment Method
                       </div>
 
-                      {/* Top-level toggle: Cash vs GCash */}
                       <div
                         style={{
                           display: "flex",
@@ -3408,7 +3511,6 @@ function DashboardPageInner() {
                         ))}
                       </div>
 
-                      {/* CASH selected */}
                       {noPaymentMethod === "cash" && (
                         <div
                           style={{
@@ -3439,7 +3541,6 @@ function DashboardPageInner() {
                         </div>
                       )}
 
-                      {/* GCASH selected */}
                       {noPaymentMethod === "gcash" && (
                         <div
                           style={{
@@ -3448,7 +3549,6 @@ function DashboardPageInner() {
                             overflow: "hidden",
                           }}
                         >
-                          {/* Header */}
                           <div
                             style={{
                               background:
@@ -3485,7 +3585,6 @@ function DashboardPageInner() {
                           </div>
 
                           <div style={{ padding: "1rem" }}>
-                            {/* Payment type sub-toggle */}
                             <div style={{ marginBottom: "1rem" }}>
                               <div
                                 style={{
@@ -3621,7 +3720,6 @@ function DashboardPageInner() {
                                 )}
                             </div>
 
-                            {/* Amount to send */}
                             <div
                               style={{
                                 background: "#f5f3ff",
@@ -3659,7 +3757,6 @@ function DashboardPageInner() {
                               </span>
                             </div>
 
-                            {/* Step 1 — QR */}
                             <div
                               style={{
                                 display: "flex",
@@ -3788,7 +3885,6 @@ function DashboardPageInner() {
                               </div>
                             </div>
 
-                            {/* Step 2 — Reference number */}
                             <div
                               style={{
                                 display: "flex",
@@ -3845,7 +3941,6 @@ function DashboardPageInner() {
                               </div>
                             </div>
 
-                            {/* Step 3 — Upload receipt */}
                             <div
                               style={{
                                 display: "flex",
@@ -4136,7 +4231,16 @@ function DashboardPageInner() {
                                         marginTop: 1,
                                       }}
                                     >
-                                      {noPdfPages} pages × {noCopies} copies
+                                      {noPdfPages} pages × {noCopies} copies × ₱
+                                      {(
+                                        (noService.toLowerCase() === "print"
+                                          ? noColorOption === "color"
+                                            ? sp(prices.print_color, 2)
+                                            : sp(prices.print_bw, 1)
+                                          : sp(prices.photocopying, 2)) *
+                                        (PAPER_MULTIPLIERS[noPaperSize] ?? 1)
+                                      ).toFixed(2)}
+                                      /page
                                     </span>
                                   )}
                                   {showsCopies && noPdfPages === 0 && (
@@ -4148,7 +4252,16 @@ function DashboardPageInner() {
                                         marginTop: 1,
                                       }}
                                     >
-                                      {effectiveQuantity} pages
+                                      {effectiveQuantity} copies × ₱
+                                      {(
+                                        (noService.toLowerCase() === "print"
+                                          ? noColorOption === "color"
+                                            ? sp(prices.print_color, 2)
+                                            : sp(prices.print_bw, 1)
+                                          : sp(prices.photocopying, 2)) *
+                                        (PAPER_MULTIPLIERS[noPaperSize] ?? 1)
+                                      ).toFixed(2)}
+                                      /page
                                     </span>
                                   )}
                                   {!showsCopies && (
@@ -4209,7 +4322,6 @@ function DashboardPageInner() {
                           )}
                       </div>
 
-                      {/* Grand Total */}
                       <div
                         style={{
                           background: "linear-gradient(135deg,#f5f3ff,#ede9fe)",
@@ -4242,7 +4354,6 @@ function DashboardPageInner() {
                         </span>
                       </div>
 
-                      {/* Payment method indicator */}
                       <div
                         style={{
                           display: "flex",
@@ -4296,7 +4407,6 @@ function DashboardPageInner() {
                         </span>
                       </div>
 
-                      {/* Amount due now (GCash only) */}
                       {noPaymentMethod === "gcash" && (
                         <div
                           style={{
@@ -4331,7 +4441,6 @@ function DashboardPageInner() {
                         </div>
                       )}
 
-                      {/* Downpayment balance notice */}
                       {noPaymentMethod === "gcash" &&
                         noGcashPayType === "downpayment" &&
                         summaryTotal >= 500 && (
@@ -4370,7 +4479,6 @@ function DashboardPageInner() {
                           </div>
                         )}
 
-                      {/* Cash + large order reminder */}
                       {noPaymentMethod === "cash" && summaryTotal >= 500 && (
                         <div
                           style={{
@@ -5793,7 +5901,7 @@ function DashboardPageInner() {
                       marginLeft: 5,
                     }}
                   >
-                    (Optional)
+                    (PDF, JPG, PNG, DOCX — multiple files allowed)
                   </span>
                 </label>
                 <input
@@ -5801,9 +5909,50 @@ function DashboardPageInner() {
                   type="file"
                   multiple
                   ref={editFileInputRef}
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  accept=".pdf,.jpg,.jpeg,.png,.docx"
                   onChange={(e) => handleEditFileChange(e.target.files)}
                 />
+                {/* File list display for edit modal */}
+                {editFileInputRef.current?.files &&
+                  editFileInputRef.current.files.length > 0 && (
+                    <div className="file-list">
+                      {Array.from(editFileInputRef.current.files).map(
+                        (f, fi) => {
+                          const ext =
+                            f.name.split(".").pop()?.toLowerCase() ?? "";
+                          const isPaged = ext === "pdf" || ext === "docx";
+                          return (
+                            <div key={`${fi}-${f.name}`} className="file-item">
+                              <IC.PDF />
+                              <span
+                                style={{
+                                  flex: 1,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {f.name}
+                              </span>
+                              <span
+                                className="file-item-badge"
+                                style={
+                                  isPaged
+                                    ? {}
+                                    : {
+                                        background: "#f3f4f6",
+                                        color: "#6b7280",
+                                      }
+                                }
+                              >
+                                {ext.toUpperCase()}
+                              </span>
+                            </div>
+                          );
+                        },
+                      )}
+                    </div>
+                  )}
                 {eoPdfPages > 0 && (
                   <div className="pdf-info">
                     <IC.PDF />
