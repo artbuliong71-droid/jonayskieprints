@@ -20,6 +20,8 @@ export interface IOrder extends Document {
   payment_method: string;
   total_amount: number;
   files: IFileData[];
+  gcash_ref_num: string | null;
+  gcash_receipt_url: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -55,6 +57,8 @@ const OrderSchema = new Schema<IOrder>({
   payment_method: { type: String, default: "cash" },
   total_amount: { type: Number, required: true, default: 0 },
   files: { type: [FileDataSchema], default: [] },
+  gcash_ref_num: { type: String, default: null },
+  gcash_receipt_url: { type: String, default: null },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now },
 });
