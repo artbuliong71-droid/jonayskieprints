@@ -345,15 +345,17 @@ export async function POST(req: NextRequest) {
       prices,
     );
 
-    // ✅ Upload all files to Cloudinary before saving the order
+    // ── Read payment method and GCash fields ──────────────────────────────────
+    const payment_method = (formData.get("payment_method") as string) || "Cash";
+    const gcash_ref_num = (formData.get("gcash_ref_num") as string) || null;
+
+    // ── Upload order files to Cloudinary ─────────────────────────────────────
     const uploadedFiles: { url: string; resource_type: string }[] = [];
     const fileEntries = formData.getAll("files") as File[];
-
     for (const file of fileEntries) {
       if (!file || typeof file === "string" || file.size === 0) continue;
       try {
         const buffer = Buffer.from(await file.arrayBuffer());
-        // ✅ Pass file.name so isPdf detection works correctly
         const result = await uploadToCloudinary(buffer, file.name);
         uploadedFiles.push({
           url: result.url,
@@ -365,7 +367,25 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ✅ Save order with files
+    // ── Upload GCash receipt to Cloudinary ────────────────────────────────────
+    let gcash_receipt_url: string | null = null;
+    const gcashReceiptFile = formData.get("gcash_receipt") as File | null;
+    if (
+      gcashReceiptFile &&
+      typeof gcashReceiptFile !== "string" &&
+      gcashReceiptFile.size > 0
+    ) {
+      try {
+        const buffer = Buffer.from(await gcashReceiptFile.arrayBuffer());
+        const result = await uploadToCloudinary(buffer, gcashReceiptFile.name);
+        gcash_receipt_url = result.url;
+        console.log(`[GCASH RECEIPT UPLOAD] → ${result.url}`);
+      } catch (uploadErr) {
+        console.error("[GCASH RECEIPT UPLOAD ERROR]", uploadErr);
+      }
+    }
+
+    // ── Save order ────────────────────────────────────────────────────────────
     const order = await Order.create({
       user_id: new mongoose.Types.ObjectId(session.userId),
       service,
@@ -375,7 +395,9 @@ export async function POST(req: NextRequest) {
       delivery_address,
       pickup_time,
       total_amount,
-      payment_method: "cash",
+      payment_method,
+      gcash_ref_num,
+      gcash_receipt_url,
       files: uploadedFiles,
     });
 
@@ -428,7 +450,6 @@ function buildSpecifications(formData: FormData): string {
   return parts.join("\n");
 }
 
-// ✅ Always include files in every order response
 function formatOrder(order: any) {
   return {
     order_id: order.order_id || order._id.toString(),
@@ -440,6 +461,8 @@ function formatOrder(order: any) {
     pickup_time: order.pickup_time || null,
     status: order.status,
     payment_method: order.payment_method,
+    gcash_ref_num: order.gcash_ref_num || null,
+    gcash_receipt_url: order.gcash_receipt_url || null,
     total_amount: Number(order.total_amount).toFixed(2),
     created_at: order.created_at,
     updated_at: order.updated_at,
