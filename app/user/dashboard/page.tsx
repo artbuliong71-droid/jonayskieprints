@@ -5901,7 +5901,7 @@ function DashboardPageInner() {
                       marginLeft: 5,
                     }}
                   >
-                    (PDF, JPG, PNG, DOCX — multiple files allowed)
+                    (PDF, JPG, PNG, DOCX)
                   </span>
                 </label>
                 <input
