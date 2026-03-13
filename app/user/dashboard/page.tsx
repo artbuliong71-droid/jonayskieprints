@@ -113,11 +113,12 @@ async function countPagesFromFiles(files: FileList): Promise<number> {
     } else if (name.endsWith(".docx")) {
       const n = await getDocxPageCount(f);
       total += n;
+    } else {
+      total += 1; // ← each image file (PNG, JPG) counts as 1 page
     }
   }
   return total;
 }
-
 function formatPickupTime(time24: string): string {
   try {
     const [h, m] = time24.split(":");
@@ -3370,7 +3371,7 @@ function DashboardPageInner() {
                             marginLeft: 5,
                           }}
                         >
-                          (PDF, JPG, PNG, DOCX — multiple files allowed)
+                          (PDF, JPG, PNG, DOCX)
                         </span>
                       </label>
                       <input

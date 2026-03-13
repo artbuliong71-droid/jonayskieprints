@@ -397,52 +397,8 @@ function TermsModal({
           </div>
 
           {/* 04 */}
-          <div className="tos-section highlight-section">
-            <div className="tos-section-badge accent">04</div>
-            <h3 className="tos-section-title">
-              Personal Information Requirements
-            </h3>
-            <div className="tos-highlight-box">
-              <div className="highlight-icon">👤</div>
-              <div>
-                <p>
-                  For large transactions and order verification purposes,
-                  Jonayskie Prints requires customers to provide complete and
-                  accurate personal information, including:
-                </p>
-                <ul className="tos-list">
-                  <li>
-                    <strong>Full legal name</strong> (first and last name)
-                  </li>
-                  <li>
-                    <strong>Valid contact number</strong> (active mobile number)
-                  </li>
-                  <li>
-                    <strong>Email address</strong> for order confirmations and
-                    receipts
-                  </li>
-                  <li>
-                    <strong>Complete delivery address</strong> (if delivery
-                    service is requested)
-                  </li>
-                  <li>
-                    A <strong>valid government-issued ID</strong> may be
-                    requested for orders above ₱1,000.00 for identity
-                    verification
-                  </li>
-                </ul>
-                <p style={{ marginTop: "0.75rem" }}>
-                  Providing false, incomplete, or misleading information may
-                  result in order cancellation and account suspension without
-                  refund.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* 05 */}
           <div className="tos-section">
-            <div className="tos-section-badge">05</div>
+            <div className="tos-section-badge">04</div>
             <h3 className="tos-section-title">
               Order Processing &amp; Turnaround
             </h3>
@@ -455,9 +411,9 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 06 */}
+          {/* 05 */}
           <div className="tos-section">
-            <div className="tos-section-badge">06</div>
+            <div className="tos-section-badge">05</div>
             <h3 className="tos-section-title">File Submission &amp; Quality</h3>
             <p>
               Customers are responsible for submitting print-ready files in
@@ -469,9 +425,9 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 07 — UPDATED: GCash clarification */}
+          {/* 06 — UPDATED: GCash clarification */}
           <div className="tos-section">
-            <div className="tos-section-badge">07</div>
+            <div className="tos-section-badge">06</div>
             <h3 className="tos-section-title">Payments &amp; Pricing</h3>
             <p>
               All prices are in Philippine Peso (PHP). Final pricing is
@@ -487,9 +443,9 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 08 */}
+          {/* 07 */}
           <div className="tos-section">
-            <div className="tos-section-badge">08</div>
+            <div className="tos-section-badge">07</div>
             <h3 className="tos-section-title">Cancellations &amp; Refunds</h3>
             <p>
               Orders may be cancelled without charge prior to processing. Once
@@ -500,9 +456,9 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 09 */}
+          {/* 08 */}
           <div className="tos-section">
-            <div className="tos-section-badge">09</div>
+            <div className="tos-section-badge">08</div>
             <h3 className="tos-section-title">Privacy &amp; Data Protection</h3>
             <p>
               Your personal information is collected solely for order processing
@@ -513,9 +469,9 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 10 */}
+          {/* 9 */}
           <div className="tos-section">
-            <div className="tos-section-badge">10</div>
+            <div className="tos-section-badge">09</div>
             <h3 className="tos-section-title">Prohibited Content</h3>
             <p>
               Jonayskie Prints reserves the right to refuse printing of any
@@ -526,9 +482,9 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 11 */}
+          {/* 10 */}
           <div className="tos-section">
-            <div className="tos-section-badge">11</div>
+            <div className="tos-section-badge">10</div>
             <h3 className="tos-section-title">Limitation of Liability</h3>
             <p>
               Jonayskie Prints' maximum liability for any claim arising from our
@@ -539,9 +495,9 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 12 */}
+          {/* 11 */}
           <div className="tos-section">
-            <div className="tos-section-badge">12</div>
+            <div className="tos-section-badge">11</div>
             <h3 className="tos-section-title">Amendments</h3>
             <p>
               Jonayskie Prints reserves the right to update these Terms of
