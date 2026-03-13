@@ -2208,6 +2208,10 @@ function DashboardPageInner() {
       if (noPaymentMethod === "gcash") {
         fd.append("gcash_pay_type", noGcashPayType);
         if (noGcashRefNum) fd.append("gcash_ref_num", noGcashRefNum);
+        if (noGcashReceipt) fd.append("gcash_receipt", noGcashReceipt);
+      }
+      if (noFiles && noFiles.length > 0) {
+        Array.from(noFiles).forEach((f) => fd.append("files", f));
       }
 
       const res = await fetch("/api/dashboard", { method: "POST", body: fd });
