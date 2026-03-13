@@ -3394,46 +3394,117 @@ function DashboardPageInner() {
                             const ext =
                               f.name.split(".").pop()?.toLowerCase() ?? "";
                             const isPaged = ext === "pdf" || ext === "docx";
+                            const isImage = ["jpg", "jpeg", "png"].includes(
+                              ext,
+                            );
+
                             return (
                               <div
                                 key={`${fi}-${f.name}`}
                                 className="file-item"
+                                style={{ justifyContent: "space-between" }}
                               >
-                                <IC.PDF />
-                                <span
+                                <div
                                   style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: ".35rem",
+                                    minWidth: 0,
                                     flex: 1,
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    whiteSpace: "nowrap",
                                   }}
                                 >
-                                  {f.name}
-                                </span>
-                                <span
-                                  className="file-item-badge"
-                                  style={
-                                    isPaged
-                                      ? {}
-                                      : {
-                                          background: "#f3f4f6",
-                                          color: "#6b7280",
-                                        }
-                                  }
+                                  <IC.PDF />
+                                  <span
+                                    style={{
+                                      flex: 1,
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                      whiteSpace: "nowrap",
+                                    }}
+                                  >
+                                    {f.name}
+                                  </span>
+                                  <span
+                                    className="file-item-badge"
+                                    style={
+                                      isPaged
+                                        ? {}
+                                        : {
+                                            background: "#f3f4f6",
+                                            color: "#6b7280",
+                                          }
+                                    }
+                                  >
+                                    {ext.toUpperCase()}
+                                  </span>
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: ".3rem",
+                                    flexShrink: 0,
+                                    marginLeft: ".4rem",
+                                  }}
                                 >
-                                  {ext.toUpperCase()}
-                                </span>
+                                  {isImage && (
+                                    <button
+                                      type="button"
+                                      title="View file"
+                                      onClick={() => {
+                                        const url = URL.createObjectURL(f);
+                                        window.open(url, "_blank");
+                                      }}
+                                      style={{
+                                        color: "#7c3aed",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        padding: "2px 4px",
+                                        borderRadius: 4,
+                                        background: "#ede9fe",
+                                        border: "none",
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      <IC.Eye />
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    title="Remove file"
+                                    onClick={() => {
+                                      const dt = new DataTransfer();
+                                      Array.from(noFiles).forEach((file, i) => {
+                                        if (i !== fi) dt.items.add(file);
+                                      });
+                                      const newFiles =
+                                        dt.files.length > 0 ? dt.files : null;
+                                      setNoFiles(newFiles);
+                                      if (fileInputRef.current)
+                                        fileInputRef.current.value = "";
+                                      // Recount pages
+                                      if (newFiles) handleFileChange(newFiles);
+                                      else {
+                                        setNoPdfPages(0);
+                                        setNoQuantity("");
+                                      }
+                                    }}
+                                    style={{
+                                      color: "#ef4444",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      padding: "2px 4px",
+                                      borderRadius: 4,
+                                      background: "#fee2e2",
+                                      border: "none",
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    <IC.XCircle />
+                                  </button>
+                                </div>
                               </div>
                             );
                           })}
-                        </div>
-                      )}
-                      {noPdfPages > 0 && (
-                        <div className="pdf-info">
-                          <IC.PDF />
-                          {showsCopies
-                            ? `${noPdfPages} pages × ${noCopies} copies = ${noPdfPages * Number(noCopies)} total pages`
-                            : `${noPdfPages} pages detected`}
                         </div>
                       )}
                     </div>
