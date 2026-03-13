@@ -1812,6 +1812,12 @@ function DashboardPageInner() {
   );
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [viewDetailsOrder, setViewDetailsOrder] = useState<Order | null>(null);
+  const [viewDetailsFiles, setViewDetailsFiles] = useState<
+    { name: string; url: string; type: string }[]
+  >([]);
+  const [viewDetailsReceipt, setViewDetailsReceipt] = useState<{
+    url: string;
+  } | null>(null);
   const [step, setStep] = useState(0);
   const [noService, setNoService] = useState("");
   const [noQuantity, setNoQuantity] = useState<number | "">("");
@@ -1905,7 +1911,18 @@ function DashboardPageInner() {
     sessionStorage.clear();
     router.replace("/login");
   }
-
+  async function fetchOrderFiles(orderId: string) {
+    setViewDetailsFiles([]);
+    setViewDetailsReceipt(null);
+    try {
+      const res = await fetch(`/api/order-files?order_id=${orderId}`);
+      const r = await res.json();
+      if (r.success) {
+        setViewDetailsFiles(r.data.files || []);
+        setViewDetailsReceipt(r.data.gcash_receipt || null);
+      }
+    } catch {}
+  }
   const fetchPrices = useCallback(async () => {
     try {
       const res = await fetch(`/api/pricing?t=${Date.now()}`);
@@ -4703,7 +4720,10 @@ function DashboardPageInner() {
                             <button
                               className="edit-btn"
                               style={{ color: "#2563eb" }}
-                              onClick={() => setViewDetailsOrder(o)}
+                              onClick={() => {
+                                setViewDetailsOrder(o);
+                                fetchOrderFiles(o.order_id);
+                              }}
                             >
                               <IC.Eye /> View Details
                             </button>
@@ -5255,7 +5275,11 @@ function DashboardPageInner() {
         <div
           className="modal-overlay"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setViewDetailsOrder(null);
+            if (e.target === e.currentTarget) {
+              setViewDetailsOrder(null);
+              setViewDetailsFiles([]);
+              setViewDetailsReceipt(null);
+            }
           }}
         >
           <div className="modal">
@@ -5297,7 +5321,11 @@ function DashboardPageInner() {
               </div>
               <button
                 className="modal-close"
-                onClick={() => setViewDetailsOrder(null)}
+                onClick={() => {
+                  setViewDetailsOrder(null);
+                  setViewDetailsFiles([]);
+                  setViewDetailsReceipt(null);
+                }}
               >
                 ×
               </button>
@@ -5657,6 +5685,161 @@ function DashboardPageInner() {
               </span>
             </div>
 
+            {/* ── Uploaded Files ── */}
+            {viewDetailsFiles.length > 0 && (
+              <div style={{ marginBottom: "1rem" }}>
+                <div
+                  style={{
+                    fontSize: ".63rem",
+                    fontWeight: 700,
+                    letterSpacing: ".07em",
+                    textTransform: "uppercase",
+                    color: "#9ca3af",
+                    marginBottom: ".5rem",
+                  }}
+                >
+                  Uploaded Files
+                </div>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                >
+                  {viewDetailsFiles.map((f, i) => {
+                    const ext = f.name?.split(".").pop()?.toLowerCase() ?? "";
+                    const isImage = [
+                      "jpg",
+                      "jpeg",
+                      "png",
+                      "gif",
+                      "webp",
+                    ].includes(ext);
+                    const isPdf = ext === "pdf";
+                    return (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: ".55rem",
+                          background: "#f9fafb",
+                          border: "1.5px solid #e5e7eb",
+                          borderRadius: 8,
+                          padding: ".5rem .75rem",
+                        }}
+                      >
+                        <IC.PDF />
+                        <span
+                          style={{
+                            flex: 1,
+                            fontSize: ".78rem",
+                            color: "#374151",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {f.name}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: ".6rem",
+                            fontWeight: 700,
+                            padding: "2px 6px",
+                            borderRadius: 4,
+                            background: "#ede9fe",
+                            color: "#7c3aed",
+                          }}
+                        >
+                          {ext.toUpperCase()}
+                        </span>
+                        {(isImage || isPdf) && (
+                          <a
+                            href={f.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              color: "#7c3aed",
+                              background: "#ede9fe",
+                              border: "none",
+                              borderRadius: 4,
+                              padding: "3px 7px",
+                              fontSize: ".7rem",
+                              fontWeight: 600,
+                              cursor: "pointer",
+                              textDecoration: "none",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 3,
+                            }}
+                          >
+                            <IC.Eye /> View
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── GCash Receipt ── */}
+            {viewDetailsReceipt && (
+              <div style={{ marginBottom: "1rem" }}>
+                <div
+                  style={{
+                    fontSize: ".63rem",
+                    fontWeight: 700,
+                    letterSpacing: ".07em",
+                    textTransform: "uppercase",
+                    color: "#9ca3af",
+                    marginBottom: ".5rem",
+                  }}
+                >
+                  GCash Payment Receipt
+                </div>
+                <div
+                  style={{
+                    background: "#f5f3ff",
+                    border: "1.5px solid #ddd6fe",
+                    borderRadius: 10,
+                    padding: ".75rem",
+                    textAlign: "center",
+                  }}
+                >
+                  <img
+                    src={viewDetailsReceipt.url}
+                    alt="GCash receipt"
+                    style={{
+                      maxWidth: "100%",
+                      maxHeight: 280,
+                      borderRadius: 8,
+                      border: "1.5px solid #ddd6fe",
+                      objectFit: "contain",
+                    }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                  <div style={{ marginTop: ".5rem" }}>
+                    <a
+                      href={viewDetailsReceipt.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: "#7c3aed",
+                        fontSize: ".75rem",
+                        fontWeight: 600,
+                        textDecoration: "none",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <IC.Eye /> Open full receipt
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
             {viewDetailsOrder.status === "pending" && (
               <div style={{ display: "flex", gap: ".6rem" }}>
                 <button
@@ -5691,7 +5874,11 @@ function DashboardPageInner() {
             {viewDetailsOrder.status !== "pending" && (
               <button
                 className="btn btn-ghost btn-full"
-                onClick={() => setViewDetailsOrder(null)}
+                onClick={() => {
+                  setViewDetailsOrder(null);
+                  setViewDetailsFiles([]);
+                  setViewDetailsReceipt(null);
+                }}
               >
                 Close
               </button>

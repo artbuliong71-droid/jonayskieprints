@@ -3,6 +3,7 @@ import mongoose, { Schema, Document, models } from "mongoose";
 export interface IFileData {
   url: string;
   resource_type: string;
+  name: string;
 }
 
 export interface IOrder extends Document {
@@ -30,6 +31,7 @@ const FileDataSchema = new Schema<IFileData>(
   {
     url: { type: String, required: true },
     resource_type: { type: String, default: "image" },
+    name: { type: String, default: "" },
   },
   { _id: false },
 );

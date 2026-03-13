@@ -350,7 +350,11 @@ export async function POST(req: NextRequest) {
     const gcash_ref_num = (formData.get("gcash_ref_num") as string) || null;
 
     // ── Upload order files to Cloudinary ─────────────────────────────────────
-    const uploadedFiles: { url: string; resource_type: string }[] = [];
+    const uploadedFiles: {
+      url: string;
+      resource_type: string;
+      name: string;
+    }[] = [];
     const fileEntries = formData.getAll("files") as File[];
     for (const file of fileEntries) {
       if (!file || typeof file === "string" || file.size === 0) continue;
@@ -360,6 +364,7 @@ export async function POST(req: NextRequest) {
         uploadedFiles.push({
           url: result.url,
           resource_type: result.resource_type,
+          name: file.name,
         });
         console.log(`[UPLOAD SUCCESS] ${file.name} → ${result.url}`);
       } catch (uploadErr) {
