@@ -3397,6 +3397,7 @@ function DashboardPageInner() {
                             const isImage = ["jpg", "jpeg", "png"].includes(
                               ext,
                             );
+                            const isViewable = isImage || ext === "pdf";
 
                             return (
                               <div
@@ -3446,7 +3447,7 @@ function DashboardPageInner() {
                                     marginLeft: ".4rem",
                                   }}
                                 >
-                                  {isImage && (
+                                  {isViewable && (
                                     <button
                                       type="button"
                                       title="View file"
