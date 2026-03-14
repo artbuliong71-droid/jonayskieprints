@@ -1157,161 +1157,45 @@ function FirstLoginTosModal({
                   gap: ".55rem",
                   marginBottom: ".55rem",
                 }}
-              >
-                <div
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: 7,
-                    background: "linear-gradient(135deg,#5b6dee,#7c3aed)",
-                    color: "#fff",
-                    fontSize: ".65rem",
-                    fontWeight: 700,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  04
-                </div>
-                <div
-                  style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: ".97rem",
-                    color: "#1d4ed8",
-                    fontWeight: 700,
-                  }}
-                >
-                  Personal Information Requirements
-                </div>
-              </div>
-              <div
-                style={{
-                  background: "linear-gradient(135deg,#eff6ff,#f5f3ff)",
-                  border: "1.5px solid #c7d2fe",
-                  borderRadius: 12,
-                  padding: "1rem 1.1rem",
-                  display: "flex",
-                  gap: ".85rem",
-                }}
-              >
-                <div
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 10,
-                    background: "linear-gradient(135deg,#2563eb,#7c3aed)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "1rem",
-                    flexShrink: 0,
-                  }}
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#fff"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  >
-                    <circle cx="12" cy="8" r="4" />
-                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                  </svg>
-                </div>
-                <div>
-                  <p
-                    style={{
-                      fontSize: ".83rem",
-                      color: "#374151",
-                      lineHeight: 1.65,
-                      marginBottom: ".5rem",
-                    }}
-                  >
-                    For large transactions and order verification, we require:
-                  </p>
-                  <ul
-                    style={{
-                      listStyle: "none",
-                      padding: 0,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: ".38rem",
-                    }}
-                  >
-                    {[
-                      "Full legal name (first and last name)",
-                      "Valid contact number (active mobile number)",
-                      "Email address for order confirmations and receipts",
-                      "Complete delivery address (if delivery is requested)",
-                      "Valid government-issued ID may be requested for orders above ₱1,000.00",
-                    ].map((item, i) => (
-                      <li
-                        key={i}
-                        style={{
-                          fontSize: ".82rem",
-                          color: "#374151",
-                          paddingLeft: "1rem",
-                          position: "relative",
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        <span
-                          style={{
-                            position: "absolute",
-                            left: 0,
-                            color: "#7c3aed",
-                            fontWeight: 700,
-                          }}
-                        >
-                          ›
-                        </span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
+              ></div>
             </div>
             <TosSection
-              num="05"
+              num="04"
               title="Order Processing & Turnaround"
               body="Standard orders are processed within 1–2 business days. Urgent requests may be accommodated based on availability and may incur additional rush fees. Jonayskie Prints is not liable for delays caused by incomplete file submissions, unclear instructions, or force majeure events."
             />
             <TosSection
-              num="06"
+              num="05"
               title="File Submission & Quality"
               body="Customers are responsible for submitting print-ready files in accepted formats (PDF, JPG, PNG, DOCX). Jonayskie Prints will print files as submitted. We are not responsible for pixelation, incorrect margins, spelling errors, or layout issues present in the original file. A digital proof may be requested before final printing."
             />
             <TosSection
-              num="07"
+              num="06"
               title="Payments & Pricing"
               body="All prices are in Philippine Peso (PHP). Final pricing is calculated based on paper size, color, quantity, and finishing options. Accepted payment methods: (1) Cash on pickup for any order amount. (2) GCash — customers may pay the full amount online, or pay a 50% downpayment via GCash for cash orders exceeding ₱500.00 with the balance due on pickup. GCash is the only accepted online payment channel."
             />
             <TosSection
-              num="08"
+              num="07"
               title="Cancellations & Refunds"
               body="Orders may be cancelled without charge prior to processing. Once production has commenced, cancellations are not accepted and downpayments are forfeited. In cases where we cannot fulfill an order, a full refund will be issued within 3–5 business days."
             />
             <TosSection
-              num="09"
+              num="08"
               title="Privacy & Data Protection"
               body="Your personal information is collected solely for order processing and service delivery. We do not sell, rent, or share your data with third parties. All submitted files are deleted from our systems within 30 days of order completion."
             />
             <TosSection
-              num="10"
+              num="09"
               title="Prohibited Content"
               body="Jonayskie Prints reserves the right to refuse printing of any content deemed illegal, defamatory, obscene, or in violation of intellectual property rights. Customers are solely responsible for ensuring their content complies with applicable laws."
             />
             <TosSection
-              num="11"
+              num="10"
               title="Limitation of Liability"
               body="Our maximum liability for any claim shall not exceed the amount paid for the specific order. We are not liable for indirect, incidental, or consequential damages including lost profits or data loss."
             />
             <TosSection
-              num="12"
+              num="11"
               title="Amendments"
               body="Jonayskie Prints reserves the right to update these Terms of Service at any time. Continued use of the platform after changes are published constitutes acceptance of the updated terms. Material changes will be communicated via email or platform notification."
             />
@@ -1782,7 +1666,15 @@ async function uploadFilesForOrder(
   const r = await res.json();
   if (!r.success) throw new Error(r.message || "File upload failed");
 }
-
+async function deleteOrderFile(
+  orderId: string,
+  fileName: string,
+): Promise<void> {
+  const fd = new FormData();
+  fd.append("order_id", orderId);
+  fd.append("file_name", fileName);
+  await fetch("/api/delete-file", { method: "POST", body: fd });
+}
 function DashboardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1796,6 +1688,10 @@ function DashboardPageInner() {
     type: "success",
     visible: false,
   });
+  const [eoExistingFiles, setEoExistingFiles] = useState<
+    { name: string; url: string; type: string }[]
+  >([]);
+  const [eoNewFiles, setEoNewFiles] = useState<FileList | null>(null);
   const [prices, setPrices] = useState<Prices>(DEFAULT_PRICES);
   const [stats, setStats] = useState<DashboardStats>({
     totalOrders: 0,
@@ -2197,6 +2093,13 @@ function DashboardPageInner() {
       );
       return;
     }
+    if (noPaymentMethod === "cash" && summaryTotal >= 500) {
+      showToast(
+        "Orders over ₱500 require a GCash downpayment. Please switch to Pay via GCash.",
+        "error",
+      );
+      return;
+    }
     if (noPaymentMethod === "gcash" && !noGcashRefNum.trim()) {
       showToast("Please enter your GCash reference number.", "error");
       return;
@@ -2343,6 +2246,13 @@ function DashboardPageInner() {
       );
       setEoLamination(p.addLamination);
       setEoPdfPages(0);
+      setEoExistingFiles([]);
+      setEoNewFiles(null);
+      try {
+        const fr = await fetch(`/api/order-files?order_id=${orderId}`);
+        const fd = await fr.json();
+        if (fd.success) setEoExistingFiles(fd.data.files || []);
+      } catch {}
       setEditModalOpen(true);
     } catch {
       showToast("Error loading order", "error");
@@ -2404,7 +2314,7 @@ function DashboardPageInner() {
         return;
       }
 
-      const newFiles = editFileInputRef.current?.files;
+      const newFiles = eoNewFiles;
       if (newFiles && newFiles.length > 0) {
         try {
           await uploadFilesForOrder(String(editOrder.order_id!), newFiles);
@@ -4628,7 +4538,15 @@ function DashboardPageInner() {
                       <button
                         type="submit"
                         className="btn btn-accent"
-                        disabled={noSubmitting}
+                        disabled={
+                          noSubmitting ||
+                          (noPaymentMethod === "cash" && summaryTotal >= 500)
+                        }
+                        title={
+                          noPaymentMethod === "cash" && summaryTotal >= 500
+                            ? "Switch to GCash to proceed — downpayment required for orders over ₱500"
+                            : undefined
+                        }
                       >
                         {noSubmitting ? "Placing..." : "Place Order"}
                       </button>
@@ -6144,17 +6062,8 @@ function DashboardPageInner() {
                 </div>
               )}
               <div className="form-group">
-                <label className="form-label">Specifications</label>
-                <textarea
-                  className="form-textarea"
-                  value={eoSpecs}
-                  onChange={(e) => setEoSpecs(e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div className="form-group">
                 <label className="form-label">
-                  Add More Files{" "}
+                  Files
                   <span
                     style={{
                       fontSize: ".6rem",
@@ -6168,25 +6077,48 @@ function DashboardPageInner() {
                     (PDF, JPG, PNG, DOCX)
                   </span>
                 </label>
-                <input
-                  className="form-input"
-                  type="file"
-                  multiple
-                  ref={editFileInputRef}
-                  accept=".pdf,.jpg,.jpeg,.png,.docx"
-                  onChange={(e) => handleEditFileChange(e.target.files)}
-                />
-                {/* File list display for edit modal */}
-                {editFileInputRef.current?.files &&
-                  editFileInputRef.current.files.length > 0 && (
+
+                {/* ── Existing uploaded files ── */}
+                {eoExistingFiles.length > 0 && (
+                  <div style={{ marginBottom: ".6rem" }}>
+                    <div
+                      style={{
+                        fontSize: ".62rem",
+                        fontWeight: 700,
+                        letterSpacing: ".06em",
+                        textTransform: "uppercase",
+                        color: "#9ca3af",
+                        marginBottom: ".35rem",
+                      }}
+                    >
+                      Currently Uploaded
+                    </div>
                     <div className="file-list">
-                      {Array.from(editFileInputRef.current.files).map(
-                        (f, fi) => {
-                          const ext =
-                            f.name.split(".").pop()?.toLowerCase() ?? "";
-                          const isPaged = ext === "pdf" || ext === "docx";
-                          return (
-                            <div key={`${fi}-${f.name}`} className="file-item">
+                      {eoExistingFiles.map((f, fi) => {
+                        const ext =
+                          f.name?.split(".").pop()?.toLowerCase() ?? "";
+                        const isViewable = [
+                          "jpg",
+                          "jpeg",
+                          "png",
+                          "pdf",
+                        ].includes(ext);
+                        const isPaged = ext === "pdf" || ext === "docx";
+                        return (
+                          <div
+                            key={fi}
+                            className="file-item"
+                            style={{ justifyContent: "space-between" }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: ".35rem",
+                                minWidth: 0,
+                                flex: 1,
+                              }}
+                            >
                               <IC.PDF />
                               <span
                                 style={{
@@ -6212,11 +6144,202 @@ function DashboardPageInner() {
                                 {ext.toUpperCase()}
                               </span>
                             </div>
-                          );
-                        },
-                      )}
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: ".3rem",
+                                flexShrink: 0,
+                                marginLeft: ".4rem",
+                              }}
+                            >
+                              {isViewable && (
+                                <a
+                                  href={f.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    color: "#7c3aed",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    padding: "2px 4px",
+                                    borderRadius: 4,
+                                    background: "#ede9fe",
+                                    textDecoration: "none",
+                                  }}
+                                >
+                                  <IC.Eye />
+                                </a>
+                              )}
+                              <button
+                                type="button"
+                                title="Delete file"
+                                onClick={async () => {
+                                  if (!editOrder?.order_id) return;
+                                  try {
+                                    await deleteOrderFile(
+                                      String(editOrder.order_id),
+                                      f.name,
+                                    );
+                                  } catch {}
+                                  setEoExistingFiles((prev) =>
+                                    prev.filter((_, i) => i !== fi),
+                                  );
+                                }}
+                                style={{
+                                  color: "#ef4444",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  padding: "2px 4px",
+                                  borderRadius: 4,
+                                  background: "#fee2e2",
+                                  border: "none",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <IC.XCircle />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  )}
+                  </div>
+                )}
+
+                {/* ── Add new files ── */}
+                <div
+                  style={{
+                    fontSize: ".62rem",
+                    fontWeight: 700,
+                    letterSpacing: ".06em",
+                    textTransform: "uppercase",
+                    color: "#9ca3af",
+                    marginBottom: ".35rem",
+                  }}
+                >
+                  Add New Files
+                </div>
+                <input
+                  className="form-input"
+                  type="file"
+                  multiple
+                  ref={editFileInputRef}
+                  accept=".pdf,.jpg,.jpeg,.png,.docx"
+                  onChange={(e) => {
+                    setEoNewFiles(e.target.files);
+                    handleEditFileChange(e.target.files);
+                  }}
+                />
+                {eoNewFiles && eoNewFiles.length > 0 && (
+                  <div className="file-list">
+                    {Array.from(eoNewFiles).map((f, fi) => {
+                      const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
+                      const isPaged = ext === "pdf" || ext === "docx";
+                      const isViewable = ["jpg", "jpeg", "png", "pdf"].includes(
+                        ext,
+                      );
+                      return (
+                        <div
+                          key={`${fi}-${f.name}`}
+                          className="file-item"
+                          style={{ justifyContent: "space-between" }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: ".35rem",
+                              minWidth: 0,
+                              flex: 1,
+                            }}
+                          >
+                            <IC.PDF />
+                            <span
+                              style={{
+                                flex: 1,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {f.name}
+                            </span>
+                            <span
+                              className="file-item-badge"
+                              style={
+                                isPaged
+                                  ? {}
+                                  : { background: "#f3f4f6", color: "#6b7280" }
+                              }
+                            >
+                              {ext.toUpperCase()}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: ".3rem",
+                              flexShrink: 0,
+                              marginLeft: ".4rem",
+                            }}
+                          >
+                            {isViewable && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  window.open(URL.createObjectURL(f), "_blank")
+                                }
+                                style={{
+                                  color: "#7c3aed",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  padding: "2px 4px",
+                                  borderRadius: 4,
+                                  background: "#ede9fe",
+                                  border: "none",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <IC.Eye />
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const dt = new DataTransfer();
+                                Array.from(eoNewFiles).forEach((file, i) => {
+                                  if (i !== fi) dt.items.add(file);
+                                });
+                                const updated =
+                                  dt.files.length > 0 ? dt.files : null;
+                                setEoNewFiles(updated);
+                                if (editFileInputRef.current)
+                                  editFileInputRef.current.value = "";
+                                if (updated) handleEditFileChange(updated);
+                                else {
+                                  setEoPdfPages(0);
+                                  setEoQuantity("");
+                                }
+                              }}
+                              style={{
+                                color: "#ef4444",
+                                display: "flex",
+                                alignItems: "center",
+                                padding: "2px 4px",
+                                borderRadius: 4,
+                                background: "#fee2e2",
+                                border: "none",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <IC.XCircle />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
                 {eoPdfPages > 0 && (
                   <div className="pdf-info">
                     <IC.PDF />
