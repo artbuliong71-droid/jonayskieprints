@@ -67,6 +67,7 @@ interface Pricing {
   scanning: number;
   photo_development: number;
   laminating: number;
+  folder: number;
 }
 interface PricingStr {
   print_bw: string;
@@ -75,6 +76,7 @@ interface PricingStr {
   scanning: string;
   photo_development: string;
   laminating: string;
+  folder: string;
 }
 type Section =
   | "dashboard"
@@ -117,18 +119,59 @@ function pricingStrToNum(p: PricingStr): Pricing {
     scanning: parseFloat(p.scanning) || 0,
     photo_development: parseFloat(p.photo_development) || 0,
     laminating: parseFloat(p.laminating) || 0,
+    folder: parseFloat(p.folder) || 0,
   };
 }
 function isGcash(method?: string) {
   return (method || "").toLowerCase().includes("gcash");
 }
-
 function detectIsPdf(url: string, resource_type: string): boolean {
   return url.toLowerCase().includes(".pdf") || resource_type === "raw";
 }
 function detectIsImage(url: string, resource_type: string): boolean {
   return !detectIsPdf(url, resource_type);
 }
+
+// ── Parse folder info from specifications string ──────────────────
+function parseFolderFromSpecs(specifications: string): {
+  hasFolder: boolean;
+  color: string;
+  size: string;
+  qty: string;
+} {
+  const result = { hasFolder: false, color: "", size: "", qty: "" };
+  for (const line of specifications.split("\n")) {
+    const t = line.trim();
+    if (t.startsWith("Add Folder:")) {
+      result.hasFolder = true;
+      const parts = t.replace("Add Folder:", "").trim();
+      const sizeMatch = parts.match(/(A4|Short|Long)/);
+      const qtyMatch = parts.match(/(\d+)\s*pc/);
+      const colorMatch = parts.match(
+        /(White|Ivory|Pink|Red|Blue|Green|Orange|Yellow|Purple|Black|Brown|Clear)/i,
+      );
+      if (sizeMatch) result.size = sizeMatch[1];
+      if (qtyMatch) result.qty = qtyMatch[1];
+      if (colorMatch) result.color = colorMatch[1];
+    }
+  }
+  return result;
+}
+
+const FOLDER_COLOR_SWATCHES: Record<string, string> = {
+  White: "#ffffff",
+  Ivory: "#fffff0",
+  Pink: "#ffc0cb",
+  Red: "#ef4444",
+  Blue: "#3b82f6",
+  Green: "#22c55e",
+  Orange: "#f97316",
+  Yellow: "#eab308",
+  Purple: "#a855f7",
+  Black: "#111827",
+  Brown: "#92400e",
+  Clear: "linear-gradient(135deg,#e0e7ff 0%,#f0fdf4 100%)",
+};
 
 const IC = {
   Menu: () => (
@@ -616,6 +659,19 @@ const IC = {
       <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M14 14v4h4v-4h-4z" />
     </svg>
   ),
+  Folder: () => (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+    </svg>
+  ),
 };
 
 import {
@@ -682,7 +738,46 @@ function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
   );
 }
 
-// ── GCash Receipt Viewer Modal ────────────────────────────────────
+// ── Folder Badge ──────────────────────────────────────────────────
+function FolderBadge({ specs }: { specs: string }) {
+  const info = parseFolderFromSpecs(specs);
+  if (!info.hasFolder) return null;
+  const swatch = FOLDER_COLOR_SWATCHES[info.color] || "#9ca3af";
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        background: "#faf5ff",
+        color: "#7c3aed",
+        border: "1.5px solid #ddd6fe",
+        padding: "2px 8px",
+        borderRadius: 99,
+        fontSize: ".65rem",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <IC.Folder />
+      <span
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: swatch,
+          border: ["White", "Ivory", "Clear"].includes(info.color)
+            ? "1px solid #d1d5db"
+            : "none",
+          display: "inline-block",
+          flexShrink: 0,
+        }}
+      />
+      {info.color} {info.size} × {info.qty}
+    </span>
+  );
+}
+
 function GcashReceiptModal({
   order,
   onClose,
@@ -692,7 +787,6 @@ function GcashReceiptModal({
 }) {
   const receiptUrl = order.gcash_receipt_url;
   const isPdf = receiptUrl ? detectIsPdf(receiptUrl, "") : false;
-
   return (
     <div
       style={{
@@ -720,7 +814,6 @@ function GcashReceiptModal({
           boxShadow: "0 24px 60px rgba(0,0,0,.3)",
         }}
       >
-        {/* Header */}
         <div
           style={{
             display: "flex",
@@ -777,9 +870,7 @@ function GcashReceiptModal({
             <IC.X />
           </button>
         </div>
-
         <div style={{ padding: "1.1rem 1.2rem" }}>
-          {/* Reference number */}
           {order.gcash_ref_num && (
             <div
               style={{
@@ -843,8 +934,6 @@ function GcashReceiptModal({
               </div>
             </div>
           )}
-
-          {/* Amount paid */}
           <div
             style={{
               display: "flex",
@@ -865,8 +954,6 @@ function GcashReceiptModal({
               ₱{Number(order.total_amount).toFixed(2)}
             </span>
           </div>
-
-          {/* Receipt image / PDF */}
           {receiptUrl ? (
             <div
               style={{
@@ -969,6 +1056,7 @@ function DetailsModal({
   onClose: () => void;
 }) {
   const gcashPay = isGcash(order.payment_method);
+  const folderInfo = parseFolderFromSpecs(order.specifications);
 
   const detailRows = [
     { label: "Customer", value: `${order.user_name} (${order.user_email})` },
@@ -1017,7 +1105,6 @@ function DetailsModal({
           boxShadow: "0 24px 60px rgba(0,0,0,.25)",
         }}
       >
-        {/* sticky header */}
         <div
           style={{
             display: "flex",
@@ -1055,7 +1142,6 @@ function DetailsModal({
             <IC.X />
           </button>
         </div>
-
         <div style={{ padding: "1.1rem 1.2rem" }}>
           {detailRows.map((row: any) => (
             <div
@@ -1098,7 +1184,77 @@ function DetailsModal({
             </div>
           ))}
 
-          {/* ── Payment method row ── */}
+          {/* Folder add-on row */}
+          {folderInfo.hasFolder && (
+            <div
+              style={{
+                display: "flex",
+                gap: ".75rem",
+                padding: ".45rem 0",
+                borderBottom: "1px solid #f3f4f6",
+                fontSize: ".84rem",
+              }}
+            >
+              <div
+                style={{
+                  width: 90,
+                  color: "#6b7280",
+                  fontWeight: 600,
+                  flexShrink: 0,
+                  fontSize: ".75rem",
+                  textTransform: "uppercase",
+                  letterSpacing: ".04em",
+                  paddingTop: 2,
+                }}
+              >
+                Folder
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    background: "#faf5ff",
+                    color: "#7c3aed",
+                    border: "1.5px solid #ddd6fe",
+                    padding: "3px 10px",
+                    borderRadius: 99,
+                    fontSize: ".72rem",
+                    fontWeight: 700,
+                  }}
+                >
+                  <IC.Folder />
+                  <span
+                    style={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      background:
+                        FOLDER_COLOR_SWATCHES[folderInfo.color] || "#9ca3af",
+                      border: ["White", "Ivory", "Clear"].includes(
+                        folderInfo.color,
+                      )
+                        ? "1px solid #d1d5db"
+                        : "none",
+                      display: "inline-block",
+                      flexShrink: 0,
+                    }}
+                  />
+                  {folderInfo.color} · {folderInfo.size} · {folderInfo.qty} pc
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Payment row */}
           <div
             style={{
               display: "flex",
@@ -1171,7 +1327,7 @@ function DetailsModal({
             </div>
           </div>
 
-          {/* ── Specifications ── */}
+          {/* Specifications */}
           <div style={{ marginTop: ".85rem" }}>
             <div
               style={{
@@ -1201,7 +1357,7 @@ function DetailsModal({
             </div>
           </div>
 
-          {/* ── GCash receipt inline preview ── */}
+          {/* GCash receipt */}
           {gcashPay && order.gcash_receipt_url && (
             <div style={{ marginTop: ".85rem" }}>
               <div
@@ -1662,8 +1818,6 @@ function CancelledBadge() {
     </span>
   );
 }
-
-// ── GCash payment badge (used in tables) ─────────────────────────
 function PaymentBadge({ method }: { method?: string }) {
   if (isGcash(method)) {
     return (
@@ -1736,6 +1890,7 @@ export default function AdminDashboardPage() {
     scanning: "5",
     photo_development: "15",
     laminating: "20",
+    folder: "10",
   });
   const [orderFilter, setOrderFilter] = useState("");
   const [ordersLoading, setOrdersLoading] = useState(false);
@@ -1842,6 +1997,7 @@ export default function AdminDashboardPage() {
         scanning: String(d.scanning ?? 5),
         photo_development: String(d.photo_development ?? 15),
         laminating: String(d.laminating ?? 20),
+        folder: String(d.folder ?? 10),
       });
     } catch {}
   }, []);
@@ -1850,7 +2006,6 @@ export default function AdminDashboardPage() {
     fetchStats();
     fetchPricing();
   }, [fetchStats, fetchPricing]);
-
   useEffect(() => {
     if (section === "orders") fetchOrders(orderFilter);
     if (section === "customers") fetchCustomers();
@@ -2064,6 +2219,7 @@ export default function AdminDashboardPage() {
     { key: "scanning", label: "Scanning / page" },
     { key: "photo_development", label: "Photo Dev / photo" },
     { key: "laminating", label: "Laminating / item" },
+    { key: "folder", label: "Folder / pc" },
   ];
 
   function StatusCell({ o }: { o: Order }) {
@@ -2118,7 +2274,6 @@ export default function AdminDashboardPage() {
     },
   ];
 
-  // Count GCash orders among pending (for notification highlight)
   const gcashPendingCount = orders.filter(
     (o) => o.status === "pending" && isGcash(o.payment_method),
   ).length;
@@ -2539,7 +2694,6 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Orders overview donut */}
               <div className="chart-card">
                 <div className="chart-title">Orders Overview</div>
                 {(() => {
@@ -2685,7 +2839,6 @@ export default function AdminDashboardPage() {
                 })()}
               </div>
 
-              {/* Recent orders */}
               <div className="card">
                 <div className="card-head">
                   <div className="card-head-title">Recent Orders</div>
@@ -2704,6 +2857,7 @@ export default function AdminDashboardPage() {
                           <th>Order ID</th>
                           <th>Customer</th>
                           <th>Service</th>
+                          <th>Folder</th>
                           <th>Pickup Time</th>
                           <th>Payment</th>
                           <th>Status</th>
@@ -2714,7 +2868,7 @@ export default function AdminDashboardPage() {
                       <tbody>
                         {orders.slice(0, 5).length === 0 ? (
                           <tr>
-                            <td colSpan={8} className="empty-state">
+                            <td colSpan={9} className="empty-state">
                               No orders yet
                             </td>
                           </tr>
@@ -2743,6 +2897,9 @@ export default function AdminDashboardPage() {
                                 </div>
                               </td>
                               <td>{o.service}</td>
+                              <td>
+                                <FolderBadge specs={o.specifications} />
+                              </td>
                               <td>
                                 {o.delivery_option === "pickup" &&
                                 o.pickup_time ? (
@@ -2813,6 +2970,7 @@ export default function AdminDashboardPage() {
                             </span>
                           )}
                         </div>
+                        <FolderBadge specs={o.specifications} />
                       </div>
                       <div className="m-card-right">
                         <div className="m-amount">
@@ -2868,6 +3026,7 @@ export default function AdminDashboardPage() {
                               <th>Customer</th>
                               <th>Service</th>
                               <th>Qty</th>
+                              <th>Folder</th>
                               <th>Delivery</th>
                               <th>Pickup Time</th>
                               <th>Amount</th>
@@ -2905,6 +3064,9 @@ export default function AdminDashboardPage() {
                                 </td>
                                 <td>{o.service}</td>
                                 <td>{o.quantity}</td>
+                                <td>
+                                  <FolderBadge specs={o.specifications} />
+                                </td>
                                 <td style={{ textTransform: "capitalize" }}>
                                   {o.delivery_option}
                                 </td>
@@ -3060,6 +3222,9 @@ export default function AdminDashboardPage() {
                                 Ref: <strong>{o.gcash_ref_num}</strong>
                               </div>
                             )}
+                            <div style={{ marginTop: ".3rem" }}>
+                              <FolderBadge specs={o.specifications} />
+                            </div>
                             <div
                               className="action-btns"
                               style={{ marginTop: ".45rem" }}
@@ -3414,7 +3579,21 @@ export default function AdminDashboardPage() {
                   <div className="form-grid">
                     {pricingFields.map(({ key, label }) => (
                       <div className="form-group" key={key}>
-                        <label className="form-label">{label}</label>
+                        <label className="form-label">
+                          {key === "folder" ? (
+                            <span
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                              }}
+                            >
+                              <IC.Folder /> {label}
+                            </span>
+                          ) : (
+                            label
+                          )}
+                        </label>
                         <input
                           className="form-input"
                           type="number"
@@ -3585,7 +3764,7 @@ export default function AdminDashboardPage() {
                               }}
                             >
                               Qty: {o.quantity} ·{" "}
-                              {new Date(o.created_at).toLocaleDateString()}
+                              {new Date(o.created_at).toLocaleDateString()}{" "}
                               <PaymentBadge method={o.payment_method} />
                             </div>
                             <div
