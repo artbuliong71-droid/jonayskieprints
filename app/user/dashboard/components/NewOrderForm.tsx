@@ -1547,63 +1547,6 @@ export function NewOrderForm({
                     </div>
                   </div>
 
-                  {/* Ref number */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: ".6rem",
-                      marginBottom: ".85rem",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: "50%",
-                        background: "#7c3aed",
-                        color: "#fff",
-                        fontSize: ".7rem",
-                        fontWeight: 800,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                    >
-                      2
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <div
-                        style={{
-                          fontWeight: 700,
-                          fontSize: ".8rem",
-                          color: "#111827",
-                          marginBottom: ".35rem",
-                        }}
-                      >
-                        Enter GCash Reference Number
-                      </div>
-                      <input
-                        className="form-input"
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="e.g. 1234567890123"
-                        value={noGcashRefNum}
-                        onChange={(e) =>
-                          setNoGcashRefNum(
-                            e.target.value.replace(/[^0-9]/g, ""),
-                          )
-                        }
-                        maxLength={20}
-                        style={{ fontSize: "max(16px,.875rem)" }}
-                      />
-                      <div className="hint-text">
-                        Found in your GCash transaction receipt
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Receipt upload */}
                   <div
                     style={{

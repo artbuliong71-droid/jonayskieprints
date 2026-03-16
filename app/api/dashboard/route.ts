@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
+import { User } from "@/models/user";
 import { Order } from "@/models/order";
 import { Pricing } from "@/models/pricing";
 import { getSession } from "@/lib/auth";
@@ -389,10 +390,20 @@ export async function POST(req: NextRequest) {
         console.error("[GCASH RECEIPT UPLOAD ERROR]", uploadErr);
       }
     }
+    const { User } = await import("@/models/user");
+    const user = await User.findById(session.userId);
 
+    if (!user) {
+      return NextResponse.json(
+        { success: false, message: "User not found." },
+        { status: 404 },
+      );
+    }
     // ── Save order ────────────────────────────────────────────────────────────
     const order = await Order.create({
       user_id: new mongoose.Types.ObjectId(session.userId),
+      user_name: `${user.first_name} ${user.last_name}`,
+      user_email: user.email,
       service,
       quantity,
       specifications,

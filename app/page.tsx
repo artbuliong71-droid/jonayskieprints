@@ -266,11 +266,7 @@ const SERVICES: ServiceCard[] = [
     title: "Photocopying (Xerox)",
     description: "Fast and reliable photocopying services for all your needs.",
   },
-  {
-    icon: <IcoScan />,
-    title: "Scanning",
-    description: "Professional scanning services to digitize your documents.",
-  },
+
   {
     icon: <IcoPhoto />,
     title: "Photo Development",
@@ -281,11 +277,6 @@ const SERVICES: ServiceCard[] = [
     title: "Laminating",
     description:
       "Protect your important documents with our laminating service.",
-  },
-  {
-    icon: <IcoZap />,
-    title: "Quick Turnaround",
-    description: "Fast processing times to meet your urgent printing needs.",
   },
 ];
 

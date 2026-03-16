@@ -599,10 +599,7 @@ function DashboardPageInner() {
       );
       return;
     }
-    if (noPaymentMethod === "gcash" && !noGcashRefNum.trim()) {
-      showToast("Please enter your GCash reference number.", "error");
-      return;
-    }
+
     let finalQuantity = Number(noQuantity);
     if (showsCopiesNow && (finalQuantity < 1 || noQuantity === ""))
       finalQuantity = Number(noCopies) || 1;
