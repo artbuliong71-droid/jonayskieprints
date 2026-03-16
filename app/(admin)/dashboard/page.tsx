@@ -132,7 +132,7 @@ function detectIsImage(url: string, resource_type: string): boolean {
   return !detectIsPdf(url, resource_type);
 }
 
-// ── Parse folder info from specifications string ──────────────────
+// ── Parse folder info ─────────────────────────────────────────
 function parseFolderFromSpecs(specifications: string): {
   hasFolder: boolean;
   color: string;
@@ -156,6 +156,25 @@ function parseFolderFromSpecs(specifications: string): {
     }
   }
   return result;
+}
+
+// ── Parse paper type ──────────────────────────────────────────
+function parsePaperTypeFromSpecs(specifications: string): string {
+  for (const line of specifications.split("\n")) {
+    const t = line.trim();
+    if (t.startsWith("Paper Type:")) return t.replace("Paper Type:", "").trim();
+  }
+  return "";
+}
+
+// ── Parse photo finish ────────────────────────────────────────
+function parsePhotoFinishFromSpecs(specifications: string): string {
+  for (const line of specifications.split("\n")) {
+    const t = line.trim();
+    if (t.startsWith("Photo Finish:"))
+      return t.replace("Photo Finish:", "").trim();
+  }
+  return "";
 }
 
 const FOLDER_COLOR_SWATCHES: Record<string, string> = {
@@ -738,7 +757,7 @@ function Toast({ msg, type }: { msg: string; type: "success" | "error" }) {
   );
 }
 
-// ── Folder Badge ──────────────────────────────────────────────────
+// ── FolderBadge ───────────────────────────────────────────────
 function FolderBadge({ specs }: { specs: string }) {
   const info = parseFolderFromSpecs(specs);
   if (!info.hasFolder) return null;
@@ -774,6 +793,69 @@ function FolderBadge({ specs }: { specs: string }) {
         }}
       />
       {info.color} {info.size} × {info.qty}
+    </span>
+  );
+}
+
+// ── PaperTypeBadge ────────────────────────────────────────────
+function PaperTypeBadge({ specs }: { specs: string }) {
+  const pt = parsePaperTypeFromSpecs(specs);
+  if (!pt) return null;
+  const colors: Record<string, { bg: string; color: string; border: string }> =
+    {
+      "White Paper": { bg: "#f9fafb", color: "#374151", border: "#e5e7eb" },
+      "Matte Paper": { bg: "#fdf6ee", color: "#92400e", border: "#fde68a" },
+      "Glossy Photo": { bg: "#eff6ff", color: "#1d4ed8", border: "#bfdbfe" },
+      Vellum: { bg: "#fefce8", color: "#854d0e", border: "#fef08a" },
+    };
+  const c = colors[pt] || {
+    bg: "#f3f4f6",
+    color: "#374151",
+    border: "#e5e7eb",
+  };
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        background: c.bg,
+        color: c.color,
+        border: `1.5px solid ${c.border}`,
+        padding: "2px 8px",
+        borderRadius: 99,
+        fontSize: ".65rem",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {pt}
+    </span>
+  );
+}
+
+// ── PhotoFinishBadge ──────────────────────────────────────────
+function PhotoFinishBadge({ specs }: { specs: string }) {
+  const pf = parsePhotoFinishFromSpecs(specs);
+  if (!pf) return null;
+  const isGlossy = pf.toLowerCase() === "glossy";
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        background: isGlossy ? "#eff6ff" : "#f9fafb",
+        color: isGlossy ? "#1d4ed8" : "#374151",
+        border: `1.5px solid ${isGlossy ? "#bfdbfe" : "#e5e7eb"}`,
+        padding: "2px 8px",
+        borderRadius: 99,
+        fontSize: ".65rem",
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {pf}
     </span>
   );
 }
@@ -1057,6 +1139,8 @@ function DetailsModal({
 }) {
   const gcashPay = isGcash(order.payment_method);
   const folderInfo = parseFolderFromSpecs(order.specifications);
+  const paperType = parsePaperTypeFromSpecs(order.specifications);
+  const photoFinish = parsePhotoFinishFromSpecs(order.specifications);
 
   const detailRows = [
     { label: "Customer", value: `${order.user_name} (${order.user_email})` },
@@ -1077,6 +1161,24 @@ function DetailsModal({
     { label: "Status", value: order.status },
     { label: "Date", value: new Date(order.created_at).toLocaleString() },
   ];
+
+  const detailRowStyle = {
+    display: "flex",
+    gap: ".75rem",
+    padding: ".45rem 0",
+    borderBottom: "1px solid #f3f4f6",
+    fontSize: ".84rem",
+  };
+  const labelStyle: React.CSSProperties = {
+    width: 90,
+    color: "#6b7280",
+    fontWeight: 600,
+    flexShrink: 0,
+    fontSize: ".75rem",
+    textTransform: "uppercase",
+    letterSpacing: ".04em",
+    paddingTop: 2,
+  };
 
   return (
     <div
@@ -1144,30 +1246,8 @@ function DetailsModal({
         </div>
         <div style={{ padding: "1.1rem 1.2rem" }}>
           {detailRows.map((row: any) => (
-            <div
-              key={row.label}
-              style={{
-                display: "flex",
-                gap: ".75rem",
-                padding: ".45rem 0",
-                borderBottom: "1px solid #f3f4f6",
-                fontSize: ".84rem",
-              }}
-            >
-              <div
-                style={{
-                  width: 90,
-                  color: "#6b7280",
-                  fontWeight: 600,
-                  flexShrink: 0,
-                  fontSize: ".75rem",
-                  textTransform: "uppercase",
-                  letterSpacing: ".04em",
-                  paddingTop: 2,
-                }}
-              >
-                {row.label}
-              </div>
+            <div key={row.label} style={detailRowStyle}>
+              <div style={labelStyle}>{row.label}</div>
               <div
                 style={{
                   color: row.highlight ? "#7c3aed" : "#111827",
@@ -1184,31 +1264,10 @@ function DetailsModal({
             </div>
           ))}
 
-          {/* Folder add-on row */}
+          {/* Folder row */}
           {folderInfo.hasFolder && (
-            <div
-              style={{
-                display: "flex",
-                gap: ".75rem",
-                padding: ".45rem 0",
-                borderBottom: "1px solid #f3f4f6",
-                fontSize: ".84rem",
-              }}
-            >
-              <div
-                style={{
-                  width: 90,
-                  color: "#6b7280",
-                  fontWeight: 600,
-                  flexShrink: 0,
-                  fontSize: ".75rem",
-                  textTransform: "uppercase",
-                  letterSpacing: ".04em",
-                  paddingTop: 2,
-                }}
-              >
-                Folder
-              </div>
+            <div style={detailRowStyle}>
+              <div style={labelStyle}>Folder</div>
               <div
                 style={{
                   flex: 1,
@@ -1254,30 +1313,29 @@ function DetailsModal({
             </div>
           )}
 
-          {/* Payment row */}
-          <div
-            style={{
-              display: "flex",
-              gap: ".75rem",
-              padding: ".45rem 0",
-              borderBottom: "1px solid #f3f4f6",
-              fontSize: ".84rem",
-            }}
-          >
-            <div
-              style={{
-                width: 90,
-                color: "#6b7280",
-                fontWeight: 600,
-                flexShrink: 0,
-                fontSize: ".75rem",
-                textTransform: "uppercase",
-                letterSpacing: ".04em",
-                paddingTop: 2,
-              }}
-            >
-              Payment
+          {/* Paper Type row */}
+          {paperType && (
+            <div style={detailRowStyle}>
+              <div style={labelStyle}>Paper Type</div>
+              <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+                <PaperTypeBadge specs={order.specifications} />
+              </div>
             </div>
+          )}
+
+          {/* Photo Finish row */}
+          {photoFinish && (
+            <div style={detailRowStyle}>
+              <div style={labelStyle}>Photo Finish</div>
+              <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+                <PhotoFinishBadge specs={order.specifications} />
+              </div>
+            </div>
+          )}
+
+          {/* Payment row */}
+          <div style={detailRowStyle}>
+            <div style={labelStyle}>Payment</div>
             <div
               style={{ flex: 1, display: "flex", alignItems: "center", gap: 6 }}
             >
@@ -2278,6 +2336,126 @@ export default function AdminDashboardPage() {
     (o) => o.status === "pending" && isGcash(o.payment_method),
   ).length;
 
+  // ── Shared order row renderer ─────────────────────────────────
+  function OrderTableRow({
+    o,
+    showActions = true,
+  }: {
+    o: Order;
+    showActions?: boolean;
+  }) {
+    return (
+      <tr
+        key={o._id || o.order_id}
+        className={isGcash(o.payment_method) ? "gcash-row" : ""}
+      >
+        <td style={{ fontWeight: 600 }}>#{getOrderDisplay(o)}</td>
+        <td>
+          <div style={{ fontWeight: 500 }}>{o.user_name}</div>
+          <div style={{ fontSize: ".7rem", color: "#9ca3af" }}>
+            {o.user_email}
+          </div>
+        </td>
+        <td>{o.service}</td>
+        {showActions && <td>{o.quantity}</td>}
+        <td>
+          {o.delivery_option === "pickup" && o.pickup_time ? (
+            <span className="pickup-badge">
+              <IC.ClockSmall />
+              {formatPickupTime(o.pickup_time)}
+            </span>
+          ) : (
+            <span style={{ color: "#9ca3af", fontSize: ".75rem" }}>—</span>
+          )}
+        </td>
+        {showActions && (
+          <td style={{ fontWeight: 600 }}>
+            ₱{Number(o.total_amount).toFixed(2)}
+          </td>
+        )}
+        <td>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <PaymentBadge method={o.payment_method} />
+            {isGcash(o.payment_method) && o.gcash_ref_num && (
+              <span style={{ fontSize: ".62rem", color: "#6b7280" }}>
+                Ref: <strong>{o.gcash_ref_num}</strong>
+              </span>
+            )}
+          </div>
+        </td>
+        {showActions && (
+          <>
+            <td>
+              <button
+                className="action-btn action-btn-details"
+                onClick={() => setDetailsOrder(o)}
+              >
+                <IC.Eye /> View Details
+              </button>
+            </td>
+            <td>
+              <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <button
+                  className="action-btn action-btn-files"
+                  onClick={() => setFilesOrder(o)}
+                >
+                  <IC.File />
+                  {o.files && o.files.length > 0
+                    ? `View (${o.files.length})`
+                    : "View"}
+                </button>
+                {isGcash(o.payment_method) && (
+                  <button
+                    className="action-btn action-btn-gcash"
+                    onClick={() => setGcashReceiptOrder(o)}
+                  >
+                    <IC.GCash /> GCash Receipt
+                  </button>
+                )}
+              </div>
+            </td>
+            <td>
+              <StatusCell o={o} />
+            </td>
+            <td style={{ color: "#9ca3af", whiteSpace: "nowrap" }}>
+              {new Date(o.created_at).toLocaleDateString()}
+            </td>
+            <td>
+              <button
+                className="btn btn-danger btn-sm"
+                onClick={() => deleteOrder(getOrderId(o))}
+                disabled={o.status === "completed" || o.status === "cancelled"}
+              >
+                <IC.Trash />
+              </button>
+            </td>
+          </>
+        )}
+        {!showActions && (
+          <>
+            <td style={{ fontWeight: 600 }}>
+              ₱{Number(o.total_amount).toFixed(2)}
+            </td>
+            <td>
+              <span
+                className="badge"
+                style={{
+                  background: sBg[o.status] || "#f3f4f6",
+                  color: sColor[o.status] || "#374151",
+                }}
+              >
+                {o.status}
+              </span>
+            </td>
+            <td style={{ color: "#9ca3af" }}>
+              {new Date(o.created_at).toLocaleDateString()}
+            </td>
+          </>
+        )}
+      </tr>
+    );
+  }
+
   return (
     <>
       <style>{`
@@ -2857,7 +3035,6 @@ export default function AdminDashboardPage() {
                           <th>Order ID</th>
                           <th>Customer</th>
                           <th>Service</th>
-                          <th>Folder</th>
                           <th>Pickup Time</th>
                           <th>Payment</th>
                           <th>Status</th>
@@ -2897,9 +3074,6 @@ export default function AdminDashboardPage() {
                                 </div>
                               </td>
                               <td>{o.service}</td>
-                              <td>
-                                <FolderBadge specs={o.specifications} />
-                              </td>
                               <td>
                                 {o.delivery_option === "pickup" &&
                                 o.pickup_time ? (
@@ -2970,7 +3144,14 @@ export default function AdminDashboardPage() {
                             </span>
                           )}
                         </div>
-                        <FolderBadge specs={o.specifications} />
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 4,
+                            flexWrap: "wrap",
+                            marginTop: 3,
+                          }}
+                        ></div>
                       </div>
                       <div className="m-card-right">
                         <div className="m-amount">
@@ -3026,7 +3207,6 @@ export default function AdminDashboardPage() {
                               <th>Customer</th>
                               <th>Service</th>
                               <th>Qty</th>
-                              <th>Folder</th>
                               <th>Delivery</th>
                               <th>Pickup Time</th>
                               <th>Amount</th>
@@ -3064,9 +3244,6 @@ export default function AdminDashboardPage() {
                                 </td>
                                 <td>{o.service}</td>
                                 <td>{o.quantity}</td>
-                                <td>
-                                  <FolderBadge specs={o.specifications} />
-                                </td>
                                 <td style={{ textTransform: "capitalize" }}>
                                   {o.delivery_option}
                                 </td>
@@ -3222,9 +3399,14 @@ export default function AdminDashboardPage() {
                                 Ref: <strong>{o.gcash_ref_num}</strong>
                               </div>
                             )}
-                            <div style={{ marginTop: ".3rem" }}>
-                              <FolderBadge specs={o.specifications} />
-                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: 4,
+                                flexWrap: "wrap",
+                                marginTop: ".3rem",
+                              }}
+                            ></div>
                             <div
                               className="action-btns"
                               style={{ marginTop: ".45rem" }}

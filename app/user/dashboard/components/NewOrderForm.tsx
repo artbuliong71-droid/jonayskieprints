@@ -22,6 +22,96 @@ import {
 } from "./icons";
 import { PickupTimeDropdown } from "./ui";
 
+// ── Paper Type ────────────────────────────────────────────────────────────────
+export type PaperType = "white" | "matte" | "glossy" | "vellum";
+
+const PAPER_TYPES: {
+  value: PaperType;
+  label: string;
+  sub: string;
+  swatch: string;
+  border: string;
+}[] = [
+  {
+    value: "white",
+    label: "White Paper",
+    sub: "Standard bond",
+    swatch: "#ffffff",
+    border: "#d1d5db",
+  },
+  {
+    value: "matte",
+    label: "Matte Paper",
+    sub: "Smooth, no glare",
+    swatch: "#e8e0d5",
+    border: "#d1d5db",
+  },
+  {
+    value: "glossy",
+    label: "Glossy Photo",
+    sub: "Vibrant finish",
+    swatch: "linear-gradient(135deg,#bfdbfe,#ddd6fe)",
+    border: "#d1d5db",
+  },
+  {
+    value: "vellum",
+    label: "Vellum",
+    sub: "Translucent sheet",
+    swatch: "linear-gradient(135deg,#fef9c3,#fde68a)",
+    border: "#d1d5db",
+  },
+];
+
+// ── Photo Finish ──────────────────────────────────────────────────────────────
+export type PhotoFinish = "glossy" | "matte";
+
+// ── Photo Sizes ───────────────────────────────────────────────────────────────
+const PHOTO_SIZES: {
+  value: string;
+  label: string;
+  desc: string;
+  popular?: boolean;
+}[] = [
+  { value: "2x2", label: '2×2"', desc: "ID / Passport" },
+  { value: "3x3", label: '3×3"', desc: "Visa photo" },
+  { value: "4x4", label: '4×4"', desc: "Square print" },
+  { value: "4x6", label: '4×6"', desc: "Standard photo", popular: true },
+  { value: "5x7", label: '5×7"', desc: "Portrait size" },
+  { value: "8x10", label: '8×10"', desc: "Large print" },
+  { value: "A4", label: "A4", desc: "Full-page glossy", popular: true },
+];
+
+// ── Folder constants (unchanged) ──────────────────────────────────────────────
+const FOLDER_COLORS = [
+  "White",
+  "Ivory",
+  "Pink",
+  "Red",
+  "Blue",
+  "Green",
+  "Orange",
+  "Yellow",
+  "Purple",
+  "Black",
+  "Brown",
+  "Clear",
+];
+const FOLDER_COLOR_SWATCHES: Record<string, string> = {
+  White: "#ffffff",
+  Ivory: "#fffff0",
+  Pink: "#ffc0cb",
+  Red: "#ef4444",
+  Blue: "#3b82f6",
+  Green: "#22c55e",
+  Orange: "#f97316",
+  Yellow: "#eab308",
+  Purple: "#a855f7",
+  Black: "#111827",
+  Brown: "#92400e",
+  Clear: "linear-gradient(135deg,#e0e7ff 0%,#f0fdf4 100%)",
+};
+
+// ── Props ─────────────────────────────────────────────────────────────────────
 interface NewOrderFormProps {
   step: number;
   setStep: (n: number) => void;
@@ -78,37 +168,12 @@ interface NewOrderFormProps {
   handleFileChange: (files: FileList | null) => void;
   handleCopiesChange: (val: number | "") => void;
   validateStep: (n: number) => boolean;
+  // ── New props ──
+  noPaperType: PaperType;
+  setNoPaperType: (v: PaperType) => void;
+  noPhotoFinish: PhotoFinish;
+  setNoPhotoFinish: (v: PhotoFinish) => void;
 }
-
-const FOLDER_COLORS = [
-  "White",
-  "Ivory",
-  "Pink",
-  "Red",
-  "Blue",
-  "Green",
-  "Orange",
-  "Yellow",
-  "Purple",
-  "Black",
-  "Brown",
-  "Clear",
-];
-
-const FOLDER_COLOR_SWATCHES: Record<string, string> = {
-  White: "#ffffff",
-  Ivory: "#fffff0",
-  Pink: "#ffc0cb",
-  Red: "#ef4444",
-  Blue: "#3b82f6",
-  Green: "#22c55e",
-  Orange: "#f97316",
-  Yellow: "#eab308",
-  Purple: "#a855f7",
-  Black: "#111827",
-  Brown: "#92400e",
-  Clear: "linear-gradient(135deg,#e0e7ff 0%,#f0fdf4 100%)",
-};
 
 export function NewOrderForm({
   step,
@@ -166,6 +231,10 @@ export function NewOrderForm({
   handleFileChange,
   handleCopiesChange,
   validateStep,
+  noPaperType,
+  setNoPaperType,
+  noPhotoFinish,
+  setNoPhotoFinish,
 }: NewOrderFormProps) {
   const showsPaper = ["Print", "Photocopy", "Scanning"].includes(noService);
   const showsPhoto = noService === "Photo Development";
@@ -177,6 +246,7 @@ export function NewOrderForm({
     "Photo Development",
   ].includes(noService);
   const showsCopies = noService === "Print" || noService === "Photocopy";
+  const showsPaperType = noService === "Print";
 
   const effectiveQuantity = (() => {
     if (noQuantity !== "" && Number(noQuantity) >= 1) return Number(noQuantity);
@@ -198,6 +268,14 @@ export function NewOrderForm({
           noFolderQty,
         )
       : 0;
+
+  // ── Paper Type label for summary ──
+  const paperTypeLabel =
+    PAPER_TYPES.find((p) => p.value === noPaperType)?.label ?? "";
+
+  // ── Photo size label for summary ──
+  const photoSizeLabel =
+    PHOTO_SIZES.find((p) => p.value === noPhotoSize)?.label ?? noPhotoSize;
 
   return (
     <div
@@ -253,6 +331,9 @@ export function NewOrderForm({
                 setNoPdfPages(0);
                 setNoQuantity("");
                 setNoCopies(1);
+                setNoPaperType("white");
+                setNoPhotoFinish("glossy");
+                setNoPhotoSize("4x6");
               }}
             >
               <option value="">-- Select Service --</option>
@@ -422,6 +503,7 @@ export function NewOrderForm({
 
         {/* ── Step 1: Print Options + Specs ── */}
         <div className={`step-box ${step === 1 ? "active" : ""}`}>
+          {/* Paper Size (Print / Photocopy / Scanning) */}
           {showsPaper && (
             <div className="form-group">
               <label className="form-label">Paper Size</label>
@@ -438,19 +520,235 @@ export function NewOrderForm({
               </select>
             </div>
           )}
-          {showsPhoto && (
+
+          {/* ── NEW: Paper Type (Print only) ── */}
+          {showsPaperType && (
             <div className="form-group">
-              <label className="form-label">Photo Size</label>
-              <select
-                className="form-select"
-                value={noPhotoSize}
-                onChange={(e) => setNoPhotoSize(e.target.value)}
+              <label className="form-label">Paper Type</label>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: ".5rem",
+                  marginTop: ".35rem",
+                }}
               >
-                <option value="A4">Glossy A4</option>
-                <option value="4x6">Glossy 4x6</option>
-              </select>
+                {PAPER_TYPES.map((pt) => {
+                  const selected = noPaperType === pt.value;
+                  return (
+                    <button
+                      key={pt.value}
+                      type="button"
+                      onClick={() => setNoPaperType(pt.value)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: ".55rem",
+                        padding: ".55rem .65rem",
+                        borderRadius: 10,
+                        border: `2px solid ${selected ? "#7c3aed" : "#e5e7eb"}`,
+                        background: selected ? "#f5f3ff" : "#fff",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "all .13s",
+                        fontFamily: "'Inter',sans-serif",
+                      }}
+                    >
+                      {/* Swatch */}
+                      <span
+                        style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 7,
+                          background: pt.swatch,
+                          border: `1.5px solid ${selected ? "#c4b5fd" : pt.border}`,
+                          flexShrink: 0,
+                          display: "inline-block",
+                          boxShadow: selected ? "0 0 0 2px #ede9fe" : "none",
+                        }}
+                      />
+                      <div>
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: ".78rem",
+                            color: selected ? "#7c3aed" : "#111827",
+                            lineHeight: 1.2,
+                          }}
+                        >
+                          {pt.label}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: ".67rem",
+                            color: selected ? "#a78bfa" : "#9ca3af",
+                            marginTop: 1,
+                          }}
+                        >
+                          {pt.sub}
+                        </div>
+                      </div>
+                      {selected && (
+                        <span style={{ marginLeft: "auto", flexShrink: 0 }}>
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#7c3aed"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
+
+          {/* ── NEW: Photo Finish + Photo Size grid (Photo Development only) ── */}
+          {showsPhoto && (
+            <>
+              {/* Photo Finish */}
+              <div className="form-group">
+                <label className="form-label">Photo Finish</label>
+                <div
+                  style={{ display: "flex", gap: ".5rem", marginTop: ".35rem" }}
+                >
+                  {[
+                    {
+                      value: "glossy" as PhotoFinish,
+                      label: "Glossy",
+                      sub: "Vibrant & shiny",
+                    },
+                    {
+                      value: "matte" as PhotoFinish,
+                      label: "Matte",
+                      sub: "Soft, no glare",
+                    },
+                  ].map((f) => {
+                    const selected = noPhotoFinish === f.value;
+                    return (
+                      <button
+                        key={f.value}
+                        type="button"
+                        onClick={() => setNoPhotoFinish(f.value)}
+                        style={{
+                          flex: 1,
+                          padding: ".6rem .5rem",
+                          borderRadius: 10,
+                          border: `2px solid ${selected ? "#7c3aed" : "#e5e7eb"}`,
+                          background: selected ? "#f5f3ff" : "#fff",
+                          cursor: "pointer",
+                          fontFamily: "'Inter',sans-serif",
+                          transition: "all .13s",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 700,
+                            fontSize: ".8rem",
+                            color: selected ? "#7c3aed" : "#111827",
+                          }}
+                        >
+                          {f.label}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: ".67rem",
+                            color: selected ? "#a78bfa" : "#9ca3af",
+                            marginTop: 1,
+                          }}
+                        >
+                          {f.sub}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Photo Size grid */}
+              <div className="form-group">
+                <label className="form-label">Photo Size</label>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: ".4rem",
+                    marginTop: ".35rem",
+                  }}
+                >
+                  {PHOTO_SIZES.map((ps) => {
+                    const selected = noPhotoSize === ps.value;
+                    return (
+                      <button
+                        key={ps.value}
+                        type="button"
+                        onClick={() => setNoPhotoSize(ps.value)}
+                        style={{
+                          position: "relative",
+                          padding: ".55rem .4rem",
+                          borderRadius: 10,
+                          border: `2px solid ${selected ? "#7c3aed" : "#e5e7eb"}`,
+                          background: selected ? "#f5f3ff" : "#fff",
+                          cursor: "pointer",
+                          fontFamily: "'Inter',sans-serif",
+                          transition: "all .13s",
+                          textAlign: "center",
+                        }}
+                      >
+                        {ps.popular && (
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: -7,
+                              right: 4,
+                              background: "#7c3aed",
+                              color: "#fff",
+                              fontSize: ".56rem",
+                              fontWeight: 800,
+                              padding: "1px 5px",
+                              borderRadius: 99,
+                              letterSpacing: ".04em",
+                              lineHeight: 1.6,
+                            }}
+                          >
+                            POPULAR
+                          </span>
+                        )}
+                        <div
+                          style={{
+                            fontWeight: 800,
+                            fontSize: ".82rem",
+                            color: selected ? "#7c3aed" : "#111827",
+                          }}
+                        >
+                          {ps.label}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: ".63rem",
+                            color: selected ? "#a78bfa" : "#9ca3af",
+                            marginTop: 1,
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {ps.desc}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Print Type (Print / Scanning) */}
           {showsColor && (
             <div className="form-group">
               <label className="form-label">Print Type</label>
@@ -479,6 +777,7 @@ export function NewOrderForm({
             </div>
           )}
 
+          {/* Lamination */}
           {showsLam && (
             <div className="form-group">
               <label className="check-label">
@@ -492,7 +791,7 @@ export function NewOrderForm({
             </div>
           )}
 
-          {/* ── Folder add-on ── */}
+          {/* Folder add-on */}
           {showsLam && (
             <div className="form-group">
               <label className="check-label">
@@ -523,7 +822,6 @@ export function NewOrderForm({
                     gap: ".65rem",
                   }}
                 >
-                  {/* Size + Qty */}
                   <div style={{ display: "flex", gap: ".6rem" }}>
                     <div style={{ flex: 1 }}>
                       <label className="form-label">Size</label>
@@ -554,8 +852,6 @@ export function NewOrderForm({
                       />
                     </div>
                   </div>
-
-                  {/* Color picker */}
                   <div>
                     <label
                       className="form-label"
@@ -615,8 +911,6 @@ export function NewOrderForm({
                       })}
                     </div>
                   </div>
-
-                  {/* Selected summary */}
                   <div
                     style={{
                       fontSize: ".72rem",
@@ -1449,7 +1743,7 @@ export function NewOrderForm({
             )}
           </div>
 
-          {/* Order summary */}
+          {/* Order Summary */}
           <div className="sum-box">
             <div
               style={{
@@ -1518,11 +1812,35 @@ export function NewOrderForm({
                   </span>
                 </div>
               )}
-              {showsPhoto && (
+              {/* Paper Type in summary */}
+              {showsPaperType && (
                 <div className="sum-row">
-                  <span>Photo Size</span>
-                  <span>Glossy {noPhotoSize}</span>
+                  <span>Paper Type</span>
+                  <span style={{ color: "#7c3aed", fontWeight: 600 }}>
+                    {paperTypeLabel}
+                  </span>
                 </div>
+              )}
+              {/* Photo Finish + Size in summary */}
+              {showsPhoto && (
+                <>
+                  <div className="sum-row">
+                    <span>Photo Finish</span>
+                    <span
+                      style={{
+                        color: "#7c3aed",
+                        fontWeight: 600,
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {noPhotoFinish}
+                    </span>
+                  </div>
+                  <div className="sum-row">
+                    <span>Photo Size</span>
+                    <span>{photoSizeLabel}</span>
+                  </div>
+                </>
               )}
               {showsColor && (
                 <div className="sum-row">

@@ -30,17 +30,25 @@ import { FirstLoginTosModal, CancelConfirmModal } from "./components/modals";
 import { DashboardSection } from "./components/DashboardSection";
 import { OrdersSection } from "./components/OrdersSection";
 import { ProfileSection } from "./components/ProfileSection";
-import { NewOrderForm } from "./components/NewOrderForm";
+import {
+  NewOrderForm,
+  PaperType,
+  PhotoFinish,
+} from "./components/NewOrderForm";
 import { ViewDetailsModal } from "./components/ViewDetailsModal";
 import { EditOrderModal } from "./components/EditOrderModal";
 
-// ─────────────────────────────────────────────────────────────────────────────
+const PAPER_TYPE_LABELS: Record<string, string> = {
+  white: "White Paper",
+  matte: "Matte Paper",
+  glossy: "Glossy Photo",
+  vellum: "Vellum",
+};
 
 function DashboardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // ── UI ────────────────────────────────────────────────────────────────────
   const [showTosModal, setShowTosModal] = useState(false);
   const [activeSection, setActiveSection] = useState<Section>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -58,7 +66,6 @@ function DashboardPageInner() {
     [],
   );
 
-  // ── Server data ───────────────────────────────────────────────────────────
   const [prices, setPrices] = useState<Prices>(DEFAULT_PRICES);
   const [stats, setStats] = useState<DashboardStats>({
     totalOrders: 0,
@@ -78,13 +85,11 @@ function DashboardPageInner() {
     role: "customer",
   });
 
-  // ── Cancel modal ──────────────────────────────────────────────────────────
   const [cancelModalOrderId, setCancelModalOrderId] = useState<string | null>(
     null,
   );
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  // ── View-details modal ────────────────────────────────────────────────────
   const [viewDetailsOrder, setViewDetailsOrder] = useState<Order | null>(null);
   const [viewDetailsFiles, setViewDetailsFiles] = useState<
     { name: string; url: string; type: string }[]
@@ -93,7 +98,7 @@ function DashboardPageInner() {
     url: string;
   } | null>(null);
 
-  // ── New-order form ────────────────────────────────────────────────────────
+  // New-order form state
   const [step, setStep] = useState(0);
   const [noService, setNoService] = useState("");
   const [noQuantity, setNoQuantity] = useState<number | "">("");
@@ -102,7 +107,9 @@ function DashboardPageInner() {
   const [noAddress, setNoAddress] = useState("");
   const [noPickupTime, setNoPickupTime] = useState("");
   const [noPaperSize, setNoPaperSize] = useState<PaperSize>("A4");
-  const [noPhotoSize, setNoPhotoSize] = useState("A4");
+  const [noPhotoSize, setNoPhotoSize] = useState("4x6");
+  const [noPaperType, setNoPaperType] = useState<PaperType>("white");
+  const [noPhotoFinish, setNoPhotoFinish] = useState<PhotoFinish>("glossy");
   const [noColorOption, setNoColorOption] = useState<ColorOption>("bw");
   const [noLamination, setNoLamination] = useState(false);
   const [noFolder, setNoFolder] = useState(false);
@@ -127,7 +134,7 @@ function DashboardPageInner() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const gcashReceiptRef = useRef<HTMLInputElement>(null);
 
-  // ── Edit-order modal ──────────────────────────────────────────────────────
+  // Edit-order modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editOrder, setEditOrder] = useState<Partial<Order> | null>(null);
   const [eoService, setEoService] = useState("");
@@ -149,7 +156,7 @@ function DashboardPageInner() {
   const [eoNewFiles, setEoNewFiles] = useState<FileList | null>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
 
-  // ── Profile ───────────────────────────────────────────────────────────────
+  // Profile state
   const [profFirstName, setProfFirstName] = useState("");
   const [profLastName, setProfLastName] = useState("");
   const [profEmail, setProfEmail] = useState("");
@@ -164,7 +171,6 @@ function DashboardPageInner() {
   const [profTab, setProfTab] = useState<"info" | "password">("info");
   const [profAvatar, setProfAvatar] = useState<string | null>(null);
 
-  // ── Derived ───────────────────────────────────────────────────────────────
   const pwStrength = (() => {
     if (!profNewPw) return 0;
     let s = 0;
@@ -186,7 +192,6 @@ function DashboardPageInner() {
     `${profFirstName?.[0] ?? ""}${profLastName?.[0] ?? ""}`.toUpperCase() ||
     "U";
 
-  // ── Data fetching ─────────────────────────────────────────────────────────
   const fetchPrices = useCallback(async () => {
     try {
       const res = await fetch(`/api/pricing?t=${Date.now()}`);
@@ -271,6 +276,7 @@ function DashboardPageInner() {
     fetchRecentOrders();
     fetchUser();
   }, [fetchPrices, fetchStats, fetchRecentOrders, fetchUser]);
+
   useEffect(() => {
     if (activeSection === "orders") fetchOrders(orderFilter);
     if (activeSection === "dashboard") {
@@ -286,9 +292,11 @@ function DashboardPageInner() {
     fetchRecentOrders,
     fetchPrices,
   ]);
+
   useEffect(() => {
     if (!localStorage.getItem(TOS_ACCEPTED_KEY)) setShowTosModal(true);
   }, []);
+
   useEffect(() => {
     if (searchParams.get("welcome") !== "true" || !user.first_name) return;
     window.history.replaceState({}, "", "/user/dashboard");
@@ -299,7 +307,6 @@ function DashboardPageInner() {
     return () => clearTimeout(t);
   }, [searchParams, user.first_name, showToast]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
   function handleTosAccept() {
     localStorage.setItem(TOS_ACCEPTED_KEY, "true");
     setShowTosModal(false);
@@ -414,7 +421,6 @@ function DashboardPageInner() {
     setProfSubmitting(false);
   }
 
-  // ── New-order helpers ──────────────────────────────────────────────────────
   const showsCopies = noService === "Print" || noService === "Photocopy";
 
   async function handleFileChange(files: FileList | null) {
@@ -528,7 +534,9 @@ function DashboardPageInner() {
     setNoAddress("");
     setNoPickupTime("");
     setNoPaperSize("A4");
-    setNoPhotoSize("A4");
+    setNoPhotoSize("4x6");
+    setNoPaperType("white");
+    setNoPhotoFinish("glossy");
     setNoColorOption("bw");
     setNoLamination(false);
     setNoFolder(false);
@@ -603,13 +611,29 @@ function DashboardPageInner() {
       const fd = new FormData();
       fd.append("service", noService);
       fd.append("quantity", String(finalQuantity));
-      fd.append("specifications", noSpecs);
+
+      // ── Enrich specifications with Paper Type / Photo Finish ──
+      let enrichedSpecs = noSpecs;
+      if (noService === "Print" && noPaperType) {
+        enrichedSpecs =
+          `Paper Type: ${PAPER_TYPE_LABELS[noPaperType] || noPaperType}\n` +
+          enrichedSpecs;
+      }
+      if (noService === "Photo Development" && noPhotoFinish) {
+        const pfLabel =
+          noPhotoFinish.charAt(0).toUpperCase() + noPhotoFinish.slice(1);
+        enrichedSpecs = `Photo Finish: ${pfLabel}\n` + enrichedSpecs;
+      }
+      fd.append("specifications", enrichedSpecs);
+
       fd.append("delivery_option", noDelivery);
       if (noDelivery === "delivery") fd.append("delivery_address", noAddress);
       if (noDelivery === "pickup" && noPickupTime)
         fd.append("pickup_time", noPickupTime);
       fd.append("paper_size", noPaperSize);
       fd.append("photo_size", noPhotoSize);
+      fd.append("paper_type", noPaperType);
+      fd.append("photo_finish", noPhotoFinish);
       fd.append("color_option", noColorOption);
       if (noLamination) fd.append("add_lamination", "on");
       if (noFolder) {
@@ -679,7 +703,6 @@ function DashboardPageInner() {
     setNoSubmitting(false);
   }
 
-  // ── Edit-order helpers ─────────────────────────────────────────────────────
   async function openEditModal(orderId: string) {
     try {
       const res = await fetch(
@@ -800,17 +823,14 @@ function DashboardPageInner() {
     setEoSubmitting(false);
   }
 
-  // ── Nav ───────────────────────────────────────────────────────────────────
   const navItems: { id: Section; icon: React.ReactNode; label: string }[] = [
     { id: "dashboard", icon: <IC.Grid />, label: "Dashboard" },
     { id: "new-order", icon: <IC.Plus />, label: "New Order" },
     { id: "orders", icon: <IC.List />, label: "My Orders" },
   ];
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* Paste your full <style> CSS string here — identical to original page.tsx */}
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
         @keyframes tosBackdropIn { from{opacity:0} to{opacity:1} }
         @keyframes tosModalIn { from{opacity:0;transform:scale(.9) translateY(20px)} to{opacity:1;transform:scale(1) translateY(0)} }
@@ -922,6 +942,7 @@ function DashboardPageInner() {
                 prices={prices}
                 recentOrders={recentOrders}
                 onViewAll={() => setActiveSection("orders")}
+                onNewOrder={() => setActiveSection("new-order")}
               />
             </section>
 
@@ -949,6 +970,10 @@ function DashboardPageInner() {
                 setNoPaperSize={setNoPaperSize}
                 noPhotoSize={noPhotoSize}
                 setNoPhotoSize={setNoPhotoSize}
+                noPaperType={noPaperType}
+                setNoPaperType={setNoPaperType}
+                noPhotoFinish={noPhotoFinish}
+                setNoPhotoFinish={setNoPhotoFinish}
                 noColorOption={noColorOption}
                 setNoColorOption={setNoColorOption}
                 noLamination={noLamination}

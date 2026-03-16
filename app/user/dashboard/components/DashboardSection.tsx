@@ -11,36 +11,42 @@ const pricingCards = (prices: Prices) => [
     price: sp(prices.print_bw, 1),
     icon: <IC.Printer />,
     unit: "per page",
+    service: "Print",
   },
   {
     name: "Print Color",
     price: sp(prices.print_color, 2),
     icon: <IC.Printer />,
     unit: "per page",
+    service: "Print",
   },
   {
     name: "Photocopy",
     price: sp(prices.photocopying, 2),
     icon: <IC.Copy />,
     unit: "per page",
+    service: "Photocopy",
   },
   {
     name: "Scanning",
     price: sp(prices.scanning, 5),
     icon: <IC.Scan />,
     unit: "per page",
+    service: "Scanning",
   },
   {
     name: "Photo Dev.",
     price: sp(prices.photo_development, 15),
     icon: <IC.Camera />,
     unit: "per photo",
+    service: "Photo Development",
   },
   {
     name: "Laminating",
     price: sp(prices.laminating, 20),
     icon: <IC.Layers />,
     unit: "per item",
+    service: "Laminating",
   },
 ];
 
@@ -49,11 +55,13 @@ export function DashboardSection({
   prices,
   recentOrders,
   onViewAll,
+  onNewOrder,
 }: {
   stats: DashboardStats;
   prices: Prices;
   recentOrders: Order[];
   onViewAll: () => void;
+  onNewOrder: () => void;
 }) {
   return (
     <>
@@ -63,10 +71,21 @@ export function DashboardSection({
           <div className="p-label">
             <IC.Tag /> Current Pricing
           </div>
+          <div
+            style={{ fontSize: ".68rem", color: "#9ca3af", fontWeight: 500 }}
+          >
+            Tap a service to order
+          </div>
         </div>
         <div className="p-grid">
           {pricingCards(prices).map((s) => (
-            <div key={s.name} className="p-card">
+            <div
+              key={s.name}
+              className="p-card"
+              onClick={onNewOrder}
+              title={`Order ${s.name}`}
+              style={{ cursor: "pointer" }}
+            >
               <div className="p-ico">{s.icon}</div>
               <div className="p-name">{s.name}</div>
               <div className="p-price">₱{s.price.toFixed(2)}</div>
