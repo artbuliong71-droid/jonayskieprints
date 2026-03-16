@@ -330,15 +330,6 @@ export function NewOrderForm({
                     handleCopiesChange(val);
                   }}
                 />
-                <div className="hint-text">
-                  Upload PDF/DOCX in Step 3 — pages will be auto-counted
-                </div>
-                {noPdfPages > 0 && Number(noCopies) > 0 && (
-                  <div className="copies-info">
-                    ✓ {noPdfPages} pages × {noCopies} copies ={" "}
-                    {noPdfPages * Number(noCopies)} total pages
-                  </div>
-                )}
               </div>
             ) : (
               <div className="form-group">
@@ -426,7 +417,7 @@ export function NewOrderForm({
               <label className="form-label">Delivery Address</label>
               <textarea
                 className="form-textarea"
-                placeholder="Enter complete address"
+                placeholder="Enter the complete address and nearest Landmark"
                 value={noAddress}
                 onChange={(e) => setNoAddress(e.target.value)}
               />
