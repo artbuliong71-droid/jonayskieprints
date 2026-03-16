@@ -28,38 +28,11 @@ export type PaperType = "white" | "matte" | "glossy" | "vellum";
 const PAPER_TYPES: {
   value: PaperType;
   label: string;
-  sub: string;
-  swatch: string;
-  border: string;
 }[] = [
-  {
-    value: "white",
-    label: "White Paper",
-    sub: "Standard bond",
-    swatch: "#ffffff",
-    border: "#d1d5db",
-  },
-  {
-    value: "matte",
-    label: "Matte Paper",
-    sub: "Smooth, no glare",
-    swatch: "#e8e0d5",
-    border: "#d1d5db",
-  },
-  {
-    value: "glossy",
-    label: "Glossy Photo",
-    sub: "Vibrant finish",
-    swatch: "linear-gradient(135deg,#bfdbfe,#ddd6fe)",
-    border: "#d1d5db",
-  },
-  {
-    value: "vellum",
-    label: "Vellum",
-    sub: "Translucent sheet",
-    swatch: "linear-gradient(135deg,#fef9c3,#fde68a)",
-    border: "#d1d5db",
-  },
+  { value: "white", label: "White Paper" },
+  { value: "matte", label: "Matte Paper" },
+  { value: "glossy", label: "Glossy Photo" },
+  { value: "vellum", label: "Vellum" },
 ];
 
 // ── Photo Finish ──────────────────────────────────────────────────────────────
@@ -69,16 +42,10 @@ export type PhotoFinish = "glossy" | "matte";
 const PHOTO_SIZES: {
   value: string;
   label: string;
-  desc: string;
-  popular?: boolean;
 }[] = [
-  { value: "2x2", label: '2×2"', desc: "ID / Passport" },
-  { value: "3x3", label: '3×3"', desc: "Visa photo" },
-  { value: "4x4", label: '4×4"', desc: "Square print" },
-  { value: "4x6", label: '4×6"', desc: "Standard photo", popular: true },
-  { value: "5x7", label: '5×7"', desc: "Portrait size" },
-  { value: "8x10", label: '8×10"', desc: "Large print" },
-  { value: "A4", label: "A4", desc: "Full-page glossy", popular: true },
+  { value: "1x1", label: '1×1"' },
+  { value: "2x2", label: '2×2"' },
+  { value: "A4", label: "A4" },
 ];
 
 // ── Folder constants (unchanged) ──────────────────────────────────────────────
@@ -236,15 +203,13 @@ export function NewOrderForm({
   noPhotoFinish,
   setNoPhotoFinish,
 }: NewOrderFormProps) {
-  const showsPaper = ["Print", "Photocopy", "Scanning"].includes(noService);
+  // ── Change 1: Scanning removed from all derived booleans ──
+  const showsPaper = ["Print", "Photocopy"].includes(noService);
   const showsPhoto = noService === "Photo Development";
-  const showsColor = noService === "Print" || noService === "Scanning";
-  const showsLam = [
-    "Print",
-    "Photocopy",
-    "Scanning",
-    "Photo Development",
-  ].includes(noService);
+  const showsColor = noService === "Print"; // Scanning removed
+  const showsLam = ["Print", "Photocopy", "Photo Development"].includes(
+    noService,
+  ); // Scanning removed
   const showsCopies = noService === "Print" || noService === "Photocopy";
   const showsPaperType = noService === "Print";
 
@@ -333,11 +298,12 @@ export function NewOrderForm({
                 setNoCopies(1);
                 setNoPaperType("white");
                 setNoPhotoFinish("glossy");
-                setNoPhotoSize("4x6");
+                setNoPhotoSize("2x2");
               }}
             >
               <option value="">-- Select Service --</option>
-              {SERVICES.map((s) => (
+              {/* Change 1: filter out Scanning */}
+              {SERVICES.filter((s) => s !== "Scanning").map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
@@ -503,7 +469,7 @@ export function NewOrderForm({
 
         {/* ── Step 1: Print Options + Specs ── */}
         <div className={`step-box ${step === 1 ? "active" : ""}`}>
-          {/* Paper Size (Print / Photocopy / Scanning) */}
+          {/* Paper Size (Print / Photocopy) */}
           {showsPaper && (
             <div className="form-group">
               <label className="form-label">Paper Size</label>
@@ -521,96 +487,25 @@ export function NewOrderForm({
             </div>
           )}
 
-          {/* ── NEW: Paper Type (Print only) ── */}
+          {/* ── Change 2: Paper Type as dropdown (Print only) ── */}
           {showsPaperType && (
             <div className="form-group">
               <label className="form-label">Paper Type</label>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: ".5rem",
-                  marginTop: ".35rem",
-                }}
+              <select
+                className="form-select"
+                value={noPaperType}
+                onChange={(e) => setNoPaperType(e.target.value as PaperType)}
               >
-                {PAPER_TYPES.map((pt) => {
-                  const selected = noPaperType === pt.value;
-                  return (
-                    <button
-                      key={pt.value}
-                      type="button"
-                      onClick={() => setNoPaperType(pt.value)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: ".55rem",
-                        padding: ".55rem .65rem",
-                        borderRadius: 10,
-                        border: `2px solid ${selected ? "#7c3aed" : "#e5e7eb"}`,
-                        background: selected ? "#f5f3ff" : "#fff",
-                        cursor: "pointer",
-                        textAlign: "left",
-                        transition: "all .13s",
-                        fontFamily: "'Inter',sans-serif",
-                      }}
-                    >
-                      {/* Swatch */}
-                      <span
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 7,
-                          background: pt.swatch,
-                          border: `1.5px solid ${selected ? "#c4b5fd" : pt.border}`,
-                          flexShrink: 0,
-                          display: "inline-block",
-                          boxShadow: selected ? "0 0 0 2px #ede9fe" : "none",
-                        }}
-                      />
-                      <div>
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            fontSize: ".78rem",
-                            color: selected ? "#7c3aed" : "#111827",
-                            lineHeight: 1.2,
-                          }}
-                        >
-                          {pt.label}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: ".67rem",
-                            color: selected ? "#a78bfa" : "#9ca3af",
-                            marginTop: 1,
-                          }}
-                        >
-                          {pt.sub}
-                        </div>
-                      </div>
-                      {selected && (
-                        <span style={{ marginLeft: "auto", flexShrink: 0 }}>
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="#7c3aed"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                          >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                {PAPER_TYPES.map((pt) => (
+                  <option key={pt.value} value={pt.value}>
+                    {pt.label}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
-          {/* ── NEW: Photo Finish + Photo Size grid (Photo Development only) ── */}
+          {/* ── Photo Finish + Photo Size (Photo Development only) ── */}
           {showsPhoto && (
             <>
               {/* Photo Finish */}
@@ -672,7 +567,7 @@ export function NewOrderForm({
                 </div>
               </div>
 
-              {/* Photo Size grid */}
+              {/* Change 3 & 4: Photo Size — only 1x1, 2x2, A4 with "Picture" caption */}
               <div className="form-group">
                 <label className="form-label">Photo Size</label>
                 <div
@@ -691,7 +586,6 @@ export function NewOrderForm({
                         type="button"
                         onClick={() => setNoPhotoSize(ps.value)}
                         style={{
-                          position: "relative",
                           padding: ".55rem .4rem",
                           borderRadius: 10,
                           border: `2px solid ${selected ? "#7c3aed" : "#e5e7eb"}`,
@@ -702,25 +596,6 @@ export function NewOrderForm({
                           textAlign: "center",
                         }}
                       >
-                        {ps.popular && (
-                          <span
-                            style={{
-                              position: "absolute",
-                              top: -7,
-                              right: 4,
-                              background: "#7c3aed",
-                              color: "#fff",
-                              fontSize: ".56rem",
-                              fontWeight: 800,
-                              padding: "1px 5px",
-                              borderRadius: 99,
-                              letterSpacing: ".04em",
-                              lineHeight: 1.6,
-                            }}
-                          >
-                            POPULAR
-                          </span>
-                        )}
                         <div
                           style={{
                             fontWeight: 800,
@@ -738,7 +613,7 @@ export function NewOrderForm({
                             lineHeight: 1.3,
                           }}
                         >
-                          {ps.desc}
+                          Picture
                         </div>
                       </button>
                     );
@@ -748,7 +623,7 @@ export function NewOrderForm({
             </>
           )}
 
-          {/* Print Type (Print / Scanning) */}
+          {/* Change 2: Print Type — B&W only (Color option removed), shown for Print only */}
           {showsColor && (
             <div className="form-group">
               <label className="form-label">Print Type</label>
@@ -762,16 +637,6 @@ export function NewOrderForm({
                     onChange={() => setNoColorOption("bw")}
                   />{" "}
                   B&W
-                </label>
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="no_col"
-                    value="color"
-                    checked={noColorOption === "color"}
-                    onChange={() => setNoColorOption("color")}
-                  />{" "}
-                  Color
                 </label>
               </div>
             </div>
@@ -1755,7 +1620,6 @@ export function NewOrderForm({
                   </span>
                 </div>
               )}
-              {/* Paper Type in summary */}
               {showsPaperType && (
                 <div className="sum-row">
                   <span>Paper Type</span>
@@ -1764,7 +1628,6 @@ export function NewOrderForm({
                   </span>
                 </div>
               )}
-              {/* Photo Finish + Size in summary */}
               {showsPhoto && (
                 <>
                   <div className="sum-row">
@@ -1788,7 +1651,7 @@ export function NewOrderForm({
               {showsColor && (
                 <div className="sum-row">
                   <span>Print Type</span>
-                  <span>{noColorOption === "color" ? "Color" : "B&W"}</span>
+                  <span>B&W</span>
                 </div>
               )}
               {noFolder && (
@@ -1860,9 +1723,6 @@ export function NewOrderForm({
                   } else if (sl === "photocopy") {
                     unitPrice = sp(prices.photocopying, 2) * m;
                     priceLabel = `₱${sp(prices.photocopying, 2).toFixed(2)}/page${noPaperSize === "Long" ? " × 1.2 (Long)" : ""}`;
-                  } else if (sl === "scanning") {
-                    unitPrice = sp(prices.scanning, 5) * m;
-                    priceLabel = `₱${sp(prices.scanning, 5).toFixed(2)}/page${noPaperSize === "Long" ? " × 1.2 (Long)" : ""}`;
                   } else if (sl === "photo development") {
                     unitPrice = sp(prices.photo_development, 15);
                     priceLabel = `₱${sp(prices.photo_development, 15).toFixed(2)}/photo`;
