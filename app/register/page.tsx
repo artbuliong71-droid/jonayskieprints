@@ -227,6 +227,134 @@ const IconScroll = () => (
   </svg>
 );
 
+// ── OTP MODAL ───────────────────────────────────────────────────────
+function OtpModal({
+  email,
+  onVerified,
+  onClose,
+}: {
+  email: string;
+  onVerified: () => void;
+  onClose: () => void;
+}) {
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [resendTimer, setResendTimer] = useState(60);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  useEffect(() => {
+    if (resendTimer <= 0) return;
+    const t = setTimeout(() => setResendTimer((n) => n - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendTimer]);
+
+  const handleVerify = async () => {
+    if (otp.length !== 6) {
+      setError("Enter the 6-digit code");
+      return;
+    }
+    setIsVerifying(true);
+    setError("");
+    try {
+      const res = await fetch(
+        `/api/send-otp?email=${encodeURIComponent(email)}&otp=${otp}`,
+      );
+      const data = await res.json();
+      if (data.success) {
+        onVerified();
+      } else {
+        setError(data.message || "Invalid code");
+      }
+    } catch {
+      setError("Something went wrong. Try again.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResendTimer(60);
+    setError("");
+    setOtp("");
+    await fetch("/api/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+  };
+
+  return (
+    <div className="tos-backdrop" onClick={onClose}>
+      <div className="otp-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="otp-icon-wrap">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+            <polyline points="22,6 12,13 2,6" />
+          </svg>
+        </div>
+        <h2 className="otp-title">Check your email</h2>
+        <p className="otp-subtitle">
+          We sent a 6-digit code to
+          <br />
+          <strong>{email}</strong>
+        </p>
+        <input
+          className={`otp-input ${error ? "has-error" : ""}`}
+          type="text"
+          inputMode="numeric"
+          maxLength={6}
+          placeholder="000000"
+          value={otp}
+          onChange={(e) => {
+            setOtp(e.target.value.replace(/\D/g, ""));
+            setError("");
+          }}
+        />
+        {error && <p className="otp-error">{error}</p>}
+        <button
+          className="btn-primary"
+          style={{ marginTop: "1rem", marginBottom: 0 }}
+          onClick={handleVerify}
+          disabled={isVerifying}
+        >
+          {isVerifying ? (
+            <>
+              <span className="spinner" /> Verifying…
+            </>
+          ) : (
+            "Verify & Create Account"
+          )}
+        </button>
+        <p className="otp-resend">
+          {resendTimer > 0 ? (
+            `Resend code in ${resendTimer}s`
+          ) : (
+            <button className="terms-link" onClick={handleResend}>
+              Resend code
+            </button>
+          )}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── TERMS OF SERVICE MODAL ──────────────────────────────────────────
 function TermsModal({
   onClose,
@@ -286,7 +414,6 @@ function TermsModal({
             Prints as a service provider.
           </div>
 
-          {/* 01 */}
           <div className="tos-section">
             <div className="tos-section-badge">01</div>
             <h3 className="tos-section-title">Acceptance of Terms</h3>
@@ -298,7 +425,6 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 02 */}
           <div className="tos-section">
             <div className="tos-section-badge">02</div>
             <h3 className="tos-section-title">Services Offered</h3>
@@ -311,14 +437,12 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 03 — UPDATED: GCash-only policy */}
           <div className="tos-section highlight-section">
             <div className="tos-section-badge accent">03</div>
             <h3 className="tos-section-title">
               Payment Methods &amp; Downpayment Policy
             </h3>
 
-            {/* GCash-only card */}
             <div
               className="tos-highlight-box"
               style={{ marginBottom: "0.75rem" }}
@@ -327,10 +451,21 @@ function TermsModal({
                 className="highlight-icon"
                 style={{
                   background: "linear-gradient(135deg,#7c3aed,#a855f7)",
-                  fontSize: "1.1rem",
                 }}
               >
-                💜
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+                  <line x1="1" y1="10" x2="23" y2="10" />
+                </svg>
               </div>
               <div>
                 <p style={{ fontWeight: 700, marginBottom: "0.4rem" }}>
@@ -358,7 +493,6 @@ function TermsModal({
               </div>
             </div>
 
-            {/* Cash + downpayment card */}
             <div className="tos-highlight-box">
               <div className="highlight-icon">₱</div>
               <div>
@@ -396,7 +530,6 @@ function TermsModal({
             </div>
           </div>
 
-          {/* 04 */}
           <div className="tos-section">
             <div className="tos-section-badge">04</div>
             <h3 className="tos-section-title">
@@ -411,7 +544,6 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 05 */}
           <div className="tos-section">
             <div className="tos-section-badge">05</div>
             <h3 className="tos-section-title">File Submission &amp; Quality</h3>
@@ -425,7 +557,6 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 06 — UPDATED: GCash clarification */}
           <div className="tos-section">
             <div className="tos-section-badge">06</div>
             <h3 className="tos-section-title">Payments &amp; Pricing</h3>
@@ -443,7 +574,6 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 07 */}
           <div className="tos-section">
             <div className="tos-section-badge">07</div>
             <h3 className="tos-section-title">Cancellations &amp; Refunds</h3>
@@ -456,7 +586,6 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 08 */}
           <div className="tos-section">
             <div className="tos-section-badge">08</div>
             <h3 className="tos-section-title">Privacy &amp; Data Protection</h3>
@@ -469,7 +598,6 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 9 */}
           <div className="tos-section">
             <div className="tos-section-badge">09</div>
             <h3 className="tos-section-title">Prohibited Content</h3>
@@ -482,7 +610,6 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 10 */}
           <div className="tos-section">
             <div className="tos-section-badge">10</div>
             <h3 className="tos-section-title">Limitation of Liability</h3>
@@ -495,7 +622,6 @@ function TermsModal({
             </p>
           </div>
 
-          {/* 11 */}
           <div className="tos-section">
             <div className="tos-section-badge">11</div>
             <h3 className="tos-section-title">Amendments</h3>
@@ -544,6 +670,7 @@ function TermsModal({
   );
 }
 
+// ── REGISTER PAGE ───────────────────────────────────────────────────
 export default function RegisterPage() {
   const router = useRouter();
   const [formData, setFormData] = useState<RegisterFormData>({
@@ -560,6 +687,8 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [showTos, setShowTos] = useState(false);
+  const [showOtp, setShowOtp] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
   const [notification, setNotification] = useState<NotificationState>({
     message: "",
     type: "error",
@@ -603,9 +732,34 @@ export default function RegisterPage() {
     return Object.keys(e).length === 0;
   };
 
+  // Step 1: Validate form → send OTP
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOtpEmail(formData.email);
+        setShowOtp(true);
+      } else {
+        showNotification(data.message || "Failed to send OTP", "error");
+      }
+    } catch {
+      showNotification("An unexpected error occurred.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Step 2: OTP verified → create account
+  const handleRegister = async () => {
+    setShowOtp(false);
     setIsLoading(true);
     try {
       const body = new FormData();
@@ -746,19 +900,6 @@ export default function RegisterPage() {
         .btn-primary:active:not(:disabled) { transform: translateY(0); opacity: 0.85; }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-        .btn-google {
-          width: 100%; padding: clamp(0.72rem, 2.5vw, 0.875rem);
-          background: #fff; color: #374151; border: 1.5px solid #e5e7eb; border-radius: 10px;
-          font-family: 'DM Sans', sans-serif; font-size: clamp(0.84rem, 2.5vw, 0.92rem);
-          font-weight: 600; cursor: pointer; text-align: center; text-decoration: none;
-          display: flex; align-items: center; justify-content: center; gap: 0.65rem;
-          transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-          margin-bottom: clamp(0.75rem, 2vw, 1rem);
-          -webkit-tap-highlight-color: transparent;
-        }
-        .btn-google:hover { border-color: #d1d5db; background: #f9fafb; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-
         .divider {
           display: flex; align-items: center; gap: 0.75rem;
           margin: 0.2rem 0 clamp(0.75rem, 2vw, 1rem);
@@ -793,9 +934,36 @@ export default function RegisterPage() {
         .notification.success { background: #2d9b5a; }
         .notification.error { background: #e63329; }
 
-        /* ═══════════════════════════════
-           TERMS OF SERVICE MODAL
-        ═══════════════════════════════ */
+        /* ── OTP MODAL ── */
+        .otp-modal {
+          background: #fff; border-radius: 20px;
+          width: 100%; max-width: 400px;
+          padding: 2rem 1.75rem 1.75rem;
+          display: flex; flex-direction: column; align-items: center; text-align: center;
+          box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+          animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .otp-icon-wrap {
+          width: 60px; height: 60px; border-radius: 16px;
+          background: linear-gradient(135deg, #5b6dee, #7c3aed);
+          display: flex; align-items: center; justify-content: center;
+          margin-bottom: 1rem;
+        }
+        .otp-title { font-size: 1.3rem; font-weight: 700; color: #0f0e11; margin-bottom: 0.4rem; }
+        .otp-subtitle { font-size: 0.875rem; color: #6b7280; line-height: 1.6; margin-bottom: 1.25rem; }
+        .otp-input {
+          width: 100%; padding: 0.85rem 1rem; text-align: center;
+          font-size: 1.75rem; font-weight: 700; letter-spacing: 0.5rem;
+          border: 1.5px solid #e5e7eb; border-radius: 12px; outline: none;
+          font-family: 'DM Sans', sans-serif; color: #0f0e11;
+          transition: border-color 0.2s, box-shadow 0.2s; -webkit-appearance: none;
+        }
+        .otp-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+        .otp-input.has-error { border-color: #e63329; background: #fff8f8; }
+        .otp-error { font-size: 0.78rem; color: #e63329; font-weight: 500; margin-top: 0.4rem; }
+        .otp-resend { font-size: 0.82rem; color: #9ca3af; margin-top: 1rem; }
+
+        /* ── TERMS OF SERVICE MODAL ── */
         .tos-backdrop {
           position: fixed; inset: 0; z-index: 1000;
           background: rgba(10, 8, 20, 0.65);
@@ -934,6 +1102,14 @@ export default function RegisterPage() {
         />
       )}
 
+      {showOtp && (
+        <OtpModal
+          email={otpEmail}
+          onVerified={handleRegister}
+          onClose={() => setShowOtp(false)}
+        />
+      )}
+
       <div className="page">
         <div className="card">
           <div className="card-header">
@@ -949,30 +1125,6 @@ export default function RegisterPage() {
               Join our community — it&apos;s completely free!
             </p>
           </div>
-
-          <a href="/api/auth/google" className="btn-google">
-            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-              <path
-                fill="#EA4335"
-                d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-              />
-              <path
-                fill="#4285F4"
-                d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-              />
-              <path
-                fill="#34A853"
-                d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-              />
-            </svg>
-            Sign up with Google
-          </a>
-
-          <div className="divider">or sign up with email</div>
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="name-grid">
@@ -1194,7 +1346,7 @@ export default function RegisterPage() {
             <button type="submit" className="btn-primary" disabled={isLoading}>
               {isLoading ? (
                 <>
-                  <span className="spinner" /> Creating account…
+                  <span className="spinner" /> Sending code…
                 </>
               ) : (
                 "Create Account"

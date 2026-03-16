@@ -695,7 +695,13 @@ export default function HomePage() {
 
         /* ── SERVICES ── */
         .services-section { background: #fff; min-height: 100vh; display: flex; align-items: center; }
-        .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+        .services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
 
         /* ── SERVICE CARD with hover overlay ── */
         .service-card {
