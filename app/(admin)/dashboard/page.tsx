@@ -64,7 +64,6 @@ interface Pricing {
   print_bw: number;
   print_color: number;
   photocopying: number;
-  scanning: number;
   photo_development: number;
   laminating: number;
   folder: number;
@@ -73,7 +72,6 @@ interface PricingStr {
   print_bw: string;
   print_color: string;
   photocopying: string;
-  scanning: string;
   photo_development: string;
   laminating: string;
   folder: string;
@@ -116,7 +114,6 @@ function pricingStrToNum(p: PricingStr): Pricing {
     print_bw: parseFloat(p.print_bw) || 0,
     print_color: parseFloat(p.print_color) || 0,
     photocopying: parseFloat(p.photocopying) || 0,
-    scanning: parseFloat(p.scanning) || 0,
     photo_development: parseFloat(p.photo_development) || 0,
     laminating: parseFloat(p.laminating) || 0,
     folder: parseFloat(p.folder) || 0,
@@ -1945,7 +1942,6 @@ export default function AdminDashboardPage() {
     print_bw: "1",
     print_color: "2",
     photocopying: "2",
-    scanning: "5",
     photo_development: "15",
     laminating: "20",
     folder: "10",
@@ -2052,7 +2048,6 @@ export default function AdminDashboardPage() {
         print_bw: String(d.print_bw ?? 1),
         print_color: String(d.print_color ?? 2),
         photocopying: String(d.photocopying ?? 2),
-        scanning: String(d.scanning ?? 5),
         photo_development: String(d.photo_development ?? 15),
         laminating: String(d.laminating ?? 20),
         folder: String(d.folder ?? 10),
@@ -2274,7 +2269,6 @@ export default function AdminDashboardPage() {
     { key: "print_bw", label: "Print B&W / page" },
     { key: "print_color", label: "Print Color / page" },
     { key: "photocopying", label: "Photocopy / page" },
-    { key: "scanning", label: "Scanning / page" },
     { key: "photo_development", label: "Photo Dev / photo" },
     { key: "laminating", label: "Laminating / item" },
     { key: "folder", label: "Folder / pc" },
