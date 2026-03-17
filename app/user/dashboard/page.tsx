@@ -427,8 +427,9 @@ function DashboardPageInner() {
     if (!files || files.length === 0) return;
     setNoFiles(files);
     setNoPdfPages(0);
-    setNoQuantity("");
     if (noService === "Print" || noService === "Photocopy") {
+      setNoQuantity("");
+
       const totalPages = await countPagesFromFiles(files);
       if (totalPages > 0) {
         setNoPdfPages(totalPages);
