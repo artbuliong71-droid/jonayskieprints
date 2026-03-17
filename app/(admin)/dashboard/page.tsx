@@ -2854,7 +2854,7 @@ export default function AdminDashboardPage() {
                     {
                       ico: <IC.CreditCard />,
                       val: `₱${stats.totalRevenue}`,
-                      lbl: "Revenue",
+                      lbl: "Total Sales",
                     },
                   ].map((s) => (
                     <div key={s.lbl} className="stat-card">
