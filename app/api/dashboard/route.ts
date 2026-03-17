@@ -217,6 +217,97 @@ export async function POST(req: NextRequest) {
           { success: false, message: "Order not found." },
           { status: 404 },
         );
+
+      // ── Send email notification to customer ──────────────────────────
+      if (newStatus === "in-progress" || newStatus === "completed") {
+        try {
+          const nodemailer = await import("nodemailer");
+          const transporter = nodemailer.default.createTransport({
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
+            auth: {
+              user: process.env.GMAIL_USER,
+              pass: process.env.GMAIL_PASS,
+            },
+          });
+
+          const isCompleted = newStatus === "completed";
+
+          const statusLabel = isCompleted ? "Completed ✓" : "In Progress";
+          const statusColor = isCompleted ? "#2d9b5a" : "#d97706";
+          const statusMessage = isCompleted
+            ? "Your order has been completed and is ready for pickup or delivery."
+            : "Your order is now being processed by our team.";
+
+          await transporter.sendMail({
+            from: `"Jonayskie Prints" <${process.env.GMAIL_USER}>`,
+            to: order.user_email,
+            subject: `Order ${order.order_id} — ${statusLabel} | Jonayskie Prints`,
+            html: `
+        <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 32px; border: 1px solid #e5e7eb; border-radius: 12px;">
+          <h2 style="color: #7c3aed; margin-bottom: 4px;">Jonayskie Prints</h2>
+          <p style="color: #9ca3af; font-size: 13px; margin-bottom: 24px;">Order Status Update</p>
+
+          <div style="background: ${statusColor}18; border-left: 4px solid ${statusColor}; padding: 14px 16px; border-radius: 0 8px 8px 0; margin-bottom: 24px;">
+            <p style="margin: 0; font-weight: 700; color: ${statusColor}; font-size: 1rem;">
+              ${statusLabel}
+            </p>
+            <p style="margin: 6px 0 0; color: #4b5563; font-size: 0.875rem;">
+              ${statusMessage}
+            </p>
+          </div>
+
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+            <tr>
+              <td style="padding: 8px 0; color: #9ca3af; width: 40%;">Order ID</td>
+              <td style="padding: 8px 0; color: #0f0e11; font-weight: 600;">${order.order_id}</td>
+            </tr>
+            <tr style="border-top: 1px solid #f3f4f6;">
+              <td style="padding: 8px 0; color: #9ca3af;">Service</td>
+              <td style="padding: 8px 0; color: #0f0e11; font-weight: 600;">${order.service}</td>
+            </tr>
+            <tr style="border-top: 1px solid #f3f4f6;">
+              <td style="padding: 8px 0; color: #9ca3af;">Quantity</td>
+              <td style="padding: 8px 0; color: #0f0e11; font-weight: 600;">${order.quantity}</td>
+            </tr>
+            <tr style="border-top: 1px solid #f3f4f6;">
+              <td style="padding: 8px 0; color: #9ca3af;">Total Amount</td>
+              <td style="padding: 8px 0; color: #0f0e11; font-weight: 600;">₱${Number(order.total_amount).toFixed(2)}</td>
+            </tr>
+            <tr style="border-top: 1px solid #f3f4f6;">
+              <td style="padding: 8px 0; color: #9ca3af;">Delivery</td>
+              <td style="padding: 8px 0; color: #0f0e11; font-weight: 600; text-transform: capitalize;">${order.delivery_option}</td>
+            </tr>
+          </table>
+
+          ${
+            isCompleted
+              ? `
+          <div style="margin-top: 24px; background: #f5f3ff; border-radius: 10px; padding: 16px; text-align: center;">
+            <p style="margin: 0; color: #7c3aed; font-weight: 600;">Thank you for choosing Jonayskie Prints!</p>
+            <p style="margin: 6px 0 0; color: #6b7280; font-size: 0.82rem;">We hope to serve you again soon.</p>
+          </div>
+          `
+              : `
+          <div style="margin-top: 24px; background: #fffbeb; border-radius: 10px; padding: 16px; text-align: center;">
+            <p style="margin: 0; color: #d97706; font-weight: 600;">We'll notify you again once your order is completed.</p>
+          </div>
+          `
+          }
+
+          <p style="margin-top: 24px; color: #9ca3af; font-size: 12px; text-align: center;">
+            Questions? Contact us at jonalynpascual2704@gmail.com or +63 935 033 6938
+          </p>
+        </div>
+      `,
+          });
+        } catch (emailErr) {
+          console.error("[STATUS EMAIL ERROR]", emailErr);
+          // Don't fail the request if email fails
+        }
+      }
+
       return NextResponse.json({
         success: true,
         message: "Order status updated.",
