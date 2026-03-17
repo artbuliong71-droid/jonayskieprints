@@ -147,6 +147,10 @@ function DashboardPageInner() {
   const [eoPhotoSize, setEoPhotoSize] = useState("A4");
   const [eoColorOption, setEoColorOption] = useState<ColorOption>("bw");
   const [eoLamination, setEoLamination] = useState(false);
+  const [eoFolder, setEoFolder] = useState(false);
+  const [eoFolderSize, setEoFolderSize] = useState("A4");
+  const [eoFolderQty, setEoFolderQty] = useState(1);
+  const [eoFolderColor, setEoFolderColor] = useState("White");
   const [eoSpecs, setEoSpecs] = useState("");
   const [eoSubmitting, setEoSubmitting] = useState(false);
   const [eoPdfPages, setEoPdfPages] = useState(0);
@@ -732,6 +736,10 @@ function DashboardPageInner() {
       setEoPdfPages(0);
       setEoExistingFiles([]);
       setEoNewFiles(null);
+      setEoFolder(false);
+      setEoFolderSize("A4");
+      setEoFolderQty(1);
+      setEoFolderColor("White");
       try {
         const fr = await fetch(`/api/order-files?order_id=${orderId}`);
         const fd = await fr.json();
@@ -786,6 +794,12 @@ function DashboardPageInner() {
       fd.append("photo_size", eoPhotoSize);
       fd.append("color_option", eoColorOption);
       if (eoLamination) fd.append("add_lamination", "on");
+      if (eoFolder) {
+        fd.append("add_folder", "on");
+        fd.append("folder_size", eoFolderSize);
+        fd.append("folder_qty", String(eoFolderQty));
+        fd.append("folder_color", eoFolderColor);
+      }
       if (eoShowsCopies) fd.append("copies", String(eoCopies || 1));
       const res = await fetch("/api/dashboard", { method: "POST", body: fd });
       const r = await res.json();
@@ -1110,6 +1124,14 @@ function DashboardPageInner() {
           setEoColorOption={setEoColorOption}
           eoLamination={eoLamination}
           setEoLamination={setEoLamination}
+          eoFolder={eoFolder}
+          setEoFolder={setEoFolder}
+          eoFolderSize={eoFolderSize}
+          setEoFolderSize={setEoFolderSize}
+          eoFolderQty={eoFolderQty}
+          setEoFolderQty={setEoFolderQty}
+          eoFolderColor={eoFolderColor}
+          setEoFolderColor={setEoFolderColor}
           eoSpecs={eoSpecs}
           setEoSpecs={setEoSpecs}
           eoExistingFiles={eoExistingFiles}

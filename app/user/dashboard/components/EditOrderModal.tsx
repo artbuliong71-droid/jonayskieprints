@@ -16,6 +16,35 @@ import {
 import { IC } from "./icons";
 import { PickupTimeDropdown } from "./ui";
 
+const FOLDER_COLORS = [
+  "White",
+  "Ivory",
+  "Pink",
+  "Red",
+  "Blue",
+  "Green",
+  "Orange",
+  "Yellow",
+  "Purple",
+  "Black",
+  "Brown",
+  "Clear",
+];
+const FOLDER_COLOR_SWATCHES: Record<string, string> = {
+  White: "#ffffff",
+  Ivory: "#fffff0",
+  Pink: "#ffc0cb",
+  Red: "#ef4444",
+  Blue: "#3b82f6",
+  Green: "#22c55e",
+  Orange: "#f97316",
+  Yellow: "#eab308",
+  Purple: "#a855f7",
+  Black: "#111827",
+  Brown: "#92400e",
+  Clear: "linear-gradient(135deg,#e0e7ff 0%,#f0fdf4 100%)",
+};
+
 interface EditOrderModalProps {
   editOrder: Partial<Order>;
   // service / qty
@@ -43,6 +72,14 @@ interface EditOrderModalProps {
   setEoColorOption: (v: ColorOption) => void;
   eoLamination: boolean;
   setEoLamination: (v: boolean) => void;
+  eoFolder: boolean;
+  setEoFolder: (v: boolean) => void;
+  eoFolderSize: string;
+  setEoFolderSize: (v: string) => void;
+  eoFolderQty: number;
+  setEoFolderQty: (v: number) => void;
+  eoFolderColor: string;
+  setEoFolderColor: (v: string) => void;
   // specs / files
   eoSpecs: string;
   setEoSpecs: (v: string) => void;
@@ -87,6 +124,14 @@ export function EditOrderModal({
   setEoColorOption,
   eoLamination,
   setEoLamination,
+  eoFolder,
+  setEoFolder,
+  eoFolderSize,
+  setEoFolderSize,
+  eoFolderQty,
+  setEoFolderQty,
+  eoFolderColor,
+  setEoFolderColor,
   eoSpecs,
   setEoSpecs,
   eoExistingFiles,
@@ -362,6 +407,153 @@ export function EditOrderModal({
                 />
                 Add Lamination (+₱{sp(prices.laminating, 20).toFixed(2)}/item)
               </label>
+            </div>
+          )}
+          {eoShowsLam && (
+            <div className="form-group">
+              <label className="check-label">
+                <input
+                  type="checkbox"
+                  checked={eoFolder}
+                  onChange={(e) => {
+                    setEoFolder(e.target.checked);
+                    if (!e.target.checked) {
+                      setEoFolderSize("A4");
+                      setEoFolderQty(1);
+                      setEoFolderColor("White");
+                    }
+                  }}
+                />
+                Add Folder (+₱{sp(prices.folder, 10).toFixed(2)}/pc)
+              </label>
+              {eoFolder && (
+                <div
+                  style={{
+                    marginTop: ".75rem",
+                    background: "#f5f3ff",
+                    border: "1.5px solid #ddd6fe",
+                    borderRadius: 10,
+                    padding: ".75rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: ".65rem",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: ".6rem" }}>
+                    <div style={{ flex: 1 }}>
+                      <label className="form-label">Size</label>
+                      <select
+                        className="form-select"
+                        value={eoFolderSize}
+                        onChange={(e) => setEoFolderSize(e.target.value)}
+                      >
+                        <option value="A4">A4</option>
+                        <option value="Short">Short</option>
+                        <option value="Long">Long</option>
+                      </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label className="form-label">Quantity</label>
+                      <input
+                        className="form-input"
+                        type="number"
+                        min={1}
+                        inputMode="numeric"
+                        value={eoFolderQty}
+                        onChange={(e) =>
+                          setEoFolderQty(
+                            Math.max(1, parseInt(e.target.value) || 1),
+                          )
+                        }
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label
+                      className="form-label"
+                      style={{ marginBottom: ".4rem" }}
+                    >
+                      Color
+                    </label>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: ".35rem",
+                      }}
+                    >
+                      {FOLDER_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setEoFolderColor(color)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: ".3rem",
+                            padding: "3px 8px 3px 4px",
+                            borderRadius: 99,
+                            border: `2px solid ${eoFolderColor === color ? "#7c3aed" : "#e5e7eb"}`,
+                            background:
+                              eoFolderColor === color ? "#f5f3ff" : "#fff",
+                            cursor: "pointer",
+                            fontFamily: "'Inter',sans-serif",
+                            fontSize: ".72rem",
+                            fontWeight: eoFolderColor === color ? 700 : 500,
+                            color:
+                              eoFolderColor === color ? "#7c3aed" : "#374151",
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 14,
+                              height: 14,
+                              borderRadius: "50%",
+                              background: FOLDER_COLOR_SWATCHES[color],
+                              border: ["White", "Ivory", "Clear"].includes(
+                                color,
+                              )
+                                ? "1.5px solid #d1d5db"
+                                : "1.5px solid transparent",
+                              flexShrink: 0,
+                              display: "inline-block",
+                            }}
+                          />
+                          {color}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      fontSize: ".72rem",
+                      color: "#7c3aed",
+                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: ".3rem",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: FOLDER_COLOR_SWATCHES[eoFolderColor],
+                        border: ["White", "Ivory", "Clear"].includes(
+                          eoFolderColor,
+                        )
+                          ? "1px solid #d1d5db"
+                          : "none",
+                        display: "inline-block",
+                        flexShrink: 0,
+                      }}
+                    />
+                    {eoFolderColor} · {eoFolderSize} · {eoFolderQty} pc · ₱
+                    {(sp(prices.folder, 10) * eoFolderQty).toFixed(2)}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
