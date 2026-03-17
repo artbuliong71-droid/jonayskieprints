@@ -1911,7 +1911,20 @@ function PaymentBadge({ method }: { method?: string }) {
         whiteSpace: "nowrap",
       }}
     >
-      💵 Cash
+      <svg
+        width="13"
+        height="13"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      >
+        <rect x="1" y="4" width="22" height="16" rx="2" />
+        <line x1="1" y1="10" x2="23" y2="10" />
+        <circle cx="12" cy="15" r="2" />
+      </svg>
+      Cash
     </span>
   );
 }
@@ -2305,7 +2318,7 @@ export default function AdminDashboardPage() {
       c: "#2563eb",
     },
     {
-      label: "Total Revenue",
+      label: "Total Sales",
       value: `₱${reportGenerated ? reportSummary.totalRevenue : stats.totalRevenue}`,
       ico: <IC.Coin />,
       c: "#7c3aed",
@@ -2618,8 +2631,24 @@ export default function AdminDashboardPage() {
         />
         <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
           <div className="sb-brand">
-            <div className="sb-icon">
-              <IC.Printer />
+            <div
+              className="sb-icon"
+              style={{
+                background: "transparent",
+                padding: 0,
+                overflow: "hidden",
+              }}
+            >
+              <img
+                src="/logo.png"
+                alt="Jonayskie Prints"
+                style={{
+                  width: 34,
+                  height: 34,
+                  objectFit: "contain",
+                  borderRadius: 8,
+                }}
+              />
             </div>
             <div>
               <div className="sb-name">Admin Dashboard</div>
@@ -2840,24 +2869,39 @@ export default function AdminDashboardPage() {
                       ico: <IC.Cart />,
                       val: stats.totalOrders,
                       lbl: "Total Orders",
+                      onClick: () => {
+                        setSection("orders");
+                        setOrderFilter("");
+                      },
                     },
                     {
                       ico: <IC.Clock />,
                       val: stats.pendingOrders,
                       lbl: "Pending",
+                      onClick: () => {
+                        setSection("orders");
+                        setOrderFilter("pending");
+                      },
                     },
                     {
                       ico: <IC.People />,
                       val: stats.totalCustomers,
                       lbl: "Customers",
+                      onClick: () => setSection("customers"),
                     },
                     {
                       ico: <IC.CreditCard />,
                       val: `₱${stats.totalRevenue}`,
                       lbl: "Total Sales",
+                      onClick: () => setSection("reports"),
                     },
                   ].map((s) => (
-                    <div key={s.lbl} className="stat-card">
+                    <div
+                      key={s.lbl}
+                      className="stat-card"
+                      onClick={s.onClick}
+                      style={{ cursor: "pointer" }}
+                    >
                       <div className="stat-ico">{s.ico}</div>
                       <div className="stat-val">{s.val}</div>
                       <div className="stat-lbl">{s.lbl}</div>
