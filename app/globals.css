@@ -1375,6 +1375,11 @@ body {
   .form-row-2 {
     grid-template-columns: 1fr;
   }
+  .p-grid .p-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    width: 70%;
+    margin: 0 auto;
+  }
 }
 @media (min-width: 360px) and (max-width: 479px) {
   .p-grid {
@@ -1383,6 +1388,11 @@ body {
   }
   .form-row-2 {
     grid-template-columns: 1fr;
+  }
+  .p-grid .p-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    width: 70%;
+    margin: 0 auto;
   }
 }
 @media (min-width: 480px) and (max-width: 639px) {
@@ -1512,6 +1522,11 @@ body {
   }
   .welcome {
     display: none;
+  }
+  .p-grid .p-card:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    width: 70%;
+    margin: 0 auto;
   }
 }
 @media (min-width: 1400px) {

@@ -420,6 +420,7 @@ export function NewOrderForm({
                 placeholder="Enter the complete address and nearest Landmark"
                 value={noAddress}
                 onChange={(e) => setNoAddress(e.target.value)}
+                style={{ resize: "none" }}
               />
             </div>
           )}
@@ -814,11 +815,16 @@ export function NewOrderForm({
             <label className="form-label">Specifications</label>
             <textarea
               className="form-textarea"
-              placeholder="Describe your order or type N/A."
+              placeholder="Describe your order or type N/A. Include your preferred completion date (e.g. Today, March 18, or ASAP)."
               value={noSpecs}
               onChange={(e) => setNoSpecs(e.target.value)}
               rows={4}
+              style={{ resize: "none" }}
             />
+            <div className="hint-text">
+              💡 Let us know when you need it — e.g. "Today", "March 20", or
+              "ASAP".
+            </div>
           </div>
 
           <div className="btn-row between">
