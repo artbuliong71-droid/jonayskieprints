@@ -27,13 +27,7 @@ const pricingCards = (prices: Prices) => [
     unit: "per page",
     service: "Photocopy",
   },
-  {
-    name: "Scanning",
-    price: sp(prices.scanning, 5),
-    icon: <IC.Scan />,
-    unit: "per page",
-    service: "Scanning",
-  },
+
   {
     name: "Photo Dev.",
     price: sp(prices.photo_development, 15),
