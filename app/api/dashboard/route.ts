@@ -218,6 +218,11 @@ export async function POST(req: NextRequest) {
           { status: 404 },
         );
 
+      console.log("[EMAIL DEBUG] user_email:", order.user_email);
+      console.log("[EMAIL DEBUG] GMAIL_USER:", process.env.GMAIL_USER);
+      console.log("[EMAIL DEBUG] GMAIL_PASS exists:", !!process.env.GMAIL_PASS);
+      console.log("[EMAIL DEBUG] newStatus:", newStatus);
+
       // ── Send email notification to customer ──────────────────────────
       if (newStatus === "in-progress" || newStatus === "completed") {
         try {
