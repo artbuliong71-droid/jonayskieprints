@@ -629,6 +629,16 @@ export function NewOrderForm({
                   />{" "}
                   B&W
                 </label>
+                <label className="radio-label">
+                  <input
+                    type="radio"
+                    name="no_col"
+                    value="color"
+                    checked={noColorOption === "color"}
+                    onChange={() => setNoColorOption("color")}
+                  />{" "}
+                  Color
+                </label>
               </div>
             </div>
           )}
