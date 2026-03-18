@@ -1201,7 +1201,6 @@ export default function HomePage() {
                 {[
                   "Document Printing",
                   "Photocopying",
-                  "Scanning",
                   "Photo Development",
                   "Laminating",
                 ].map((s) => (

@@ -45,12 +45,26 @@ const PAPER_TYPE_LABELS: Record<string, string> = {
   vellum: "Vellum",
 };
 
+const DRAFT_KEY = "newOrderDraft";
+
 function DashboardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const [showTosModal, setShowTosModal] = useState(false);
-  const [activeSection, setActiveSection] = useState<Section>("dashboard");
+
+  // ── Initialize activeSection from localStorage to prevent flash ──
+  const [activeSection, setActiveSection] = useState<Section>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const d = JSON.parse(saved);
+        if (d.noService) return "new-order";
+      }
+    } catch {}
+    return "dashboard";
+  });
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState<Toast>({
     message: "",
@@ -98,41 +112,220 @@ function DashboardPageInner() {
     url: string;
   } | null>(null);
 
-  // New-order form state
-  const [step, setStep] = useState(0);
-  const [noService, setNoService] = useState("");
-  const [noQuantity, setNoQuantity] = useState<number | "">("");
-  const [noCopies, setNoCopies] = useState<number | "">(1);
-  const [noDelivery, setNoDelivery] = useState<DeliveryOption>("pickup");
-  const [noAddress, setNoAddress] = useState("");
-  const [noPickupTime, setNoPickupTime] = useState("");
-  const [noPaperSize, setNoPaperSize] = useState<PaperSize>("A4");
-  const [noPhotoSize, setNoPhotoSize] = useState("4x6");
-  const [noPaperType, setNoPaperType] = useState<PaperType>("white");
-  const [noPhotoFinish, setNoPhotoFinish] = useState<PhotoFinish>("glossy");
-  const [noColorOption, setNoColorOption] = useState<ColorOption>("bw");
-  const [noLamination, setNoLamination] = useState(false);
-  const [noFolder, setNoFolder] = useState(false);
-  const [noFolderSize, setNoFolderSize] = useState("A4");
-  const [noFolderQty, setNoFolderQty] = useState(1);
-  const [noFolderColor, setNoFolderColor] = useState("White");
-  const [noSpecs, setNoSpecs] = useState("");
+  // ── New-order form state — initialize from localStorage draft ──
+  const [step, setStep] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).step ?? 0;
+    } catch {}
+    return 0;
+  });
+  const [noService, setNoService] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noService ?? "";
+    } catch {}
+    return "";
+  });
+  const [noQuantity, setNoQuantity] = useState<number | "">(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noQuantity ?? "";
+    } catch {}
+    return "";
+  });
+  const [noCopies, setNoCopies] = useState<number | "">(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noCopies ?? 1;
+    } catch {}
+    return 1;
+  });
+  const [noDelivery, setNoDelivery] = useState<DeliveryOption>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noDelivery ?? "pickup";
+    } catch {}
+    return "pickup";
+  });
+  const [noAddress, setNoAddress] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noAddress ?? "";
+    } catch {}
+    return "";
+  });
+  const [noPickupTime, setNoPickupTime] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noPickupTime ?? "";
+    } catch {}
+    return "";
+  });
+  const [noPaperSize, setNoPaperSize] = useState<PaperSize>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noPaperSize ?? "A4";
+    } catch {}
+    return "A4";
+  });
+  const [noPhotoSize, setNoPhotoSize] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noPhotoSize ?? "4x6";
+    } catch {}
+    return "4x6";
+  });
+  const [noPaperType, setNoPaperType] = useState<PaperType>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noPaperType ?? "white";
+    } catch {}
+    return "white";
+  });
+  const [noPhotoFinish, setNoPhotoFinish] = useState<PhotoFinish>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noPhotoFinish ?? "glossy";
+    } catch {}
+    return "glossy";
+  });
+  const [noColorOption, setNoColorOption] = useState<ColorOption>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noColorOption ?? "bw";
+    } catch {}
+    return "bw";
+  });
+  const [noLamination, setNoLamination] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noLamination ?? false;
+    } catch {}
+    return false;
+  });
+  const [noFolder, setNoFolder] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noFolder ?? false;
+    } catch {}
+    return false;
+  });
+  const [noFolderSize, setNoFolderSize] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noFolderSize ?? "A4";
+    } catch {}
+    return "A4";
+  });
+  const [noFolderQty, setNoFolderQty] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noFolderQty ?? 1;
+    } catch {}
+    return 1;
+  });
+  const [noFolderColor, setNoFolderColor] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noFolderColor ?? "White";
+    } catch {}
+    return "White";
+  });
+  const [noSpecs, setNoSpecs] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noSpecs ?? "";
+    } catch {}
+    return "";
+  });
+  const [noPaymentMethod, setNoPaymentMethod] = useState<"cash" | "gcash">(
+    () => {
+      try {
+        const saved = localStorage.getItem(DRAFT_KEY);
+        if (saved) return JSON.parse(saved).noPaymentMethod ?? "cash";
+      } catch {}
+      return "cash";
+    },
+  );
+  const [noGcashPayType, setNoGcashPayType] = useState<"downpayment" | "full">(
+    () => {
+      try {
+        const saved = localStorage.getItem(DRAFT_KEY);
+        if (saved) return JSON.parse(saved).noGcashPayType ?? "full";
+      } catch {}
+      return "full";
+    },
+  );
+  const [noGcashRefNum, setNoGcashRefNum] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) return JSON.parse(saved).noGcashRefNum ?? "";
+    } catch {}
+    return "";
+  });
+
   const [noFiles, setNoFiles] = useState<FileList | null>(null);
   const [noSubmitting, setNoSubmitting] = useState(false);
   const [noPdfPages, setNoPdfPages] = useState(0);
-  const [noPaymentMethod, setNoPaymentMethod] = useState<"cash" | "gcash">(
-    "cash",
-  );
-  const [noGcashPayType, setNoGcashPayType] = useState<"downpayment" | "full">(
-    "full",
-  );
   const [noGcashReceipt, setNoGcashReceipt] = useState<File | null>(null);
   const [noGcashReceiptPreview, setNoGcashReceiptPreview] = useState<
     string | null
   >(null);
-  const [noGcashRefNum, setNoGcashRefNum] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const gcashReceiptRef = useRef<HTMLInputElement>(null);
+
+  // ── Save draft to localStorage on every change ────────────────────────────
+  useEffect(() => {
+    try {
+      const draft = {
+        step,
+        noService,
+        noQuantity,
+        noCopies,
+        noDelivery,
+        noAddress,
+        noPickupTime,
+        noPaperSize,
+        noPhotoSize,
+        noPaperType,
+        noPhotoFinish,
+        noColorOption,
+        noLamination,
+        noFolder,
+        noFolderSize,
+        noFolderQty,
+        noFolderColor,
+        noSpecs,
+        noPaymentMethod,
+        noGcashPayType,
+        noGcashRefNum,
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    } catch {}
+  }, [
+    step,
+    noService,
+    noQuantity,
+    noCopies,
+    noDelivery,
+    noAddress,
+    noPickupTime,
+    noPaperSize,
+    noPhotoSize,
+    noPaperType,
+    noPhotoFinish,
+    noColorOption,
+    noLamination,
+    noFolder,
+    noFolderSize,
+    noFolderQty,
+    noFolderColor,
+    noSpecs,
+    noPaymentMethod,
+    noGcashPayType,
+    noGcashRefNum,
+  ]);
 
   // Edit-order modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -433,7 +626,6 @@ function DashboardPageInner() {
     setNoPdfPages(0);
     if (noService === "Print" || noService === "Photocopy") {
       setNoQuantity("");
-
       const totalPages = await countPagesFromFiles(files);
       if (totalPages > 0) {
         setNoPdfPages(totalPages);
@@ -531,6 +723,9 @@ function DashboardPageInner() {
   }
 
   function resetForm() {
+    // ── Clear draft from localStorage ──
+    localStorage.removeItem(DRAFT_KEY);
+
     setStep(0);
     setNoService("");
     setNoQuantity("");
@@ -614,7 +809,6 @@ function DashboardPageInner() {
       fd.append("service", noService);
       fd.append("quantity", String(finalQuantity));
 
-      // ── Enrich specifications with Paper Type / Photo Finish ──
       let enrichedSpecs = noSpecs;
       if (noService === "Print" && noPaperType) {
         enrichedSpecs =
