@@ -3,24 +3,26 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-type NavSection = "home" | "services" | "about" | "contact";
+type NavSection = "home" | "services" | "about" | "faq" | "contact";
 
 interface ServiceCard {
   icon: React.ReactNode;
   title: string;
   description: string;
 }
-
 interface ContactItem {
   icon: React.ReactNode;
   label: string;
   value: string;
 }
-
 interface FeatureCard {
   icon: React.ReactNode;
   title: string;
   description: string;
+}
+interface FaqItem {
+  q: string;
+  a: string;
 }
 
 const IcoPrinter = () => (
@@ -54,24 +56,6 @@ const IcoCopy = () => (
     <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
   </svg>
 );
-const IcoScan = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M3 7V5a2 2 0 012-2h2" />
-    <path d="M17 3h2a2 2 0 012 2v2" />
-    <path d="M21 17v2a2 2 0 01-2 2h-2" />
-    <path d="M7 21H5a2 2 0 01-2-2v-2" />
-    <line x1="3" y1="12" x2="21" y2="12" />
-  </svg>
-);
 const IcoPhoto = () => (
   <svg
     width="22"
@@ -100,20 +84,6 @@ const IcoLaminate = () => (
     strokeLinejoin="round"
   >
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-  </svg>
-);
-const IcoZap = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
   </svg>
 );
 const IcoUsers = () => (
@@ -266,7 +236,6 @@ const SERVICES: ServiceCard[] = [
     title: "Photocopying (Xerox)",
     description: "Fast and reliable photocopying services for all your needs.",
   },
-
   {
     icon: <IcoPhoto />,
     title: "Photo Development",
@@ -313,7 +282,30 @@ const CONTACT_ITEMS: ContactItem[] = [
   },
 ];
 
-function useInView(threshold = 0.15) {
+const FAQS: FaqItem[] = [
+  {
+    q: "How do I place an order?",
+    a: "Select your desired service, upload your file, choose your specifications, and proceed to checkout. It only takes a few minutes!",
+  },
+  {
+    q: "What file formats do you accept?",
+    a: "We accept JPG, PNG, and PDF formats. For best print quality, we recommend submitting files in PDF format.",
+  },
+  {
+    q: "Can I edit my order?",
+    a: "Yes — orders can be modified while they are still in pending status. Once an order has been processed, no further changes can be made.",
+  },
+  {
+    q: "How will I know when my order is ready?",
+    a: "You will receive an email notification as soon as your order is ready for pickup. Make sure your email address is up to date in your profile.",
+  },
+  {
+    q: "When will my order be ready?",
+    a: "Processed orders may be available for same-day pickup depending on current workload and order volume. We'll always keep you informed via email.",
+  },
+];
+
+function useInView(threshold = 0.08) {
   const ref = useRef<HTMLDivElement>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
@@ -334,7 +326,6 @@ function useInView(threshold = 0.15) {
   return { ref, inView };
 }
 
-// Individual service card with hover/tap inquire overlay
 function ServiceCardItem({
   service,
   index,
@@ -347,50 +338,39 @@ function ServiceCardItem({
   const [active, setActive] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     setIsTouchDevice(window.matchMedia("(hover: none)").matches);
   }, []);
-
-  // Close overlay when clicking outside on mobile
   useEffect(() => {
     if (!isTouchDevice || !active) return;
     const handler = (e: MouseEvent) => {
-      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node))
         setActive(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [isTouchDevice, active]);
 
-  const showOverlay = active;
-
-  const handleCardClick = () => {
-    if (isTouchDevice) {
-      setActive((v) => !v);
-    }
-  };
-
   return (
     <div
       ref={cardRef}
-      className={`service-card reveal ${inView ? "in" : ""} reveal-delay-${index + 1}`}
+      className={`service-card child-reveal ${inView ? "in" : ""} child-delay-${index + 1}`}
       onMouseEnter={() => {
         if (!isTouchDevice) setActive(true);
       }}
       onMouseLeave={() => {
         if (!isTouchDevice) setActive(false);
       }}
-      onClick={handleCardClick}
+      onClick={() => {
+        if (isTouchDevice) setActive((v) => !v);
+      }}
       style={{ cursor: isTouchDevice ? "pointer" : "default" }}
     >
-      {/* Normal card content */}
       <div
         className="service-card-content"
         style={{
-          opacity: showOverlay ? 0 : 1,
-          transform: showOverlay
+          opacity: active ? 0 : 1,
+          transform: active
             ? "scale(0.9) translateY(8px)"
             : "scale(1) translateY(0)",
           transition:
@@ -401,19 +381,16 @@ function ServiceCardItem({
         <div className="service-title">{service.title}</div>
         <div className="service-desc">{service.description}</div>
       </div>
-
-      {/* White aesthetic overlay */}
       <div
         className="service-inquire-overlay"
         style={{
-          opacity: showOverlay ? 1 : 0,
-          transform: showOverlay ? "translateY(0)" : "translateY(14px)",
+          opacity: active ? 1 : 0,
+          transform: active ? "translateY(0)" : "translateY(14px)",
           transition:
             "opacity 0.32s cubic-bezier(.4,0,.2,1), transform 0.32s cubic-bezier(.4,0,.2,1)",
-          pointerEvents: showOverlay ? "all" : "none",
+          pointerEvents: active ? "all" : "none",
         }}
       >
-        {/* Soft shimmer ring behind icon */}
         <div className="inquire-glow-ring" />
         <div className="inquire-icon-wrap">{service.icon}</div>
         <div className="inquire-title">{service.title}</div>
@@ -430,19 +407,75 @@ function ServiceCardItem({
   );
 }
 
+function FaqAccordionItem({
+  faq,
+  index,
+  inView,
+  isOpen,
+  onToggle,
+}: {
+  faq: FaqItem;
+  index: number;
+  inView: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  const bodyRef = useRef<HTMLDivElement>(null);
+  return (
+    <div
+      className={`faq-item child-reveal ${inView ? "in" : ""} child-delay-${Math.min(index + 1, 5)} ${isOpen ? "faq-open" : ""}`}
+      onClick={onToggle}
+    >
+      <button className="faq-question" aria-expanded={isOpen}>
+        <span>{faq.q}</span>
+        <span className="faq-chevron">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </span>
+      </button>
+      <div
+        ref={bodyRef}
+        className="faq-body"
+        style={{
+          maxHeight: isOpen
+            ? bodyRef.current
+              ? `${bodyRef.current.scrollHeight}px`
+              : "200px"
+            : "0px",
+        }}
+      >
+        <p className="faq-answer">{faq.a}</p>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [activeNav, setActiveNav] = useState<NavSection>("home");
   const [hoveredNav, setHoveredNav] = useState<NavSection | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const heroRef = useRef<HTMLElement>(null);
   const servicesRef = useRef<HTMLElement>(null);
   const aboutRef = useRef<HTMLElement>(null);
+  const faqRef = useRef<HTMLElement>(null);
   const contactRef = useRef<HTMLElement>(null);
 
   const servicesReveal = useInView();
   const aboutReveal = useInView();
+  const faqReveal = useInView();
   const contactReveal = useInView();
 
   useEffect(() => {
@@ -452,6 +485,7 @@ export default function HomePage() {
         ["home", heroRef],
         ["services", servicesRef],
         ["about", aboutRef],
+        ["faq", faqRef],
         ["contact", contactRef],
       ];
       for (let i = sections.length - 1; i >= 0; i--) {
@@ -471,6 +505,7 @@ export default function HomePage() {
       home: heroRef,
       services: servicesRef,
       about: aboutRef,
+      faq: faqRef,
       contact: contactRef,
     };
     refs[section].current?.scrollIntoView({ behavior: "smooth" });
@@ -478,11 +513,10 @@ export default function HomePage() {
   }
 
   function getLinkClass(section: NavSection) {
-    if (hoveredNav !== null) {
+    if (hoveredNav !== null)
       return hoveredNav === section
         ? "nav-link-btn hovered"
         : "nav-link-btn dimmed";
-    }
     return activeNav === section ? "nav-link-btn active" : "nav-link-btn";
   }
 
@@ -493,316 +527,119 @@ export default function HomePage() {
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
-          --ink: #0f0e11;
-          --paper: #faf9f6;
-          --accent: #2563eb;
-          --accent-dark: #1d4ed8;
-          --muted: #7a7a7a;
-          --border: #e0ddd8;
-          --success: #2d9b5a;
-          --nav-h: 72px;
-          --nav-pad: 12px;
-          --logo-h: 80px;
+          --ink: #0f0e11; --paper: #faf9f6; --accent: #2563eb; --accent-dark: #1d4ed8;
+          --muted: #7a7a7a; --border: #e0ddd8; --success: #2d9b5a;
+          --nav-h: 72px; --nav-pad: 12px; --logo-h: 80px;
         }
 
         html { scroll-behavior: smooth; }
         body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); overflow-x: hidden; }
 
-        /* ── NAV SHELL ── */
-        .nav-bar {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 200;
-          padding: var(--nav-pad) 1.5rem;
-          transition: padding 0.25s;
-        }
+        /* NAV */
+        .nav-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 200; padding: var(--nav-pad) 1.5rem; transition: padding 0.25s; }
         .nav-bar.scrolled { padding: 8px 1.5rem; }
-
-        .nav-inner {
-          max-width: 1100px; margin: 0 auto; padding: 0 1.5rem;
-          height: var(--nav-h); display: flex; align-items: center;
-          justify-content: space-between; gap: 1.5rem;
-          background: #ffffff; border: 1.5px solid var(--border);
-          border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-          transition: box-shadow 0.25s; overflow: visible;
-        }
+        .nav-inner { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; height: var(--nav-h); display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; background: #ffffff; border: 1.5px solid var(--border); border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.06); transition: box-shadow 0.25s; }
         .nav-bar.scrolled .nav-inner { box-shadow: 0 4px 24px rgba(0,0,0,0.11); }
-
-        .nav-logo {
-          display: flex; align-items: center; cursor: pointer; flex-shrink: 0;
-          transition: opacity 0.2s, transform 0.18s; outline: none; border-radius: 8px;
-        }
+        .nav-logo { display: flex; align-items: center; cursor: pointer; flex-shrink: 0; transition: opacity 0.2s, transform 0.18s; border-radius: 8px; }
         .nav-logo:hover { opacity: 0.72; transform: scale(1.05); }
-        .nav-logo:active { transform: scale(0.95); opacity: 0.5; }
         .nav-logo img { height: var(--logo-h); width: auto; max-width: 200px; object-fit: contain; display: block; }
-
         .nav-links { display: flex; align-items: center; gap: 0.1rem; list-style: none; flex: 1; justify-content: center; }
-        .nav-link-btn {
-          background: none; border: none; cursor: pointer;
-          padding: 0.45rem 0.9rem; border-radius: 7px;
-          font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; color: var(--ink);
-          transition: color 0.15s, opacity 0.15s; white-space: nowrap;
-        }
+        .nav-link-btn { background: none; border: none; cursor: pointer; padding: 0.45rem 0.9rem; border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; color: var(--ink); transition: color 0.15s, opacity 0.15s; white-space: nowrap; }
         .nav-link-btn.active { color: var(--accent); font-weight: 600; }
-        .nav-link-btn.hovered { color: var(--accent); font-weight: 600; opacity: 1; }
+        .nav-link-btn.hovered { color: var(--accent); font-weight: 600; }
         .nav-link-btn.dimmed { color: var(--muted); opacity: 0.45; }
-
         .nav-actions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
-        .btn-login {
-          padding: 0.45rem 1.2rem; background: var(--accent); color: #fff;
-          border: none; border-radius: 99px; font-family: 'DM Sans', sans-serif;
-          font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none;
-          transition: background 0.2s, transform 0.15s; display: inline-flex; align-items: center;
-        }
+        .btn-login { padding: 0.45rem 1.2rem; background: var(--accent); color: #fff; border: none; border-radius: 99px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.2s, transform 0.15s; display: inline-flex; align-items: center; }
         .btn-login:hover { background: var(--accent-dark); transform: translateY(-1px); }
-        .btn-register {
-          padding: 0.45rem 1.2rem; background: transparent; color: var(--accent);
-          border: 1.5px solid var(--accent); border-radius: 99px;
-          font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600;
-          cursor: pointer; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center;
-        }
+        .btn-register { padding: 0.45rem 1.2rem; background: transparent; color: var(--accent); border: 1.5px solid var(--accent); border-radius: 99px; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; }
         .btn-register:hover { background: rgba(37,99,235,0.06); }
-
         .hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--ink); padding: 4px; flex-shrink: 0; }
-
-        .mobile-menu {
-          position: fixed; top: calc(var(--nav-h) + var(--nav-pad) * 2 + 8px);
-          left: 1.5rem; right: 1.5rem; background: #fff;
-          border: 1.5px solid var(--border); border-radius: 14px;
-          padding: 1rem 1.25rem 1.25rem; z-index: 190;
-          transform: translateY(-20px); opacity: 0; pointer-events: none;
-          transition: transform 0.25s, opacity 0.25s;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        }
+        .mobile-menu { position: fixed; top: calc(var(--nav-h) + var(--nav-pad) * 2 + 8px); left: 1.5rem; right: 1.5rem; background: #fff; border: 1.5px solid var(--border); border-radius: 14px; padding: 1rem 1.25rem 1.25rem; z-index: 190; transform: translateY(-20px); opacity: 0; pointer-events: none; transition: transform 0.25s, opacity 0.25s; box-shadow: 0 8px 32px rgba(0,0,0,0.1); }
         .mobile-menu.open { transform: translateY(0); opacity: 1; pointer-events: all; }
         .mobile-nav-links { list-style: none; display: flex; flex-direction: column; gap: 0.2rem; margin-bottom: 1rem; }
-        .mobile-nav-btn {
-          width: 100%; text-align: left; background: none; border: none; cursor: pointer;
-          padding: 0.65rem 0.75rem; border-radius: 7px;
-          font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; color: var(--ink);
-          transition: background 0.15s;
-        }
+        .mobile-nav-btn { width: 100%; text-align: left; background: none; border: none; cursor: pointer; padding: 0.65rem 0.75rem; border-radius: 7px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; color: var(--ink); transition: background 0.15s; }
         .mobile-nav-btn:hover { background: rgba(0,0,0,0.04); }
         .mobile-nav-btn.active { color: var(--accent); font-weight: 600; }
         .mobile-actions { display: flex; gap: 0.75rem; }
         .mobile-actions .btn-login, .mobile-actions .btn-register { flex: 1; justify-content: center; }
 
-        /* ── HERO ── */
-        .hero {
-          min-height: 100vh; position: relative; overflow: hidden;
-          display: flex; align-items: center;
-          padding-top: calc(var(--nav-h) + var(--nav-pad) * 2 + 2rem);
-          padding-bottom: 4rem; padding-left: 2rem; padding-right: 2rem;
-          background-color: #7c3aed;
-        }
-        .hero-gradient {
-          position: absolute; inset: 0;
-          background: linear-gradient(135deg, rgba(91,109,238,0.55) 0%, rgba(124,58,237,0.55) 50%, rgba(168,85,247,0.55) 100%);
-          z-index: 1; pointer-events: none;
-        }
-        .hero-logo-bg {
-          position: absolute; inset: 0; z-index: 0;
-          display: flex; align-items: center; justify-content: center; pointer-events: none;
-        }
+        /* HERO */
+        .hero { min-height: 100vh; min-height: 100svh; position: relative; overflow: hidden; display: flex; align-items: center; padding-top: calc(var(--nav-h) + var(--nav-pad) * 2 + 2rem); padding-bottom: 4rem; padding-left: 2rem; padding-right: 2rem; background-color: #7c3aed; }
+        .hero-gradient { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(91,109,238,0.55) 0%, rgba(124,58,237,0.55) 50%, rgba(168,85,247,0.55) 100%); z-index: 1; pointer-events: none; }
+        .hero-logo-bg { position: absolute; inset: 0; z-index: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
         .hero-logo-bg img { width: min(600px, 80vw); height: min(600px, 80vw); object-fit: contain; opacity: 0.55; }
-        .hero::before {
-          content: ''; position: absolute; top: -120px; left: -120px;
-          width: 500px; height: 500px; border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
-          pointer-events: none; z-index: 2;
-        }
-        .hero::after {
-          content: ''; position: absolute; bottom: -80px; right: 15%;
-          width: 350px; height: 350px; border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
-          pointer-events: none; z-index: 2;
-        }
-        .hero-stripe {
-          position: absolute; top: 0; right: 0; width: 38%; height: 100%;
-          background: rgba(255,255,255,0.025);
-          clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
-          pointer-events: none; z-index: 2;
-        }
-        .hero-inner {
-          max-width: 1200px; width: 100%; margin: 0 auto;
-          display: flex; flex-direction: column; align-items: center;
-          gap: 3rem; position: relative; z-index: 3; text-align: center;
-        }
+        .hero::before { content: ''; position: absolute; top: -120px; left: -120px; width: 500px; height: 500px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%); pointer-events: none; z-index: 2; }
+        .hero::after { content: ''; position: absolute; bottom: -80px; right: 15%; width: 350px; height: 350px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%); pointer-events: none; z-index: 2; }
+        .hero-stripe { position: absolute; top: 0; right: 0; width: 38%; height: 100%; background: rgba(255,255,255,0.025); clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%); pointer-events: none; z-index: 2; }
+        .hero-inner { max-width: 1200px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 3rem; position: relative; z-index: 3; text-align: center; }
         .hero-content { flex: 1; max-width: 720px; display: flex; flex-direction: column; align-items: center; }
-        .hero-tag {
-          display: inline-flex; align-items: center; gap: 0.5rem;
-          background: rgba(255,255,255,0.15); border: 1px solid rgba(37,99,235,0.3);
-          color: rgba(255,255,255,0.9); font-size: 0.72rem; font-weight: 600;
-          letter-spacing: 0.1em; text-transform: uppercase;
-          padding: 4px 12px; border-radius: 99px; margin-bottom: 1.5rem;
-          animation: fadeUp 0.6s ease both;
-        }
-        .hero-title {
-          font-family: 'Playfair Display', serif;
-          font-size: clamp(2.8rem, 5.5vw, 4.5rem);
-          line-height: 1.12; color: #fff; margin-bottom: 1.25rem; letter-spacing: -0.02em;
-          animation: fadeUp 0.65s 0.1s ease both;
-        }
+        .hero-tag { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.15); border: 1px solid rgba(37,99,235,0.3); color: rgba(255,255,255,0.9); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 12px; border-radius: 99px; margin-bottom: 1.5rem; animation: fadeUp 0.6s ease both; }
+        .hero-title { font-family: 'Playfair Display', serif; font-size: clamp(2.8rem, 5.5vw, 4.5rem); line-height: 1.12; color: #fff; margin-bottom: 1.25rem; letter-spacing: -0.02em; animation: fadeUp 0.65s 0.1s ease both; }
         .hero-title em { color: #93c5fd; font-style: italic; }
-        .hero-subtitle {
-          font-size: 1rem; color: rgba(255,255,255,0.75); line-height: 1.7;
-          max-width: 520px; font-weight: 300; margin-bottom: 2.25rem;
-          animation: fadeUp 0.65s 0.2s ease both;
-        }
+        .hero-subtitle { font-size: 1rem; color: rgba(255,255,255,0.75); line-height: 1.7; max-width: 520px; font-weight: 300; margin-bottom: 2.25rem; animation: fadeUp 0.65s 0.2s ease both; }
         .hero-cta { display: flex; gap: 0.85rem; flex-wrap: wrap; animation: fadeUp 0.65s 0.3s ease both; justify-content: center; }
-        .cta-primary {
-          padding: 0.9rem 2rem; background: #2563eb; color: #fff;
-          border: none; border-radius: 99px;
-          font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600;
-          cursor: pointer; text-decoration: none;
-          transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-          display: inline-flex; align-items: center; gap: 0.4rem;
-        }
+        .cta-primary { padding: 0.9rem 2rem; background: #2563eb; color: #fff; border: none; border-radius: 99px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: background 0.2s, transform 0.15s, box-shadow 0.2s; display: inline-flex; align-items: center; gap: 0.4rem; }
         .cta-primary:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
-        .cta-secondary {
-          padding: 0.9rem 2rem; background: transparent; color: #fff;
-          border: 2px solid rgba(255,255,255,0.7); border-radius: 99px;
-          font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600;
-          cursor: pointer; text-decoration: none; transition: all 0.2s;
-          display: inline-flex; align-items: center; gap: 0.4rem;
-        }
+        .cta-secondary { padding: 0.9rem 2rem; background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.7); border-radius: 99px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4rem; }
         .cta-secondary:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.9); }
-        .hero-stats {
-          display: flex; gap: 2.5rem; margin-top: 3rem;
-          animation: fadeUp 0.65s 0.45s ease both; justify-content: center;
-        }
+        .hero-stats { display: flex; gap: 2.5rem; margin-top: 3rem; animation: fadeUp 0.65s 0.45s ease both; justify-content: center; }
         .hero-stat-value { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #fff; font-weight: 700; }
         .hero-stat-label { font-size: 0.72rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; margin-top: 1px; }
 
-        /* ── SECTIONS ── */
-        .section-inner { max-width: 1100px; margin: 0 auto; padding: 5rem 2rem; }
-        .section-tag {
-          font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em;
-          text-transform: uppercase; color: var(--accent);
-          margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.4rem;
+        /* ── SECTION LAYOUT ── */
+        .section-wrap {
+          position: relative;
+          z-index: 0;
+          min-height: 100vh;
+          min-height: 100svh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
         }
+        .services-section { background: #fff; }
+        .about-section { background: var(--paper); }
+        .faq-section { background: #fff; }
+        .contact-section { background: var(--paper); }
+
+        .section-inner {
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 5rem 2rem;
+          width: 100%;
+        }
+        .section-tag { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.65rem; display: flex; align-items: center; gap: 0.4rem; }
         .section-tag::before { content: ''; display: inline-block; width: 20px; height: 2px; background: var(--accent); border-radius: 2px; }
         .section-title { font-family: 'Playfair Display', serif; font-size: clamp(1.75rem, 3.5vw, 2.5rem); color: var(--ink); letter-spacing: -0.02em; line-height: 1.2; margin-bottom: 0.75rem; }
         .section-subtitle { font-size: 0.95rem; color: var(--muted); font-weight: 300; line-height: 1.65; max-width: 500px; margin-bottom: 3rem; }
 
-        /* ── REVEAL ── */
-        .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.6s, transform 0.6s; }
-        .reveal.in { opacity: 1; transform: translateY(0); }
-        .reveal-delay-1 { transition-delay: 0.1s; }
-        .reveal-delay-2 { transition-delay: 0.2s; }
-        .reveal-delay-3 { transition-delay: 0.3s; }
-        .reveal-delay-4 { transition-delay: 0.4s; }
-        .reveal-delay-5 { transition-delay: 0.5s; }
-        .reveal-delay-6 { transition-delay: 0.6s; }
+        .sec-header-reveal { opacity: 1; transform: none; }
 
-        /* ── SERVICES ── */
-        .services-section { background: #fff; min-height: 100vh; display: flex; align-items: center; }
-        .services-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.25rem;
-  max-width: 700px;
-  margin: 0 auto;
-}
+        .child-reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.4s ease, transform 0.4s ease; }
+        .child-reveal.in { opacity: 1; transform: translateY(0); }
+        .child-delay-1 { transition-delay: 0.05s; }
+        .child-delay-2 { transition-delay: 0.10s; }
+        .child-delay-3 { transition-delay: 0.15s; }
+        .child-delay-4 { transition-delay: 0.20s; }
+        .child-delay-5 { transition-delay: 0.25s; }
 
-        /* ── SERVICE CARD with hover overlay ── */
-        .service-card {
-          background: var(--paper); border: 1.5px solid var(--border); border-radius: 14px;
-          padding: 2rem 1.5rem; text-align: center;
-          transition: box-shadow 0.3s, border-color 0.3s, transform 0.3s;
-          position: relative; overflow: hidden;
-          min-height: 180px; display: flex; align-items: center; justify-content: center;
-        }
-        .service-card:hover {
-          box-shadow: 0 8px 36px rgba(0,0,0,0.10);
-          border-color: #d0cdc8;
-          transform: translateY(-3px);
-        }
-
-        .service-card-content {
-          display: flex; flex-direction: column; align-items: center;
-          width: 100%;
-        }
-
-        /* ── WHITE AESTHETIC OVERLAY ── */
-        .service-inquire-overlay {
-          position: absolute; inset: 0;
-          background: rgba(255, 255, 255, 0.97);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          border-radius: 13px;
-          display: flex; flex-direction: column; align-items: center; justify-content: center;
-          gap: 0.45rem; padding: 1.5rem;
-          z-index: 10;
-        }
-
-        /* Soft glow ring behind icon */
-        .inquire-glow-ring {
-          position: absolute;
-          top: 50%; left: 50%;
-          transform: translate(-50%, -62%);
-          width: 90px; height: 90px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(37,99,235,0.10) 0%, transparent 70%);
-          pointer-events: none;
-          animation: glowPulse 2.2s ease-in-out infinite;
-        }
-        @keyframes glowPulse {
-          0%, 100% { transform: translate(-50%, -62%) scale(1); opacity: 0.7; }
-          50% { transform: translate(-50%, -62%) scale(1.18); opacity: 1; }
-        }
-
-        .inquire-icon-wrap {
-          width: 52px; height: 52px;
-          background: #fff;
-          border: 1.5px solid var(--border);
-          border-radius: 14px;
-          display: flex; align-items: center; justify-content: center;
-          color: var(--accent);
-          box-shadow: 0 2px 12px rgba(37,99,235,0.10);
-          position: relative; z-index: 1;
-          margin-bottom: 0.15rem;
-        }
-
-        .inquire-title {
-          font-family: 'Playfair Display', serif;
-          font-size: 1rem; color: var(--ink); font-weight: 700;
-          text-align: center; line-height: 1.3;
-          position: relative; z-index: 1;
-        }
-
-        .inquire-tagline {
-          font-size: 0.75rem; color: var(--muted);
-          font-weight: 400; letter-spacing: 0.02em;
-          position: relative; z-index: 1;
-        }
-
-        .inquire-btn {
-          margin-top: 0.55rem;
-          padding: 0.55rem 1.4rem;
-          background: var(--ink); color: #fff;
-          border: none; border-radius: 99px;
-          font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 600;
-          cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;
-          text-decoration: none;
-          transition: background 0.18s, transform 0.15s, box-shadow 0.18s;
-          box-shadow: 0 4px 14px rgba(15,14,17,0.18);
-          letter-spacing: 0.01em;
-          position: relative; z-index: 1;
-        }
-        .inquire-btn:hover {
-          background: var(--accent); transform: translateY(-1px);
-          box-shadow: 0 6px 20px rgba(37,99,235,0.28);
-        }
-        .inquire-btn:active { transform: translateY(0); }
-
-        .service-icon-wrap {
-          width: 56px; height: 56px; background: var(--accent); border-radius: 14px;
-          display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: #fff;
-        }
+        /* SERVICES */
+        .services-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; max-width: 700px; margin: 0 auto; }
+        .service-card { background: var(--paper); border: 1.5px solid var(--border); border-radius: 14px; padding: 2rem 1.5rem; text-align: center; transition: box-shadow 0.3s, border-color 0.3s, transform 0.3s; position: relative; overflow: hidden; min-height: 180px; display: flex; align-items: center; justify-content: center; }
+        .service-card:hover { box-shadow: 0 8px 36px rgba(0,0,0,0.10); border-color: #d0cdc8; transform: translateY(-3px); }
+        .service-card-content { display: flex; flex-direction: column; align-items: center; width: 100%; }
+        .service-inquire-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.97); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.45rem; padding: 1.5rem; z-index: 10; }
+        .inquire-glow-ring { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -62%); width: 90px; height: 90px; border-radius: 50%; background: radial-gradient(circle, rgba(37,99,235,0.10) 0%, transparent 70%); pointer-events: none; animation: glowPulse 2.2s ease-in-out infinite; }
+        @keyframes glowPulse { 0%, 100% { transform: translate(-50%, -62%) scale(1); opacity: 0.7; } 50% { transform: translate(-50%, -62%) scale(1.18); opacity: 1; } }
+        .inquire-icon-wrap { width: 52px; height: 52px; background: #fff; border: 1.5px solid var(--border); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: var(--accent); box-shadow: 0 2px 12px rgba(37,99,235,0.10); position: relative; z-index: 1; margin-bottom: 0.15rem; }
+        .inquire-title { font-family: 'Playfair Display', serif; font-size: 1rem; color: var(--ink); font-weight: 700; text-align: center; line-height: 1.3; position: relative; z-index: 1; }
+        .inquire-tagline { font-size: 0.75rem; color: var(--muted); font-weight: 400; position: relative; z-index: 1; }
+        .inquire-btn { margin-top: 0.55rem; padding: 0.55rem 1.4rem; background: var(--ink); color: #fff; border: none; border-radius: 99px; font-family: 'DM Sans', sans-serif; font-size: 0.82rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; text-decoration: none; transition: background 0.18s, transform 0.15s; box-shadow: 0 4px 14px rgba(15,14,17,0.18); position: relative; z-index: 1; }
+        .inquire-btn:hover { background: var(--accent); transform: translateY(-1px); }
+        .service-icon-wrap { width: 56px; height: 56px; background: var(--accent); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: #fff; }
         .service-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: var(--ink); margin-bottom: 0.5rem; }
         .service-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; font-weight: 300; }
 
-        /* ── ABOUT ── */
-        .about-section { background: var(--paper); min-height: 100vh; display: flex; align-items: center; }
+        /* ABOUT */
         .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
         .about-text p { font-size: 0.95rem; color: #555; line-height: 1.8; font-weight: 300; margin-bottom: 1.25rem; }
         .about-checklist { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; margin-top: 1rem; }
@@ -810,28 +647,32 @@ export default function HomePage() {
         .check-dot { width: 20px; height: 20px; background: var(--success); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
         .check-dot svg { width: 11px; height: 11px; }
         .feature-cards { display: flex; flex-direction: column; gap: 1rem; }
-        .feature-card {
-          background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
-          padding: 1.25rem 1.5rem; display: flex; gap: 1rem; align-items: flex-start; transition: box-shadow 0.2s;
-        }
+        .feature-card { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 1.25rem 1.5rem; display: flex; gap: 1rem; align-items: flex-start; transition: box-shadow 0.2s; }
         .feature-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
         .feature-icon { width: 42px; height: 42px; background: var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
         .feature-title { font-family: 'Playfair Display', serif; font-size: 0.95rem; color: var(--ink); margin-bottom: 0.25rem; }
         .feature-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.55; font-weight: 300; }
 
-        /* ── CONTACT ── */
-        .contact-section { background: #fff; min-height: 100vh; display: flex; align-items: center; }
+        /* FAQ */
+        .faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.75rem; }
+        .faq-item { background: var(--paper); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; cursor: pointer; transition: box-shadow 0.25s, border-color 0.25s, transform 0.2s; }
+        .faq-item:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.07); border-color: #d0cdc8; transform: translateY(-1px); }
+        .faq-item.faq-open { border-color: var(--accent); box-shadow: 0 4px 24px rgba(37,99,235,0.10); background: #fff; }
+        .faq-question { width: 100%; background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem 1.5rem; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600; color: var(--ink); text-align: left; line-height: 1.4; }
+        .faq-chevron { flex-shrink: 0; color: var(--accent); transition: transform 0.3s cubic-bezier(.4,0,.2,1); display: flex; align-items: center; }
+        .faq-open .faq-chevron { transform: rotate(180deg); }
+        .faq-body { overflow: hidden; transition: max-height 0.38s cubic-bezier(.4,0,.2,1); }
+        .faq-answer { padding: 0 1.5rem 1.35rem; padding-top: 1rem; font-size: 0.9rem; color: var(--muted); line-height: 1.75; font-weight: 300; border-top: 1px solid var(--border); margin: 0; }
+
+        /* CONTACT */
         .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
-        .contact-card {
-          background: var(--paper); border: 1.5px solid var(--border); border-radius: 12px;
-          padding: 1.5rem; display: flex; align-items: center; gap: 1rem; transition: box-shadow 0.2s;
-        }
+        .contact-card { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 1.5rem; display: flex; align-items: center; gap: 1rem; transition: box-shadow 0.2s; }
         .contact-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.07); }
         .contact-icon { width: 44px; height: 44px; background: var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #fff; }
         .contact-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
         .contact-value { font-size: 0.9rem; color: var(--ink); font-weight: 500; }
 
-        /* ── FOOTER ── */
+        /* FOOTER */
         .footer { background: var(--ink); padding: 3.5rem 2rem 2rem; }
         .footer-inner { max-width: 1100px; margin: 0 auto; }
         .footer-top { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 3rem; padding-bottom: 2.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 1.5rem; }
@@ -843,49 +684,43 @@ export default function HomePage() {
         .footer-link-btn:hover { color: rgba(255,255,255,0.85); }
         .footer-bottom { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; color: rgba(255,255,255,0.25); flex-wrap: wrap; gap: 0.5rem; }
 
-        /* ── SERVICES HINT TEXT ── */
-        .services-hint {
-          font-size: 0.8rem; color: var(--muted); font-weight: 400;
-          display: flex; align-items: center; gap: 0.4rem; margin-bottom: 2rem;
-          opacity: 0.75;
-        }
-        .services-hint-dot {
-          width: 6px; height: 6px; background: var(--accent);
-          border-radius: 50%; animation: pulse 2s ease infinite;
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; transform: scale(1); }
-          50% { opacity: 0.5; transform: scale(0.7); }
-        }
+        /* HINT */
+        .services-hint { font-size: 0.8rem; color: var(--muted); display: flex; align-items: center; gap: 0.4rem; margin-bottom: 2rem; }
+        .services-hint-dot { width: 6px; height: 6px; background: var(--accent); border-radius: 50%; animation: pulse 2s ease infinite; flex-shrink: 0; }
+        @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.7); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* ── RESPONSIVE ── */
+        /* RESPONSIVE */
         @media (max-width: 900px) {
           .nav-links, .nav-actions { display: none; }
           .hamburger { display: flex; }
-          .about-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+          .about-grid { grid-template-columns: 1fr; gap: 2rem; }
           .footer-top { grid-template-columns: 1fr 1fr; }
-        }
-        @media (max-width: 720px) {
-          .services-grid { grid-template-columns: 1fr 1fr; }
+          .services-grid { grid-template-columns: 1fr; max-width: 100%; }
+          .service-card { min-height: unset; padding: 1.5rem 1.25rem; }
           .contact-grid { grid-template-columns: 1fr; }
-          .footer-top { grid-template-columns: 1fr; gap: 2rem; }
         }
-        @media (max-width: 480px) {
-          .services-grid { grid-template-columns: 1fr; }
-          .hero-stats { gap: 1.5rem; }
-          .section-inner { padding: 3.5rem 1.25rem; }
-          :root { --nav-h: 58px; --nav-pad: 10px; --logo-h: 64px; }
+        @media (max-width: 600px) {
+          :root { --nav-h: 58px; --nav-pad: 10px; --logo-h: 52px; }
+          .section-wrap {
+            min-height: 100svh;
+          }
+          .section-inner { padding: 3rem 1.1rem; }
+          .section-title { font-size: 1.65rem; }
+          .hero-stats { gap: 1.25rem; }
+          .hero-stat-value { font-size: 1.25rem; }
+          .hero-cta { flex-direction: column; align-items: stretch; }
+          .cta-primary, .cta-secondary { justify-content: center; }
+          .about-text p { font-size: 0.88rem; }
+          .feature-card { padding: 1rem; }
+          .contact-card { padding: 1rem; }
+          .faq-question { padding: 1rem; font-size: 0.88rem; }
+          .faq-answer { padding: 0 1rem 1rem; padding-top: 0.85rem; font-size: 0.85rem; }
+          .footer-top { grid-template-columns: 1fr; gap: 1.75rem; }
         }
-
-
       `}</style>
 
-      {/* ── NAV ── */}
+      {/* NAV */}
       <header className={`nav-bar ${scrolled ? "scrolled" : ""}`}>
         <div className="nav-inner">
           <div
@@ -898,23 +733,21 @@ export default function HomePage() {
           >
             <img src="/jp.png" alt="Jonayskie Prints" />
           </div>
-
           <ul className="nav-links" onMouseLeave={() => setHoveredNav(null)}>
-            {(["home", "services", "about", "contact"] as NavSection[]).map(
-              (s) => (
-                <li key={s}>
-                  <button
-                    className={getLinkClass(s)}
-                    onClick={() => scrollTo(s)}
-                    onMouseEnter={() => setHoveredNav(s)}
-                  >
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                  </button>
-                </li>
-              ),
-            )}
+            {(
+              ["home", "services", "about", "faq", "contact"] as NavSection[]
+            ).map((s) => (
+              <li key={s}>
+                <button
+                  className={getLinkClass(s)}
+                  onClick={() => scrollTo(s)}
+                  onMouseEnter={() => setHoveredNav(s)}
+                >
+                  {s === "faq" ? "FAQ" : s.charAt(0).toUpperCase() + s.slice(1)}
+                </button>
+              </li>
+            ))}
           </ul>
-
           <div className="nav-actions">
             <Link href="/login" className="btn-login">
               Login
@@ -923,7 +756,6 @@ export default function HomePage() {
               Register
             </Link>
           </div>
-
           <button className="hamburger" onClick={() => setMenuOpen((v) => !v)}>
             <svg
               width="22"
@@ -942,21 +774,21 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* ── MOBILE MENU ── */}
+      {/* MOBILE MENU */}
       <div className={`mobile-menu ${menuOpen ? "open" : ""}`}>
         <ul className="mobile-nav-links">
-          {(["home", "services", "about", "contact"] as NavSection[]).map(
-            (s) => (
-              <li key={s}>
-                <button
-                  className={`mobile-nav-btn ${activeNav === s ? "active" : ""}`}
-                  onClick={() => scrollTo(s)}
-                >
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
-              </li>
-            ),
-          )}
+          {(
+            ["home", "services", "about", "faq", "contact"] as NavSection[]
+          ).map((s) => (
+            <li key={s}>
+              <button
+                className={`mobile-nav-btn ${activeNav === s ? "active" : ""}`}
+                onClick={() => scrollTo(s)}
+              >
+                {s === "faq" ? "FAQ" : s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            </li>
+          ))}
         </ul>
         <div className="mobile-actions">
           <Link href="/login" className="btn-login">
@@ -968,7 +800,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── HERO ── */}
+      {/* HERO */}
       <section id="home" ref={heroRef as React.RefObject<HTMLElement>}>
         <div className="hero">
           <div className="hero-logo-bg">
@@ -1016,27 +848,35 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── SERVICES ── */}
+      {/* SERVICES */}
       <section
         id="services"
         ref={servicesRef as React.RefObject<HTMLElement>}
-        className="services-section"
+        className="section-wrap services-section"
       >
-        <div
-          ref={servicesReveal.ref}
-          className={`section-inner reveal ${servicesReveal.inView ? "in" : ""}`}
-        >
-          <div className="section-tag">What We Offer</div>
-          <h2 className="section-title">Our Services</h2>
-          <p className="section-subtitle">
-            From everyday document printing to specialized photo development, we
-            cover all your printing needs under one roof.
-          </p>
-          {/* Hover hint */}
-          <div className="services-hint">
-            <span className="services-hint-dot" />
-            Hover over any service to inquire
+        <div ref={servicesReveal.ref} className="section-inner">
+          {/* ✅ CENTERED SERVICES HEADER */}
+          <div
+            className={`sec-header-reveal ${servicesReveal.inView ? "in" : ""}`}
+            style={{ textAlign: "center" }}
+          >
+            <div className="section-tag" style={{ justifyContent: "center" }}>
+              What We Offer
+            </div>
+            <h2 className="section-title">Our Services</h2>
+            <p
+              className="section-subtitle"
+              style={{ margin: "0.65rem auto 1.5rem" }}
+            >
+              From everyday document printing to specialized photo development,
+              we cover all your printing needs under one roof.
+            </p>
+            <div
+              className="services-hint"
+              style={{ justifyContent: "center" }}
+            ></div>
           </div>
+
           <div className="services-grid">
             {SERVICES.map((s, i) => (
               <ServiceCardItem
@@ -1050,27 +890,28 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── ABOUT ── */}
+      {/* ABOUT */}
       <section
         id="about"
         ref={aboutRef as React.RefObject<HTMLElement>}
-        className="about-section"
+        className="section-wrap about-section"
       >
-        <div
-          ref={aboutReveal.ref}
-          className={`section-inner reveal ${aboutReveal.inView ? "in" : ""}`}
-        >
+        <div ref={aboutReveal.ref} className="section-inner">
           <div className="about-grid">
             <div className="about-text">
-              <div className="section-tag">Who We Are</div>
-              <h2 className="section-title">About Jonayskie Prints</h2>
-              <p>
-                We are a trusted printing business dedicated to providing
-                high-quality printing services to our community. With years of
-                experience in the industry, we understand the importance of
-                delivering professional results on time.
-              </p>
-              <p>Our modern order management system allows you to:</p>
+              <div
+                className={`sec-header-reveal ${aboutReveal.inView ? "in" : ""}`}
+              >
+                <div className="section-tag">Who We Are</div>
+                <h2 className="section-title">About Jonayskie Prints</h2>
+                <p>
+                  We are a trusted printing business dedicated to providing
+                  high-quality printing services to our community. With years of
+                  experience in the industry, we understand the importance of
+                  delivering professional results on time.
+                </p>
+                <p>Our modern order management system allows you to:</p>
+              </div>
               <ul className="about-checklist">
                 {[
                   "Upload files directly online",
@@ -1079,7 +920,7 @@ export default function HomePage() {
                 ].map((item, i) => (
                   <li
                     key={item}
-                    className={`about-check reveal ${aboutReveal.inView ? "in" : ""} reveal-delay-${i + 1}`}
+                    className={`about-check child-reveal ${aboutReveal.inView ? "in" : ""} child-delay-${i + 1}`}
                   >
                     <span className="check-dot">
                       <svg
@@ -1102,7 +943,7 @@ export default function HomePage() {
               {FEATURES.map((f, i) => (
                 <div
                   key={f.title}
-                  className={`feature-card reveal ${aboutReveal.inView ? "in" : ""} reveal-delay-${i + 1}`}
+                  className={`feature-card child-reveal ${aboutReveal.inView ? "in" : ""} child-delay-${i + 1}`}
                 >
                   <div className="feature-icon">{f.icon}</div>
                   <div>
@@ -1116,17 +957,56 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── CONTACT ── */}
+      {/* FAQ */}
+      <section
+        id="faq"
+        ref={faqRef as React.RefObject<HTMLElement>}
+        className="section-wrap faq-section"
+      >
+        <div ref={faqReveal.ref} className="section-inner">
+          <div
+            className={`sec-header-reveal ${faqReveal.inView ? "in" : ""}`}
+            style={{ textAlign: "center", marginBottom: "2.5rem" }}
+          >
+            <div className="section-tag" style={{ justifyContent: "center" }}>
+              Got Questions?
+            </div>
+            <h2 className="section-title" style={{ textAlign: "center" }}>
+              Frequently Asked Questions
+            </h2>
+            <p
+              className="section-subtitle"
+              style={{ textAlign: "center", margin: "0.65rem auto 0" }}
+            >
+              Everything you need to know before placing your first order.
+            </p>
+          </div>
+          <div className="faq-list">
+            {FAQS.map((faq, i) => (
+              <FaqAccordionItem
+                key={faq.q}
+                faq={faq}
+                index={i}
+                inView={faqReveal.inView}
+                isOpen={openFaq === i}
+                onToggle={() => setOpenFaq(openFaq === i ? null : i)}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CONTACT */}
       <section
         id="contact"
         ref={contactRef as React.RefObject<HTMLElement>}
-        className="contact-section"
+        className="section-wrap contact-section"
       >
-        <div
-          ref={contactReveal.ref}
-          className={`section-inner reveal ${contactReveal.inView ? "in" : ""}`}
-        >
-          <div style={{ textAlign: "center", marginBottom: "3rem" }}>
+        <div ref={contactReveal.ref} className="section-inner">
+          <div
+            className={`sec-header-reveal ${contactReveal.inView ? "in" : ""}`}
+            style={{ textAlign: "center", marginBottom: "2.5rem" }}
+          >
             <div className="section-tag" style={{ justifyContent: "center" }}>
               Get In Touch
             </div>
@@ -1138,7 +1018,7 @@ export default function HomePage() {
             {CONTACT_ITEMS.map((c, i) => (
               <div
                 key={c.label}
-                className={`contact-card reveal ${contactReveal.inView ? "in" : ""} reveal-delay-${i + 1}`}
+                className={`contact-card child-reveal ${contactReveal.inView ? "in" : ""} child-delay-${i + 1}`}
               >
                 <div className="contact-icon">{c.icon}</div>
                 <div>
@@ -1151,7 +1031,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
+      {/* FOOTER */}
       <footer className="footer">
         <div className="footer-inner">
           <div className="footer-top">
@@ -1181,18 +1061,26 @@ export default function HomePage() {
             <div>
               <div className="footer-col-title">Quick Links</div>
               <ul className="footer-links">
-                {(["home", "services", "about", "contact"] as NavSection[]).map(
-                  (s) => (
-                    <li key={s}>
-                      <button
-                        className="footer-link-btn"
-                        onClick={() => scrollTo(s)}
-                      >
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                      </button>
-                    </li>
-                  ),
-                )}
+                {(
+                  [
+                    "home",
+                    "services",
+                    "about",
+                    "faq",
+                    "contact",
+                  ] as NavSection[]
+                ).map((s) => (
+                  <li key={s}>
+                    <button
+                      className="footer-link-btn"
+                      onClick={() => scrollTo(s)}
+                    >
+                      {s === "faq"
+                        ? "FAQ"
+                        : s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
+                  </li>
+                ))}
               </ul>
             </div>
             <div>
