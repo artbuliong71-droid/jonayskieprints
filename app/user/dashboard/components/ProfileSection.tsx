@@ -73,8 +73,57 @@ export function ProfileSection({
   profInitials,
   onSubmit,
   onAvatarChange,
+  showToast,
 }: ProfileSectionProps) {
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  // Intercept submit on the password tab to validate before calling onSubmit
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (profTab === "password") {
+      // If all fields are blank, do nothing (user doesn't want to change password)
+      if (!profCurrentPw && !profNewPw && !profConfirmPw) {
+        showToast("No password changes were made.", "error");
+        return;
+      }
+
+      // Current password is required when any field is filled
+      if (!profCurrentPw) {
+        showToast("Please enter your current password.", "error");
+        return;
+      }
+
+      // New password is required
+      if (!profNewPw) {
+        showToast("Please enter a new password.", "error");
+        return;
+      }
+
+      // New password strength must be acceptable (strength >= 2)
+      if (pwStrength < 2) {
+        showToast("New password is too weak.", "error");
+        return;
+      }
+
+      // Passwords must match
+      if (pwMatch !== "match") {
+        showToast("Passwords don't match.", "error");
+        return;
+      }
+
+      // New password must differ from current
+      if (profCurrentPw === profNewPw) {
+        showToast(
+          "New password must be different from current password.",
+          "error",
+        );
+        return;
+      }
+    }
+
+    onSubmit(e);
+  };
 
   return (
     <div className="np-card">
@@ -204,7 +253,7 @@ export function ProfileSection({
 
       {/* Body */}
       <div className="np-body">
-        <form onSubmit={onSubmit}>
+        <form onSubmit={handleSubmit}>
           {/* ── Info tab ── */}
           {profTab === "info" && (
             <div className="np-fadein">
@@ -435,9 +484,6 @@ export function ProfileSection({
                       </div>
                     </div>
                   )}
-                  <div className="np-hint">
-                    8+ chars · 1 uppercase · 1 number
-                  </div>
                 </div>
                 <div className="np-group">
                   <label className="np-label">Confirm New Password</label>
