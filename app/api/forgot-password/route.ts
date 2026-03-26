@@ -75,13 +75,13 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(
-      { message: "OTP sent to your email." },
+      { success: true, message: "OTP sent to your email." },
       { status: 200 },
     );
   } catch (error) {
     console.error("[forgot-password]", error);
     return NextResponse.json(
-      { message: "Something went wrong. Try again." },
+      { success: false, message: "Something went wrong. Try again." },
       { status: 500 },
     );
   }
