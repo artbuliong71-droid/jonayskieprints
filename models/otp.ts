@@ -1,11 +1,13 @@
-// models/otp.ts
-import mongoose from "mongoose";
+import mongoose, { Schema, models } from "mongoose";
 
-const otpSchema = new mongoose.Schema({
-  email: { type: String, required: true, unique: true },
+const OtpSchema = new Schema({
+  email: { type: String, required: true, index: true },
   otp: { type: String, required: true },
+  userData: { type: Object, required: true },
   expiresAt: { type: Date, required: true },
-  verified: { type: Boolean, default: false },
 });
 
-export const OtpModel = mongoose.models.Otp || mongoose.model("Otp", otpSchema);
+OtpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+export const Otp = models.Otp || mongoose.model("Otp", OtpSchema);
+export const OtpModel = Otp; // alias so both names work

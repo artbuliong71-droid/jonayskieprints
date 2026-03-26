@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/user";
-import { OtpModel } from "@/models/otp";
+import { OtpModel } from "@/models/Otp";
 
 export async function POST(req: NextRequest) {
   try {
