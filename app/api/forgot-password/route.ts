@@ -4,18 +4,8 @@ import nodemailer from "nodemailer";
 import crypto from "crypto";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/user";
+import { OtpModel } from "@/models/otp";
 
-// ── In-memory OTP store (shared across routes via global) ─────────────────
-// In production, replace with a MongoDB OTP collection
-declare global {
-  var otpStore: Record<
-    string,
-    { otp: string; expiresAt: Date; verified: boolean }
-  >;
-}
-if (!global.otpStore) global.otpStore = {};
-
-// ── Nodemailer transporter ─────────────────────────────────────────────────
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
@@ -30,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     if (!email) {
       return NextResponse.json(
-        { message: "Email is required." },
+        { success: false, message: "Email is required." },
         { status: 400 },
       );
     }
@@ -41,7 +31,7 @@ export async function POST(req: NextRequest) {
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return NextResponse.json(
-        { message: "No account found with this email." },
+        { success: false, message: "No account found with this email." },
         { status: 404 },
       );
     }
@@ -50,8 +40,12 @@ export async function POST(req: NextRequest) {
     const otp = crypto.randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Save to global OTP store
-    global.otpStore[email] = { otp, expiresAt, verified: false };
+    // Save to MongoDB (upsert — replaces existing OTP for this email)
+    await OtpModel.findOneAndUpdate(
+      { email },
+      { otp, expiresAt, verified: false },
+      { upsert: true, new: true },
+    );
 
     // Send OTP email
     await transporter.sendMail({

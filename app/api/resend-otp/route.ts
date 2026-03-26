@@ -4,6 +4,7 @@ import nodemailer from "nodemailer";
 import crypto from "crypto";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/user";
+import { OtpModel } from "@/models/otp";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     if (!email) {
       return NextResponse.json(
-        { message: "Email is required." },
+        { success: false, message: "Email is required." },
         { status: 400 },
       );
     }
@@ -29,16 +30,21 @@ export async function POST(req: NextRequest) {
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       return NextResponse.json(
-        { message: "No account found with this email." },
+        { success: false, message: "No account found with this email." },
         { status: 404 },
       );
     }
 
     // Generate new OTP
     const otp = crypto.randomInt(100000, 999999).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    global.otpStore[email] = { otp, expiresAt, verified: false };
+    // ✅ Save to MongoDB instead of global.otpStore
+    await OtpModel.findOneAndUpdate(
+      { email },
+      { otp, expiresAt, verified: false },
+      { upsert: true, new: true },
+    );
 
     await transporter.sendMail({
       from: `"Jonayskie Prints" <${process.env.EMAIL_USER}>`,
@@ -61,13 +67,13 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(
-      { message: "New OTP sent to your email." },
+      { success: true, message: "New OTP sent to your email." },
       { status: 200 },
     );
   } catch (error) {
     console.error("[resend-otp]", error);
     return NextResponse.json(
-      { message: "Something went wrong. Try again." },
+      { success: false, message: "Something went wrong. Try again." },
       { status: 500 },
     );
   }

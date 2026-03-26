@@ -1,5 +1,7 @@
 // app/api/verify-otp/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { connectDB } from "@/lib/db";
+import { OtpModel } from "@/models/otp";
 
 export async function POST(req: NextRequest) {
   try {
@@ -7,46 +9,51 @@ export async function POST(req: NextRequest) {
 
     if (!email || !otp) {
       return NextResponse.json(
-        { message: "Email and OTP are required." },
+        { success: false, message: "Email and OTP are required." },
         { status: 400 },
       );
     }
 
-    const record = global.otpStore?.[email];
+    await connectDB();
+
+    const record = await OtpModel.findOne({ email });
 
     if (!record) {
       return NextResponse.json(
-        { message: "No OTP found. Please request a new one." },
+        { success: false, message: "No OTP found. Please request a new one." },
         { status: 400 },
       );
     }
 
     if (new Date() > record.expiresAt) {
-      delete global.otpStore[email];
+      await OtpModel.deleteOne({ email });
       return NextResponse.json(
-        { message: "OTP has expired. Please request a new one." },
+        {
+          success: false,
+          message: "OTP has expired. Please request a new one.",
+        },
         { status: 400 },
       );
     }
 
     if (record.otp !== otp) {
       return NextResponse.json(
-        { message: "Invalid OTP. Please try again." },
+        { success: false, message: "Invalid OTP. Please try again." },
         { status: 400 },
       );
     }
 
     // Mark as verified
-    global.otpStore[email].verified = true;
+    await OtpModel.findOneAndUpdate({ email }, { verified: true });
 
     return NextResponse.json(
-      { message: "OTP verified successfully." },
+      { success: true, message: "OTP verified successfully." },
       { status: 200 },
     );
   } catch (error) {
     console.error("[verify-otp]", error);
     return NextResponse.json(
-      { message: "Something went wrong. Try again." },
+      { success: false, message: "Something went wrong. Try again." },
       { status: 500 },
     );
   }
