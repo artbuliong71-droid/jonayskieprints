@@ -3,14 +3,14 @@ import nodemailer from "nodemailer";
 export const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
 export async function sendOtpEmail(to: string, otp: string) {
   await transporter.sendMail({
-    from: `"Jonayskie Prints" <${process.env.GMAIL_USER}>`,
+    from: `"Jonayskie Prints" <${process.env.EMAIL_USER}>`,
     to,
     subject: "Your OTP Verification Code",
     html: `
