@@ -53,9 +53,10 @@ function DashboardPageInner() {
 
   const [showTosModal, setShowTosModal] = useState(false);
 
-  // ── Initialize activeSection from localStorage to prevent flash ──
+  // ── Initialize activeSection — always start on dashboard for fresh logins ──
   const [activeSection, setActiveSection] = useState<Section>(() => {
     try {
+      if (!sessionStorage.getItem("dashboard_loaded")) return "dashboard";
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         const d = JSON.parse(saved);
@@ -64,6 +65,11 @@ function DashboardPageInner() {
     } catch {}
     return "dashboard";
   });
+
+  // ── Mark dashboard as loaded so draft can be restored on future renders ──
+  useEffect(() => {
+    sessionStorage.setItem("dashboard_loaded", "true");
+  }, []);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toast, setToast] = useState<Toast>({
@@ -115,6 +121,7 @@ function DashboardPageInner() {
   // ── New-order form state — initialize from localStorage draft ──
   const [step, setStep] = useState<number>(() => {
     try {
+      if (!sessionStorage.getItem("dashboard_loaded")) return 0;
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) return JSON.parse(saved).step ?? 0;
     } catch {}
@@ -122,6 +129,7 @@ function DashboardPageInner() {
   });
   const [noService, setNoService] = useState<string>(() => {
     try {
+      if (!sessionStorage.getItem("dashboard_loaded")) return "";
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) return JSON.parse(saved).noService ?? "";
     } catch {}
@@ -723,9 +731,7 @@ function DashboardPageInner() {
   }
 
   function resetForm() {
-    // ── Clear draft from localStorage ──
     localStorage.removeItem(DRAFT_KEY);
-
     setStep(0);
     setNoService("");
     setNoQuantity("");
@@ -821,7 +827,6 @@ function DashboardPageInner() {
         enrichedSpecs = `Photo Finish: ${pfLabel}\n` + enrichedSpecs;
       }
       fd.append("specifications", enrichedSpecs);
-
       fd.append("delivery_option", noDelivery);
       if (noDelivery === "delivery") fd.append("delivery_address", noAddress);
       if (noDelivery === "pickup" && noPickupTime)
