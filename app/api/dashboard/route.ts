@@ -459,7 +459,7 @@ export async function POST(req: NextRequest) {
     );
 
     // ── Read payment method and GCash fields ──────────────────────────────────
-    const payment_method = (formData.get("payment_method") as string) || "Cash";
+    const payment_method = (formData.get("payment_method") as string) || "cash";
     const gcash_ref_num = (formData.get("gcash_ref_num") as string) || null;
 
     // ── Upload order files to Cloudinary ─────────────────────────────────────
@@ -502,31 +502,84 @@ export async function POST(req: NextRequest) {
         console.error("[GCASH RECEIPT UPLOAD ERROR]", uploadErr);
       }
     }
+
     const { User } = await import("@/models/user");
     const user = await User.findById(session.userId);
 
     if (!user) {
+      console.error("[ORDER DEBUG] User not found for ID:", session.userId);
       return NextResponse.json(
         { success: false, message: "User not found." },
         { status: 404 },
       );
     }
-    // ── Save order ────────────────────────────────────────────────────────────
-    const order = await Order.create({
-      user_id: new mongoose.Types.ObjectId(session.userId),
-      user_name: `${user.first_name} ${user.last_name}`,
-      user_email: user.email,
+
+    // ── DEBUG LOG ────────────────────────────────────────────────────────────
+    console.log("[ORDER DEBUG] Creating order for user:", {
+      userId: session.userId,
+      userName: `${user.first_name} ${user.last_name}`,
+      userEmail: user.email,
+    });
+    console.log("[ORDER DEBUG] Order data:", {
       service,
       quantity,
-      specifications,
-      delivery_option,
-      delivery_address,
-      pickup_time,
       total_amount,
       payment_method,
-      gcash_ref_num,
-      gcash_receipt_url,
-      files: uploadedFiles,
+      specifications: specifications.substring(0, 50),
+    });
+
+    // ── Save order ────────────────────────────────────────────────────────────
+    let order;
+    try {
+      order = await Order.create({
+        user_id: new mongoose.Types.ObjectId(session.userId),
+        user_name: `${user.first_name} ${user.last_name}`,
+        user_email: user.email,
+        service,
+        quantity,
+        specifications,
+        delivery_option,
+        delivery_address,
+        pickup_time,
+        total_amount,
+        payment_method,
+        gcash_ref_num,
+        gcash_receipt_url,
+        files: uploadedFiles,
+        status: "pending",
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      console.log("[ORDER DEBUG] ✅ Order created successfully:", {
+        orderId: order.order_id,
+        mongoId: order._id,
+        status: order.status,
+      });
+    } catch (createErr) {
+      console.error("[ORDER CREATE ERROR]", createErr);
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Failed to create order: " + String(createErr),
+        },
+        { status: 500 },
+      );
+    }
+
+    // ── Verify order was saved ───────────────────────────────────────────────
+    const savedOrder = await Order.findById(order._id);
+    if (!savedOrder) {
+      console.error("[ORDER VERIFY ERROR] Order not found after creation!");
+      return NextResponse.json(
+        { success: false, message: "Order created but could not be verified." },
+        { status: 500 },
+      );
+    }
+
+    console.log("[ORDER DEBUG] ✅ Order verified in database:", {
+      orderId: savedOrder.order_id,
+      status: savedOrder.status,
     });
 
     return NextResponse.json({
@@ -541,7 +594,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[DASHBOARD POST ERROR]", err);
     return NextResponse.json(
-      { success: false, message: "Server error." },
+      { success: false, message: "Server error: " + String(err) },
       { status: 500 },
     );
   }
