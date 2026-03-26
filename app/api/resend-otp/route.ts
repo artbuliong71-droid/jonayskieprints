@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 import crypto from "crypto";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/user";
-import { OtpModel } from "@/models/Otp";
+import { Otp } from "@/models/otp";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // ✅ Save to MongoDB instead of global.otpStore
-    await OtpModel.findOneAndUpdate(
+    await Otp.findOneAndUpdate(
       { email },
       { otp, expiresAt, verified: false },
       { upsert: true, new: true },

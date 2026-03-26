@@ -10,4 +10,4 @@ const OtpSchema = new Schema({
 OtpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const Otp = models.Otp || mongoose.model("Otp", OtpSchema);
-export const OtpModel = Otp; // alias so both names work
+export const Otp = Otp; // alias so both names work

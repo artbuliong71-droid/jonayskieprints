@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/user";
-import { OtpModel } from "@/models/Otp";
+import { Otp } from "@/models/otp";
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     await connectDB();
 
     // Check OTP was verified in MongoDB
-    const record = await OtpModel.findOne({ email });
+    const record = await Otp.findOne({ email });
     if (!record || !record.verified) {
       return NextResponse.json(
         {
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     await user.save();
 
     // Clean up OTP from MongoDB
-    await OtpModel.deleteOne({ email });
+    await Otp.deleteOne({ email });
 
     return NextResponse.json(
       {

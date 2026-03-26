@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 import crypto from "crypto";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/user";
-import { Otp } from "@/models/Otp";
+import { Otp } from "@/models/otp";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",

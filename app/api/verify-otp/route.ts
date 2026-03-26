@@ -1,7 +1,7 @@
 // app/api/verify-otp/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { OtpModel } from "@/models/Otp";
+import { Otp } from "@/models/otp";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    const record = await OtpModel.findOne({ email });
+    const record = await Otp.findOne({ email });
 
     if (!record) {
       return NextResponse.json(
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (new Date() > record.expiresAt) {
-      await OtpModel.deleteOne({ email });
+      await Otp.deleteOne({ email });
       return NextResponse.json(
         {
           success: false,
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Mark as verified
-    await OtpModel.findOneAndUpdate({ email }, { verified: true });
+    await Otp.findOneAndUpdate({ email }, { verified: true });
 
     return NextResponse.json(
       { success: true, message: "OTP verified successfully." },

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/user";
-import { Otp } from "@/models/Otp";
+import { Otp } from "@/models/otp";
 import { sendOtpEmail } from "@/lib/mailer";
 
 export async function POST(req: NextRequest) {
