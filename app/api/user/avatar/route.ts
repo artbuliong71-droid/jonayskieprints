@@ -36,7 +36,7 @@ export async function PATCH(req: NextRequest) {
     const user = await User.findByIdAndUpdate(
       session.userId,
       { avatarUrl },
-      { new: true },
+      { returnDocument: "after" }, // was: { new: true }
     );
 
     if (!user) {
