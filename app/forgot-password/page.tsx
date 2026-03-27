@@ -88,7 +88,10 @@ const ForgotPassword: React.FC = () => {
     const otpString = otp.join("");
     if (otpString.length < 6)
       return setError("Please enter the complete 6-digit OTP.");
-    const res = await handleApiCall("/verify-otp", { email, otp: otpString });
+    const res = await handleApiCall("/forgot-password-verify", {
+      email,
+      otp: otpString,
+    });
     if (res) {
       setSuccessMsg(res.message);
       setStep("reset");
