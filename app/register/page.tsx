@@ -263,9 +263,11 @@ function OtpModal({
     setIsVerifying(true);
     setError("");
     try {
-      const res = await fetch(
-        `/api/send-otp?email=${encodeURIComponent(email)}&otp=${otp}`,
-      );
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
       const data = await res.json();
       if (data.success) {
         onVerified();
@@ -283,7 +285,7 @@ function OtpModal({
     setResendTimer(60);
     setError("");
     setOtp("");
-    await fetch("/api/send-otp", {
+    await fetch("/api/auth/send-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
@@ -738,7 +740,7 @@ export default function RegisterPage() {
     if (!validate()) return;
     setIsLoading(true);
     try {
-      const res = await fetch("/api/send-otp", {
+      const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: formData.email }),
