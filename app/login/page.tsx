@@ -464,7 +464,14 @@ export default function LoginPage() {
                 </div>
                 Remember me
               </label>
-              <Link href="/forgot-password" className="forgot-link">
+              <Link
+                href={
+                  formData.email === "admin@jonayskieprints.com"
+                    ? "/admin-reset"
+                    : "/forgot-password"
+                }
+                className="forgot-link"
+              >
                 Forgot Password?
               </Link>
             </div>
