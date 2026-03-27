@@ -47,6 +47,11 @@ const PAPER_TYPE_LABELS: Record<string, string> = {
 
 const DRAFT_KEY = "newOrderDraft";
 
+// ── Replace these with your actual Cloudinary credentials ──────────────────
+const CLOUDINARY_CLOUD_NAME = "dz56yoeaf";
+const CLOUDINARY_UPLOAD_PRESET = "jonayskie_avatars";
+// ───────────────────────────────────────────────────────────────────────────
+
 function DashboardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -447,6 +452,7 @@ function DashboardPageInner() {
     setOrdersLoading(false);
   }, []);
 
+  // ── fetchUser: now also loads avatarUrl from DB ───────────────────────────
   const fetchUser = useCallback(async () => {
     try {
       const res = await fetch("/api/dashboard?action=getUser");
@@ -458,6 +464,7 @@ function DashboardPageInner() {
         setProfLastName(u.last_name);
         setProfEmail(u.email);
         setProfPhone(u.phone || "");
+        setProfAvatar(u.avatarUrl || null); // ← Load avatar from DB
       }
     } catch {}
   }, []);
@@ -555,16 +562,55 @@ function DashboardPageInner() {
     setCancelModalOrderId(null);
   }
 
-  function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+  // ── handleAvatarChange: uploads to Cloudinary, saves URL to MongoDB ──────
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
     if (file.size > 2 * 1024 * 1024) {
       showToast("Image must be under 2MB.", "error");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => setProfAvatar(ev.target?.result as string);
-    reader.readAsDataURL(file);
+
+    try {
+      // 1. Upload to Cloudinary
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+      formData.append("folder", "avatars");
+
+      const cloudRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        { method: "POST", body: formData },
+      );
+
+      if (!cloudRes.ok) {
+        showToast("Failed to upload photo. Try again.", "error");
+        return;
+      }
+
+      const cloudData = await cloudRes.json();
+      const imageUrl: string = cloudData.secure_url;
+
+      // 2. Update UI immediately
+      setProfAvatar(imageUrl);
+
+      // 3. Save URL to MongoDB via API
+      const saveRes = await fetch("/api/user/avatar", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarUrl: imageUrl }),
+      });
+
+      if (!saveRes.ok) {
+        showToast("Photo uploaded but failed to save. Try again.", "error");
+        return;
+      }
+
+      showToast("Profile photo updated!", "success");
+    } catch {
+      showToast("Failed to upload photo.", "error");
+    }
   }
 
   async function handleProfileSubmit(e: React.FormEvent) {
