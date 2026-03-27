@@ -674,10 +674,23 @@ function DashboardPageInner() {
 
   const showsCopies = noService === "Print" || noService === "Photocopy";
 
-  async function handleFileChange(files: FileList | null) {
-    if (!files || files.length === 0) return;
+  function buildFileList(files: File[]) {
+    const dt = new DataTransfer();
+    files.forEach((file) => dt.items.add(file));
+    return dt.files;
+  }
+
+  async function applySelectedFiles(files: FileList | null) {
+    if (!files || files.length === 0) {
+      setNoFiles(null);
+      setNoPdfPages(0);
+      setNoQuantity("");
+      return;
+    }
+
     setNoFiles(files);
     setNoPdfPages(0);
+
     if (noService === "Print" || noService === "Photocopy") {
       setNoQuantity("");
       const totalPages = await countPagesFromFiles(files);
@@ -698,6 +711,29 @@ function DashboardPageInner() {
         setNoPdfPages(0);
       }
     }
+  }
+
+  async function handleFileChange(files: FileList | null) {
+    if (!files || files.length === 0) return;
+
+    const existingFiles = noFiles ? Array.from(noFiles) : [];
+    const mergedFiles = [...existingFiles];
+    const seen = new Set(
+      existingFiles.map(
+        (file) => `${file.name}-${file.size}-${file.lastModified}-${file.type}`,
+      ),
+    );
+
+    Array.from(files).forEach((file) => {
+      const fileKey = `${file.name}-${file.size}-${file.lastModified}-${file.type}`;
+      if (seen.has(fileKey)) return;
+      seen.add(fileKey);
+      mergedFiles.push(file);
+    });
+
+    await applySelectedFiles(buildFileList(mergedFiles));
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleEditFileChange(files: FileList | null) {
@@ -1244,7 +1280,6 @@ function DashboardPageInner() {
                 noSpecs={noSpecs}
                 setNoSpecs={setNoSpecs}
                 noFiles={noFiles}
-                setNoFiles={setNoFiles}
                 fileInputRef={fileInputRef}
                 noPaymentMethod={noPaymentMethod}
                 setNoPaymentMethod={setNoPaymentMethod}
@@ -1262,6 +1297,7 @@ function DashboardPageInner() {
                 prices={prices}
                 showToast={showToast}
                 handleFileChange={handleFileChange}
+                replaceFiles={applySelectedFiles}
                 handleCopiesChange={handleCopiesChange}
                 validateStep={validateStep}
               />

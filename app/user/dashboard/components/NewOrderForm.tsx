@@ -115,7 +115,6 @@ interface NewOrderFormProps {
   noSpecs: string;
   setNoSpecs: (v: string) => void;
   noFiles: FileList | null;
-  setNoFiles: (v: FileList | null) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   noPaymentMethod: "cash" | "gcash";
   setNoPaymentMethod: (v: "cash" | "gcash") => void;
@@ -132,7 +131,8 @@ interface NewOrderFormProps {
   onSubmit: (e: React.FormEvent) => void;
   prices: Prices;
   showToast: (msg: string, type?: "success" | "error") => void;
-  handleFileChange: (files: FileList | null) => void;
+  handleFileChange: (files: FileList | null) => void | Promise<void>;
+  replaceFiles: (files: FileList | null) => void | Promise<void>;
   handleCopiesChange: (val: number | "") => void;
   validateStep: (n: number) => boolean;
   // ── New props ──
@@ -178,7 +178,6 @@ export function NewOrderForm({
   noSpecs,
   setNoSpecs,
   noFiles,
-  setNoFiles,
   fileInputRef,
   noPaymentMethod,
   setNoPaymentMethod,
@@ -196,6 +195,7 @@ export function NewOrderForm({
   prices,
   showToast,
   handleFileChange,
+  replaceFiles,
   handleCopiesChange,
   validateStep,
   noPaperType,
@@ -961,14 +961,9 @@ export function NewOrderForm({
                             });
                             const newFiles =
                               dt.files.length > 0 ? dt.files : null;
-                            setNoFiles(newFiles);
                             if (fileInputRef.current)
                               fileInputRef.current.value = "";
-                            if (newFiles) handleFileChange(newFiles);
-                            else {
-                              setNoPdfPages(0);
-                              setNoQuantity("");
-                            }
+                            replaceFiles(newFiles);
                           }}
                           style={{
                             color: "#ef4444",
