@@ -360,6 +360,7 @@ function DashboardPageInner() {
   const [eoSpecs, setEoSpecs] = useState("");
   const [eoSubmitting, setEoSubmitting] = useState(false);
   const [eoPdfPages, setEoPdfPages] = useState(0);
+  const [eoBasePages, setEoBasePages] = useState(0);
   const [eoExistingFiles, setEoExistingFiles] = useState<
     { name: string; url: string; type: string }[]
   >([]);
@@ -697,7 +698,7 @@ function DashboardPageInner() {
       if (totalPages > 0) {
         setNoPdfPages(totalPages);
         const copies = Number(noCopies) || 1;
-        setNoQuantity(totalPages * copies);
+        setNoQuantity(copies);
         const fc = Array.from(files).filter((f) => {
           const n = f.name.toLowerCase();
           return n.endsWith(".pdf") || n.endsWith(".docx");
@@ -766,11 +767,41 @@ function DashboardPageInner() {
 
   function handleCopiesChange(val: number | "") {
     setNoCopies(val);
-    if (noPdfPages > 0 && val !== "") setNoQuantity(noPdfPages * Number(val));
+    if (val !== "") setNoQuantity(Number(val));
   }
   function handleEoCopiesChange(val: number | "") {
     setEoCopies(val);
-    if (eoPdfPages > 0 && val !== "") setEoQuantity(eoPdfPages * Number(val));
+    if (val !== "") setEoQuantity(Number(val));
+  }
+
+  async function handleSmartEditFileChange(files: FileList | null) {
+    setEoNewFiles(files);
+
+    if (eoService !== "Print" && eoService !== "Photocopy") return;
+
+    const newPages =
+      files && files.length > 0 ? await countPagesFromFiles(files) : 0;
+    const totalPages = eoBasePages + newPages;
+    const copies = Number(eoCopies) || 1;
+
+    setEoPdfPages(totalPages);
+    setEoQuantity(copies);
+
+    if (files && files.length > 0) {
+      const countedFiles = Array.from(files).filter((f) => {
+        const n = f.name.toLowerCase();
+        return n.endsWith(".pdf") || n.endsWith(".docx");
+      }).length;
+      showToast(
+        `${countedFiles} new file${files.length > 1 ? "s" : ""} added - ${totalPages} total page${totalPages > 1 ? "s" : ""} x ${copies} copies = ${totalPages * copies} total`,
+        "success",
+      );
+    }
+  }
+
+  function handleSmartEoCopiesChange(val: number | "") {
+    setEoCopies(val);
+    if (val !== "") setEoQuantity(Number(val));
   }
 
   function validateStep(n: number): boolean {
@@ -863,10 +894,10 @@ function DashboardPageInner() {
       return;
     }
     const effectiveQty =
-      noQuantity !== "" && Number(noQuantity) >= 1
-        ? Number(noQuantity)
-        : showsCopiesNow
-          ? Number(noCopies) || 1
+      showsCopiesNow
+        ? Number(noCopies) || 1
+        : noQuantity !== "" && Number(noQuantity) >= 1
+          ? Number(noQuantity)
           : 0;
     const total =
       noService && effectiveQty >= 1
@@ -878,6 +909,9 @@ function DashboardPageInner() {
             noPhotoSize,
             noLamination,
             prices,
+            undefined,
+            undefined,
+            showsCopiesNow ? noPdfPages : undefined,
           )
         : 0;
     if (noPaymentMethod === "cash" && total >= 500) {
@@ -888,14 +922,16 @@ function DashboardPageInner() {
       return;
     }
 
-    let finalQuantity = Number(noQuantity);
-    if (showsCopiesNow && (finalQuantity < 1 || noQuantity === ""))
-      finalQuantity = Number(noCopies) || 1;
+    const finalQuantity = showsCopiesNow
+      ? Number(noCopies) || 1
+      : Number(noQuantity) || 1;
     setNoSubmitting(true);
     try {
       const fd = new FormData();
       fd.append("service", noService);
       fd.append("quantity", String(finalQuantity));
+      if (showsCopiesNow && noPdfPages > 0)
+        fd.append("page_count", String(noPdfPages));
 
       let enrichedSpecs = noSpecs;
       if (noService === "Print" && noPaperType) {
@@ -1002,19 +1038,31 @@ function DashboardPageInner() {
       setEditOrder(o);
       setEoService(o.service);
       setEoQuantity(o.quantity);
-      setEoCopies(1);
+      const p = parseSpecsOptions(o.specifications);
+      const existingCopies =
+        o.service === "Print" || o.service === "Photocopy"
+          ? p.copies || o.quantity || 1
+          : 1;
+      setEoCopies(existingCopies);
       setEoDelivery(o.delivery_option as DeliveryOption);
       setEoAddress(o.delivery_address || "");
       setEoPickupTime(o.pickup_time || "");
       setEoSpecs(extractUserSpecs(o.specifications));
-      const p = parseSpecsOptions(o.specifications);
       setEoPaperSize(p.paperSize || "A4");
       setEoPhotoSize(p.photoSize || "A4");
       setEoColorOption(
         p.colorOption || (o.service === "Photocopy" ? "color" : "bw"),
       );
       setEoLamination(p.addLamination);
-      setEoPdfPages(0);
+      const existingPages =
+        o.service === "Print" || o.service === "Photocopy"
+          ? p.pageCount ||
+            (Number.isInteger(o.quantity / existingCopies)
+              ? o.quantity / existingCopies
+              : o.quantity)
+          : 0;
+      setEoBasePages(existingPages);
+      setEoPdfPages(existingPages);
       setEoExistingFiles([]);
       setEoNewFiles(null);
       setEoFolder(false);
@@ -1056,9 +1104,9 @@ function DashboardPageInner() {
       showToast("Delivery address is required", "error");
       return;
     }
-    let finalQty = Number(eoQuantity);
-    if (eoShowsCopies && (finalQty < 1 || eoQuantity === ""))
-      finalQty = Number(eoCopies) || 1;
+    const finalQty = eoShowsCopies
+      ? Number(eoCopies) || 1
+      : Number(eoQuantity) || 1;
     setEoSubmitting(true);
     try {
       const fd = new FormData();
@@ -1066,6 +1114,8 @@ function DashboardPageInner() {
       fd.append("order_id", String(editOrder.order_id));
       fd.append("service", eoService);
       fd.append("quantity", String(finalQty));
+      if (eoShowsCopies && eoPdfPages > 0)
+        fd.append("page_count", String(eoPdfPages));
       fd.append("specifications", eoSpecs);
       fd.append("delivery_option", eoDelivery);
       if (eoDelivery === "delivery") fd.append("delivery_address", eoAddress);
@@ -1388,7 +1438,6 @@ function DashboardPageInner() {
           eoQuantity={eoQuantity}
           setEoQuantity={setEoQuantity}
           eoCopies={eoCopies}
-          setEoCopies={setEoCopies}
           eoPdfPages={eoPdfPages}
           setEoPdfPages={setEoPdfPages}
           eoDelivery={eoDelivery}
@@ -1418,14 +1467,13 @@ function DashboardPageInner() {
           eoExistingFiles={eoExistingFiles}
           setEoExistingFiles={setEoExistingFiles}
           eoNewFiles={eoNewFiles}
-          setEoNewFiles={setEoNewFiles}
           editFileInputRef={editFileInputRef}
           eoSubmitting={eoSubmitting}
           onSubmit={handleEditSubmit}
           onClose={() => setEditModalOpen(false)}
           prices={prices}
-          handleEditFileChange={handleEditFileChange}
-          handleEoCopiesChange={handleEoCopiesChange}
+          handleEditFileChange={handleSmartEditFileChange}
+          handleEoCopiesChange={handleSmartEoCopiesChange}
         />
       )}
     </>

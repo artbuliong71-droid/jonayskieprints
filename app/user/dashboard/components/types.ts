@@ -149,6 +149,8 @@ export function parseSpecsOptions(specifications: string) {
     paperSize: PaperSize | null;
     photoSize: string | null;
     colorOption: ColorOption | null;
+    copies: number | null;
+    pageCount: number | null;
     addLamination: boolean;
     addFolder: boolean;
     folderSize: string;
@@ -158,6 +160,8 @@ export function parseSpecsOptions(specifications: string) {
     paperSize: null,
     photoSize: null,
     colorOption: null,
+    copies: null,
+    pageCount: null,
     addLamination: false,
     addFolder: false,
     folderSize: "A4",
@@ -169,6 +173,12 @@ export function parseSpecsOptions(specifications: string) {
     if (t.startsWith("Paper Size:")) {
       const sz = t.split(":")[1]?.trim() as PaperSize;
       if (["A4", "Short", "Long"].includes(sz)) result.paperSize = sz;
+    } else if (t.startsWith("PDF Pages:")) {
+      const parsedPages = parseInt(t.split(":")[1]?.trim() || "", 10);
+      if (!isNaN(parsedPages) && parsedPages > 0) result.pageCount = parsedPages;
+    } else if (t.startsWith("Copies:")) {
+      const parsedCopies = parseInt(t.split(":")[1]?.trim() || "", 10);
+      if (!isNaN(parsedCopies) && parsedCopies > 0) result.copies = parsedCopies;
     } else if (t.startsWith("Print Type:") || t.startsWith("Scan Type:"))
       result.colorOption = t.includes("Color") ? "color" : "bw";
     else if (t.startsWith("Copy Type:")) result.colorOption = "color";
@@ -197,11 +207,16 @@ export function calcTotal(
   prices: Prices,
   addFolder?: boolean,
   folderQty?: number,
+  pageCount?: number,
 ): number {
   const qty = Number(quantity);
   if (!service || isNaN(qty) || qty < 1) return 0;
   const sl = service.toLowerCase().trim();
   const m = PAPER_MULTIPLIERS[paperSize] ?? 1.0;
+  const billableQty =
+    ["print", "photocopy"].includes(sl) && (pageCount || 0) > 0
+      ? qty * Number(pageCount)
+      : qty;
   let unitPrice = 0;
   if (sl === "print")
     unitPrice =
@@ -213,9 +228,9 @@ export function calcTotal(
   else if (sl === "photo development")
     unitPrice = sp(prices.photo_development, 15);
   else if (sl === "laminating") unitPrice = sp(prices.laminating, 20);
-  let total = unitPrice * qty;
+  let total = unitPrice * billableQty;
   if (addLamination && sl !== "laminating")
-    total += sp(prices.laminating, 20) * qty;
+    total += sp(prices.laminating, 20) * billableQty;
   if (addFolder && folderQty && folderQty >= 1)
     total += sp(prices.folder, 10) * folderQty;
   return total;

@@ -1,6 +1,4 @@
 "use client";
-
-import { useRef } from "react";
 import {
   Order,
   Prices,
@@ -53,7 +51,6 @@ interface EditOrderModalProps {
   eoQuantity: number | "";
   setEoQuantity: (v: number | "") => void;
   eoCopies: number | "";
-  setEoCopies: (v: number | "") => void;
   eoPdfPages: number;
   setEoPdfPages: (v: number) => void;
   // delivery
@@ -88,7 +85,6 @@ interface EditOrderModalProps {
     v: { name: string; url: string; type: string }[],
   ) => void;
   eoNewFiles: FileList | null;
-  setEoNewFiles: (v: FileList | null) => void;
   editFileInputRef: React.RefObject<HTMLInputElement | null>;
   // submit
   eoSubmitting: boolean;
@@ -107,7 +103,6 @@ export function EditOrderModal({
   eoQuantity,
   setEoQuantity,
   eoCopies,
-  setEoCopies,
   eoPdfPages,
   setEoPdfPages,
   eoDelivery,
@@ -137,7 +132,6 @@ export function EditOrderModal({
   eoExistingFiles,
   setEoExistingFiles,
   eoNewFiles,
-  setEoNewFiles,
   editFileInputRef,
   eoSubmitting,
   onSubmit,
@@ -727,7 +721,6 @@ export function EditOrderModal({
               ref={editFileInputRef}
               accept=".pdf,.jpg,.jpeg,.png,.docx"
               onChange={(e) => {
-                setEoNewFiles(e.target.files);
                 handleEditFileChange(e.target.files);
               }}
             />
@@ -813,14 +806,9 @@ export function EditOrderModal({
                             });
                             const updated =
                               dt.files.length > 0 ? dt.files : null;
-                            setEoNewFiles(updated);
                             if (editFileInputRef.current)
                               editFileInputRef.current.value = "";
-                            if (updated) handleEditFileChange(updated);
-                            else {
-                              setEoPdfPages(0);
-                              setEoQuantity("");
-                            }
+                            handleEditFileChange(updated);
                           }}
                           style={{
                             color: "#ef4444",

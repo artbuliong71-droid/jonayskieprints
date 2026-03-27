@@ -231,6 +231,7 @@ export function NewOrderForm({
           prices,
           noFolder,
           noFolderQty,
+          showsCopies ? noPdfPages : undefined,
         )
       : 0;
 

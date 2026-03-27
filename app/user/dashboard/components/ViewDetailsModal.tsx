@@ -47,6 +47,11 @@ export function ViewDetailsModal({
   const m = PAPER_MULTIPLIERS[paperSize] ?? 1.0;
   const colorOpt = p.colorOption || "bw";
   const qty = order.quantity;
+  const copies = ["print", "photocopy"].includes(sl) ? p.copies || qty : qty;
+  const pageCount =
+    ["print", "photocopy"].includes(sl) ? p.pageCount || files.length || 1 : qty;
+  const billableQty =
+    ["print", "photocopy"].includes(sl) ? copies * pageCount : qty;
   let unitPrice = 0,
     priceNote = "";
   if (sl === "print") {
@@ -68,10 +73,19 @@ export function ViewDetailsModal({
     unitPrice = sp(prices.laminating, 20);
     priceNote = `${qty} item${qty > 1 ? "s" : ""} × ₱${sp(prices.laminating, 20).toFixed(2)}`;
   }
-  const baseTotal = unitPrice * qty;
+  if (sl === "print" || sl === "photocopy") {
+    priceNote = `${pageCount} page${pageCount > 1 ? "s" : ""} x ${copies} cop${copies > 1 ? "ies" : "y"} x P${unitPrice.toFixed(2)}`;
+  } else if (sl === "scanning") {
+    priceNote = `${qty} page${qty > 1 ? "s" : ""} x P${unitPrice.toFixed(2)}`;
+  } else if (sl === "photo development") {
+    priceNote = `${qty} photo${qty > 1 ? "s" : ""} x P${unitPrice.toFixed(2)}`;
+  } else if (sl === "laminating") {
+    priceNote = `${qty} item${qty > 1 ? "s" : ""} x P${unitPrice.toFixed(2)}`;
+  }
+  const baseTotal = unitPrice * billableQty;
   const lamTotal =
     p.addLamination && sl !== "laminating"
-      ? sp(prices.laminating, 20) * qty
+      ? sp(prices.laminating, 20) * billableQty
       : 0;
   const grandTotal = parseFloat(order.total_amount || "0");
   const isGCash = (order.payment_method || "").toLowerCase().includes("gcash");
@@ -172,7 +186,10 @@ export function ViewDetailsModal({
           >
             {[
               ["Service", order.service],
-              ["Quantity", String(order.quantity)],
+              [
+                ["print", "photocopy"].includes(sl) ? "Copies" : "Quantity",
+                String(["print", "photocopy"].includes(sl) ? copies : order.quantity),
+              ],
               [
                 "Delivery",
                 order.delivery_option.charAt(0).toUpperCase() +

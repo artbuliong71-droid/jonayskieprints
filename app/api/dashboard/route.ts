@@ -27,9 +27,14 @@ function calcTotal(
   paperSize: string,
   addLamination: boolean,
   prices: any,
+  pageCount?: number,
 ): number {
   const sl = service.toLowerCase();
   const multiplier = PAPER_MULTIPLIERS[paperSize] ?? 1.0;
+  const billableQty =
+    ["print", "photocopy"].includes(sl) && (pageCount || 0) > 0
+      ? quantity * Number(pageCount)
+      : quantity;
   let price = 0;
   if (sl === "print") {
     price =
@@ -44,9 +49,9 @@ function calcTotal(
   } else if (sl === "laminating") {
     price = prices.laminating;
   }
-  let total = price * quantity;
+  let total = price * billableQty;
   if (addLamination && sl !== "laminating") {
-    total += prices.laminating * quantity;
+    total += prices.laminating * billableQty;
   }
   return total;
 }
@@ -365,6 +370,7 @@ export async function POST(req: NextRequest) {
       const colorOption = (formData.get("color_option") as string) || "bw";
       const paperSize = (formData.get("paper_size") as string) || "A4";
       const addLamination = formData.get("add_lamination") === "on";
+      const pageCount = parseInt(formData.get("page_count") as string) || 0;
       const total_amount = calcTotal(
         service,
         quantity,
@@ -372,6 +378,7 @@ export async function POST(req: NextRequest) {
         paperSize,
         addLamination,
         prices,
+        pageCount,
       );
       order.service = service;
       order.quantity = quantity;
@@ -450,6 +457,7 @@ export async function POST(req: NextRequest) {
     const colorOption = (formData.get("color_option") as string) || "bw";
     const paperSize = (formData.get("paper_size") as string) || "A4";
     const addLamination = formData.get("add_lamination") === "on";
+    const pageCount = parseInt(formData.get("page_count") as string) || 0;
     const total_amount = calcTotal(
       service,
       quantity,
@@ -457,6 +465,7 @@ export async function POST(req: NextRequest) {
       paperSize,
       addLamination,
       prices,
+      pageCount,
     );
 
     // ── Read payment method and GCash fields ──────────────────────────────────
@@ -610,6 +619,7 @@ function buildSpecifications(formData: FormData): string {
   const service = (formData.get("service") as string)?.toLowerCase();
   const userSpecs = (formData.get("specifications") as string)?.trim();
   const copies = formData.get("copies") as string;
+  const pageCount = formData.get("page_count") as string;
   const pickupTime = formData.get("pickup_time") as string;
   if (paperSize && ["print", "photocopy", "scanning"].includes(service))
     parts.push(`Paper Size: ${paperSize}`);
@@ -625,6 +635,8 @@ function buildSpecifications(formData: FormData): string {
   if (photoSize && service === "photo development")
     parts.push(`Photo Size: Glossy ${photoSize}`);
   if (addLamination) parts.push("Add Lamination: Yes");
+  if (pageCount && ["print", "photocopy"].includes(service))
+    parts.push(`PDF Pages: ${pageCount}`);
   if (copies && ["print", "photocopy"].includes(service))
     parts.push(`Copies: ${copies}`);
   if (pickupTime) parts.push(`Pickup Time: ${pickupTime}`);
