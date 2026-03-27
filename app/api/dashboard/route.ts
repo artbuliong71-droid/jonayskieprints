@@ -121,6 +121,7 @@ export async function GET(req: NextRequest) {
           email: (user as any).email,
           phone: (user as any).phone || "",
           role: (user as any).role,
+          avatarUrl: (user as any).avatarUrl || null,
         },
       });
     }
