@@ -5,6 +5,7 @@ const OtpSchema = new Schema({
   otp: { type: String, required: true },
   userData: { type: Object, required: true },
   expiresAt: { type: Date, required: true },
+  verified: { type: Boolean, default: false },
 });
 
 OtpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
