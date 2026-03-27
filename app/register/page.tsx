@@ -743,7 +743,15 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email }),
+        // ✅ Fix - send all fields
+        body: JSON.stringify({
+          email: formData.email,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          phone: formData.phone,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+        }),
       });
       const data = await res.json();
       if (data.success) {
