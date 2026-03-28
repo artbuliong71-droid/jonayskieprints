@@ -1196,7 +1196,7 @@ export default function RegisterPage() {
                   className={`form-input ${errors.email ? "has-error" : ""}`}
                   type="email"
                   id="email"
-                  placeholder="you@example.com"
+                  placeholder="Email"
                   autoComplete="email"
                   inputMode="email"
                   value={formData.email}

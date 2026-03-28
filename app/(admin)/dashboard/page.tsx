@@ -99,6 +99,10 @@ function getFileName(url: string) {
   }
 }
 function formatPickupTime(time24: string): string {
+  if (!time24) return "";
+  if (/[AP]M/i.test(time24)) {
+    return time24.replace(/\s+/g, " ").trim();
+  }
   try {
     const [h, m] = time24.split(":");
     const hour = parseInt(h);
