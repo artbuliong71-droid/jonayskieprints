@@ -398,22 +398,50 @@ export async function POST(req: NextRequest) {
 
     if (formData.get("update_profile") === "1") {
       const { User } = await import("@/models/user");
-      const first_name = formData.get("first_name") as string;
-      const last_name = formData.get("last_name") as string;
-      const email = formData.get("email") as string;
-      const phone = formData.get("phone") as string;
+      const first_name = (formData.get("first_name") as string)?.trim();
+      const last_name = (formData.get("last_name") as string)?.trim();
+      const email = (formData.get("email") as string)?.trim();
+      const phone = (formData.get("phone") as string)?.trim();
       const new_password = formData.get("new_password") as string;
       const current_password = formData.get("current_password") as string;
+      const normalizedPhone = phone.replace(/\D/g, "");
       const user = await User.findById(session.userId);
       if (!user)
         return NextResponse.json(
           { success: false, message: "User not found." },
           { status: 404 },
         );
+      if (!first_name || !last_name || !email) {
+        return NextResponse.json(
+          { success: false, message: "First name, last name, and email are required." },
+          { status: 400 },
+        );
+      }
+      if (!/^(?=.*[A-Za-z])[A-Za-z\s'-]+$/.test(first_name)) {
+        return NextResponse.json(
+          { success: false, message: "First name must not contain numbers." },
+          { status: 400 },
+        );
+      }
+      if (!/^(?=.*[A-Za-z])[A-Za-z\s'-]+$/.test(last_name)) {
+        return NextResponse.json(
+          { success: false, message: "Last name must not contain numbers." },
+          { status: 400 },
+        );
+      }
+      if (phone && !/^(09\d{9}|639\d{9})$/.test(normalizedPhone)) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Phone number must be a valid Philippine mobile number.",
+          },
+          { status: 400 },
+        );
+      }
       user.first_name = first_name;
       user.last_name = last_name;
       user.email = email;
-      user.phone = phone;
+      user.phone = normalizedPhone;
       if (new_password) {
         const bcrypt = await import("bcryptjs");
         const isMatch = await bcrypt.default.compare(

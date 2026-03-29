@@ -618,9 +618,15 @@ function DashboardPageInner() {
     e.preventDefault();
     const errs: string[] = [];
     if (!profFirstName.trim()) errs.push("First name is required.");
+    else if (!/^(?=.*[A-Za-z])[A-Za-z\s'-]+$/.test(profFirstName.trim()))
+      errs.push("First name must not contain numbers.");
     if (!profLastName.trim()) errs.push("Last name is required.");
+    else if (!/^(?=.*[A-Za-z])[A-Za-z\s'-]+$/.test(profLastName.trim()))
+      errs.push("Last name must not contain numbers.");
     if (!profEmail.trim() || !/\S+@\S+\.\S+/.test(profEmail))
       errs.push("Valid email is required.");
+    if (profPhone.trim() && !/^(09\d{9}|639\d{9})$/.test(profPhone.trim()))
+      errs.push("Phone number must be a valid Philippine mobile number.");
     const chPw = profNewPw.trim().length > 0;
     if (chPw) {
       if (!profCurrentPw) errs.push("Current password required.");

@@ -28,6 +28,35 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+    if (!/^(?=.*[A-Za-z])[A-Za-z\s'-]+$/.test(first_name)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "First name must not contain numbers.",
+        },
+        { status: 400 },
+      );
+    }
+    if (!/^(?=.*[A-Za-z])[A-Za-z\s'-]+$/.test(last_name)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Last name must not contain numbers.",
+        },
+        { status: 400 },
+      );
+    }
+    const normalizedPhone = phone.replace(/\D/g, "");
+    if (!/^(09\d{9}|639\d{9})$/.test(normalizedPhone)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message:
+            "Phone number must be a valid Philippine mobile number.",
+        },
+        { status: 400 },
+      );
+    }
     if (password.length < 8) {
       return NextResponse.json(
         { success: false, message: "Password must be at least 8 characters." },
@@ -55,7 +84,13 @@ export async function POST(req: NextRequest) {
       { email },
       {
         otp,
-        userData: { first_name, last_name, email, phone, password },
+        userData: {
+          first_name,
+          last_name,
+          email,
+          phone: normalizedPhone,
+          password,
+        },
         expiresAt: new Date(Date.now() + 10 * 60 * 1000),
       },
       { upsert: true, new: true },

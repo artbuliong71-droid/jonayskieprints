@@ -830,6 +830,14 @@ export default function HomePage() {
                 <Link href="/login" className="cta-secondary">
                   Sign In
                 </Link>
+
+                <a
+                  href="https://github.com/artbuliong71-droid/jonayskieprints/releases/download/v1.0/app-release.apk"
+                  className="cta-secondary"
+                  download
+                >
+                  📱 Download App
+                </a>
               </div>
               <div className="hero-stats">
                 {[

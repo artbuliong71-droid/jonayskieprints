@@ -715,12 +715,16 @@ export default function RegisterPage() {
   const validate = (): boolean => {
     const e: FieldErrors = {};
     if (!formData.firstName.trim()) e.firstName = "First name is required";
+    else if (!/^(?=.*[A-Za-z])[A-Za-z\s'-]+$/.test(formData.firstName.trim()))
+      e.firstName = "First name must not contain numbers";
     if (!formData.lastName.trim()) e.lastName = "Last name is required";
+    else if (!/^(?=.*[A-Za-z])[A-Za-z\s'-]+$/.test(formData.lastName.trim()))
+      e.lastName = "Last name must not contain numbers";
     if (!formData.email.trim()) e.email = "Email is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email))
       e.email = "Invalid email format";
     if (!formData.phone.trim()) e.phone = "Phone number is required";
-    else if (!/^[\d\s\-\+\(\)]{7,15}$/.test(formData.phone))
+    else if (!/^(09\d{9}|639\d{9})$/.test(formData.phone.replace(/\D/g, "")))
       e.phone = "Invalid phone number format";
     if (!formData.password) e.password = "Password is required";
     else if (formData.password.length < PASSWORD_MIN_LENGTH)
@@ -1151,7 +1155,9 @@ export default function RegisterPage() {
                     placeholder="Jane"
                     autoComplete="given-name"
                     value={formData.firstName}
-                    onChange={(e) => setField("firstName", e.target.value)}
+                    onChange={(e) =>
+                      setField("firstName", e.target.value.replace(/\d/g, ""))
+                    }
                   />
                 </div>
                 {errors.firstName && (
@@ -1174,7 +1180,9 @@ export default function RegisterPage() {
                     placeholder="Doe"
                     autoComplete="family-name"
                     value={formData.lastName}
-                    onChange={(e) => setField("lastName", e.target.value)}
+                    onChange={(e) =>
+                      setField("lastName", e.target.value.replace(/\d/g, ""))
+                    }
                   />
                 </div>
                 {errors.lastName && (
@@ -1224,8 +1232,14 @@ export default function RegisterPage() {
                   placeholder="+63 912 345 6789"
                   autoComplete="tel"
                   inputMode="tel"
+                  maxLength={16}
                   value={formData.phone}
-                  onChange={(e) => setField("phone", e.target.value)}
+                  onChange={(e) =>
+                    setField(
+                      "phone",
+                      e.target.value.replace(/[^\d\s\-\+\(\)]/g, ""),
+                    )
+                  }
                 />
               </div>
               {errors.phone && (

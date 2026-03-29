@@ -264,7 +264,9 @@ export function ProfileSection({
                     className="np-input"
                     type="text"
                     value={profFirstName}
-                    onChange={(e) => setProfFirstName(e.target.value)}
+                    onChange={(e) =>
+                      setProfFirstName(e.target.value.replace(/\d/g, ""))
+                    }
                     placeholder="Jane"
                   />
                 </div>
@@ -274,7 +276,9 @@ export function ProfileSection({
                     className="np-input"
                     type="text"
                     value={profLastName}
-                    onChange={(e) => setProfLastName(e.target.value)}
+                    onChange={(e) =>
+                      setProfLastName(e.target.value.replace(/\d/g, ""))
+                    }
                     placeholder="Doe"
                   />
                 </div>
@@ -319,7 +323,7 @@ export function ProfileSection({
                         setProfPhone(e.target.value.replace(/[^0-9]/g, ""))
                       }
                       placeholder="09123456789"
-                      maxLength={15}
+                      maxLength={12}
                     />
                     <span className="np-ico np-ico-static">
                       <svg
